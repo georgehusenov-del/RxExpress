@@ -354,6 +354,12 @@ class Order(BaseModel):
     priority_surcharge: float = 0.0
     total_amount: float = 5.99
     
+    # Copay collection
+    copay_amount: float = 0.0  # Amount pharmacy needs to collect from patient
+    copay_collected: bool = False  # Whether copay has been collected by driver
+    copay_collected_at: Optional[datetime] = None  # When copay was collected
+    copay_collection_method: Optional[str] = None  # cash, card, etc.
+    
     # Payment
     payment_status: PaymentStatus = PaymentStatus.PENDING
     payment_session_id: Optional[str] = None
