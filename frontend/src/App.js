@@ -192,7 +192,17 @@ function AppRoutes() {
         }
       />
       
-      {/* Admin/Dispatch Dashboard */}
+      {/* Admin Dashboard */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Legacy Dispatch Dashboard (redirect to admin for admins) */}
       <Route
         path="/dashboard"
         element={
