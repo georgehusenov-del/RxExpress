@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,8 @@ import {
 } from '@/components/ui/select';
 import {
   Package, Search, Eye, MoreVertical, MapPin, Truck,
-  Clock, XCircle, ExternalLink, Calendar, User, Edit, RefreshCw
+  Clock, XCircle, ExternalLink, Calendar, User, Edit, RefreshCw,
+  LayoutGrid, List, ChevronDown, ChevronRight, Sun, Sunset, Moon, DollarSign
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,6 +38,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
 
