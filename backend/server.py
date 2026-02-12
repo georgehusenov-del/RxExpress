@@ -2087,6 +2087,106 @@ async def driver_scan_package(
     }
 
 
+@driver_portal_router.post("/deliveries/{order_id}/pod")
+async def submit_proof_of_delivery(
+    order_id: str,
+    signature_data: Optional[str] = None,  # Base64 encoded signature image
+    photo_data: Optional[str] = None,  # Base64 encoded photo
+    recipient_name: Optional[str] = None,
+    notes: Optional[str] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    current_user: dict = Depends(require_driver)
+):
+    """Submit Proof of Delivery (POD) with signature and/or photo"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    # Verify order is assigned to this driver
+    order = await db.orders.find_one({"id": order_id, "driver_id": driver["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Delivery not found or not assigned to you")
+    
+    # Check if signature is required but not provided
+    requires_signature = any(pkg.get("requires_signature") for pkg in order.get("packages", []))
+    if requires_signature and not signature_data:
+        raise HTTPException(status_code=400, detail="Signature is required for this delivery")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Create POD record
+    pod_id = str(uuid.uuid4())
+    pod = {
+        "id": pod_id,
+        "order_id": order_id,
+        "driver_id": driver["id"],
+        "signature_data": signature_data,
+        "photo_data": photo_data,
+        "recipient_name": recipient_name or order.get("recipient", {}).get("name"),
+        "notes": notes,
+        "location": {"latitude": latitude, "longitude": longitude} if latitude and longitude else None,
+        "submitted_at": now.isoformat(),
+        "submitted_by": current_user["sub"]
+    }
+    await db.proof_of_delivery.insert_one(pod)
+    
+    # Update order with POD reference and mark as delivered
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "status": "delivered",
+            "delivered_at": now.isoformat(),
+            "pod_id": pod_id,
+            "pod_submitted_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }}
+    )
+    
+    # Update driver stats
+    await db.drivers.update_one(
+        {"id": driver["id"]},
+        {
+            "$inc": {"total_deliveries": 1},
+            "$set": {"status": "available"}
+        }
+    )
+    
+    # Log status change
+    status_log = {
+        "id": str(uuid.uuid4()),
+        "order_id": order_id,
+        "old_status": order.get("status"),
+        "new_status": "delivered",
+        "changed_by": current_user.get("sub"),
+        "changed_at": now.isoformat(),
+        "notes": f"POD submitted: {pod_id}",
+        "changed_by_role": "driver"
+    }
+    await db.status_logs.insert_one(status_log)
+    
+    return {
+        "message": "Proof of Delivery submitted successfully",
+        "pod_id": pod_id,
+        "order_id": order_id,
+        "status": "delivered"
+    }
+
+
+@driver_portal_router.get("/deliveries/{order_id}/pod")
+async def get_proof_of_delivery(order_id: str, current_user: dict = Depends(require_driver)):
+    """Get POD for a delivery"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    pod = await db.proof_of_delivery.find_one({"order_id": order_id}, {"_id": 0})
+    if not pod:
+        raise HTTPException(status_code=404, detail="POD not found")
+    
+    return pod
+
+
 @driver_portal_router.put("/location")
 async def update_driver_location(
     latitude: float,
