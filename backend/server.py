@@ -2038,12 +2038,6 @@ async def admin_optimize_route_preview(
             "copay_collected": order.get("copay_collected", False),
             "status": order.get("status"),
             "packages_count": len(order.get("packages", [])),
-            "delivery_type": order.get("delivery_type"),
-            "time_window": tw_key,
-            "time_window_start": tw_config["start"],
-            "time_window_end": tw_config["end"],
-            "time_window_priority": tw_config["priority"],
-            "time_window_label": tw_config["label"],
             "borough": order_borough,
             "borough_name": borough_centers.get(order_borough, {}).get("name", "Unknown"),
         })
@@ -2058,76 +2052,20 @@ async def admin_optimize_route_preview(
     except:
         pass
     
+    # Pure location-based nearest neighbor optimization
     optimized_stops = []
+    remaining = stops.copy()
+    current_lat, current_lng = depot_lat, depot_lng
     
-    if optimize_mode == "location_only":
-        # Pure nearest neighbor
-        remaining = stops.copy()
-        current_lat, current_lng = depot_lat, depot_lng
-        
-        while remaining:
-            nearest = min(
-                remaining,
-                key=lambda s: haversine_distance(current_lat, current_lng, s.get("latitude") or depot_lat, s.get("longitude") or depot_lng)
-            )
-            remaining.remove(nearest)
-            optimized_stops.append(nearest)
-            if nearest.get("latitude") and nearest.get("longitude"):
-                current_lat, current_lng = nearest["latitude"], nearest["longitude"]
-    
-    elif optimize_mode == "time_only":
-        # Group by time window, then sort by distance within each group
-        by_time_window = defaultdict(list)
-        for stop in stops:
-            by_time_window[stop["time_window"]].append(stop)
-        
-        for tw_key in ["8am-1pm", "1pm-4pm", "4pm-10pm"]:
-            if tw_key in by_time_window:
-                tw_stops = by_time_window[tw_key]
-                # Sort by distance from depot within time window
-                tw_stops.sort(key=lambda s: haversine_distance(depot_lat, depot_lng, s.get("latitude") or depot_lat, s.get("longitude") or depot_lng))
-                optimized_stops.extend(tw_stops)
-    
-    else:  # location_time (default - smart optimization)
-        # Group by time window first (respecting deadlines)
-        by_time_window = defaultdict(list)
-        for stop in stops:
-            by_time_window[stop["time_window"]].append(stop)
-        
-        current_lat, current_lng = depot_lat, depot_lng
-        
-        # Process each time window in order
-        for tw_key in ["8am-1pm", "1pm-4pm", "4pm-10pm"]:
-            if tw_key not in by_time_window:
-                continue
-            
-            tw_stops = by_time_window[tw_key]
-            
-            # Within each time window, cluster by borough then optimize within clusters
-            by_borough = defaultdict(list)
-            for stop in tw_stops:
-                borough_key = stop.get("borough") or "other"
-                by_borough[borough_key].append(stop)
-            
-            # Sort boroughs by distance from current position
-            borough_order = sorted(
-                by_borough.keys(),
-                key=lambda b: haversine_distance(
-                    current_lat, current_lng,
-                    borough_centers.get(b, {}).get("lat", depot_lat),
-                    borough_centers.get(b, {}).get("lng", depot_lng)
-                ) if b in borough_centers else float('inf')
-            )
-            
-            # Process each borough cluster with nearest neighbor
-            for borough_key in borough_order:
-                borough_stops = by_borough[borough_key]
-                remaining = borough_stops.copy()
-                
-                while remaining:
-                    nearest = min(
-                        remaining,
-                        key=lambda s: haversine_distance(current_lat, current_lng, s.get("latitude") or depot_lat, s.get("longitude") or depot_lng)
+    while remaining:
+        nearest = min(
+            remaining,
+            key=lambda s: haversine_distance(current_lat, current_lng, s.get("latitude") or depot_lat, s.get("longitude") or depot_lng)
+        )
+        remaining.remove(nearest)
+        optimized_stops.append(nearest)
+        if nearest.get("latitude") and nearest.get("longitude"):
+            current_lat, current_lng = nearest["latitude"], nearest["longitude"]
                     )
                     remaining.remove(nearest)
                     optimized_stops.append(nearest)
