@@ -367,7 +367,7 @@ class TestCopayEdgeCases:
         order_data = {
             "pharmacy_id": PHARMACY_ID,
             "delivery_type": "next_day",
-            "time_window": "1pm-6pm",
+            "time_window": "1pm-4pm",
             "recipient": {
                 "name": f"TEST_ZeroCopay_Patient_{test_id}",
                 "phone": "+1-555-000-0000",
