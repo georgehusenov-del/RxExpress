@@ -58,7 +58,10 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     requires_photo_proof: true,
     requires_id_verification: false,
     delivery_notes: '',
-    add_refrigerated: false
+    add_refrigerated: false,
+    
+    // Copay
+    copay_amount: 0
   });
 
   // Fetch pricing on mount
