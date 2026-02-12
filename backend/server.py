@@ -638,15 +638,66 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
     order_dict["recipient"] = order_data.recipient.model_dump()
     order_dict["packages"] = [p.model_dump() for p in order_data.packages]
     
-    # Generate QR codes for each package
+    # Determine NYC borough from delivery address for QR code prefix
+    def get_borough_prefix(postal_code: str, city: str = "") -> str:
+        """Get borough prefix based on NYC ZIP code or city name"""
+        zip_code = postal_code.strip()[:5] if postal_code else ""
+        city_lower = city.lower().strip() if city else ""
+        
+        # Check city name first
+        if "manhattan" in city_lower or "new york" in city_lower:
+            return "M"
+        elif "brooklyn" in city_lower:
+            return "B"
+        elif "queens" in city_lower:
+            return "Q"
+        elif "bronx" in city_lower:
+            return "X"
+        elif "staten island" in city_lower:
+            return "S"
+        
+        # Check ZIP code ranges
+        try:
+            zip_int = int(zip_code)
+            # Manhattan: 10001-10282
+            if 10001 <= zip_int <= 10282:
+                return "M"
+            # Bronx: 10451-10475
+            elif 10451 <= zip_int <= 10475:
+                return "X"
+            # Brooklyn: 11201-11256
+            elif 11201 <= zip_int <= 11256:
+                return "B"
+            # Queens: 11004-11109, 11351-11697
+            elif (11004 <= zip_int <= 11109) or (11351 <= zip_int <= 11697):
+                return "Q"
+            # Staten Island: 10301-10314
+            elif 10301 <= zip_int <= 10314:
+                return "S"
+        except (ValueError, TypeError):
+            pass
+        
+        # Default to 'N' for non-NYC or unknown
+        return "N"
+    
+    # Get borough prefix for this order
+    delivery_zip = order_data.delivery_address.postal_code
+    delivery_city = order_data.delivery_address.city
+    borough_prefix = get_borough_prefix(delivery_zip, delivery_city)
+    
+    # Generate unique order number suffix (4 digits)
+    order_suffix = uuid.uuid4().hex[:4].upper()
+    
+    # Generate QR codes for each package with borough prefix
     for i, pkg in enumerate(order_dict["packages"]):
-        qr_code = f"RX-{order.order_number}-PKG{i+1}-{uuid.uuid4().hex[:8].upper()}"
+        qr_code = f"{borough_prefix}{order_suffix}-PKG{i+1}"
         order_dict["packages"][i]["qr_code"] = qr_code
         order_dict["packages"][i]["package_number"] = i + 1
     
-    # Generate main order QR code
-    order_qr_code = f"RX-{order.order_number}"
+    # Generate main order QR code with borough prefix
+    order_qr_code = f"{borough_prefix}{order_suffix}"
     order_dict["qr_code"] = order_qr_code
+    order_dict["borough"] = borough_prefix  # Store borough for reference
     
     if estimated_delivery_start:
         order_dict["estimated_delivery_start"] = estimated_delivery_start.isoformat()
