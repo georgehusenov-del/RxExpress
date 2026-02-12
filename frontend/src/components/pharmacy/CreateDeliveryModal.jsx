@@ -15,12 +15,14 @@ import {
 } from 'lucide-react';
 import { ordersAPI, publicAPI } from '@/lib/api';
 import { toast } from 'sonner';
+import { OrderSuccessModal } from './OrderSuccessModal';
 
 export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [pricing, setPricing] = useState(null);
   const [loadingPricing, setLoadingPricing] = useState(true);
+  const [createdOrder, setCreatedOrder] = useState(null);
   
   const [formData, setFormData] = useState({
     // Delivery Type
