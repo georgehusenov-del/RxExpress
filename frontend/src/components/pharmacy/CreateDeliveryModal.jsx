@@ -199,8 +199,11 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
       };
 
       const response = await ordersAPI.create(orderData);
-      toast.success(`Delivery created: ${response.data.order_number}`);
-      onSuccess();
+      // Show success modal with QR code
+      setCreatedOrder({
+        ...response.data,
+        time_window: formData.time_window
+      });
     } catch (err) {
       console.error('Failed to create delivery:', err);
       toast.error(err.response?.data?.detail || 'Failed to create delivery');
@@ -208,6 +211,19 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
       setLoading(false);
     }
   };
+
+  // If order was created, show success modal
+  if (createdOrder) {
+    return (
+      <OrderSuccessModal 
+        order={createdOrder} 
+        onClose={() => {
+          setCreatedOrder(null);
+          onSuccess();
+        }} 
+      />
+    );
+  }
 
   const getTimeIcon = (timeWindow) => {
     if (!timeWindow) return Clock;
