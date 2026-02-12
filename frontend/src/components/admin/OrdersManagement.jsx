@@ -79,6 +79,52 @@ const deliveryTypeLabels = {
   time_window: 'Time Window',
 };
 
+// Borough configuration for Smart Organizer
+const boroughConfig = {
+  Q: { name: 'Queens', color: 'blue', bgClass: 'from-blue-500/20 to-blue-600/10 border-blue-500/30' },
+  B: { name: 'Brooklyn', color: 'green', bgClass: 'from-green-500/20 to-green-600/10 border-green-500/30' },
+  M: { name: 'Manhattan', color: 'amber', bgClass: 'from-amber-500/20 to-amber-600/10 border-amber-500/30' },
+  S: { name: 'Staten Island', color: 'purple', bgClass: 'from-purple-500/20 to-purple-600/10 border-purple-500/30' },
+  X: { name: 'Bronx', color: 'red', bgClass: 'from-red-500/20 to-red-600/10 border-red-500/30' },
+};
+
+// Time window configuration
+const timeWindowConfig = {
+  morning: { label: '8am - 1pm', icon: Sun, color: 'amber', start: 8, end: 13 },
+  afternoon: { label: '1pm - 4pm', icon: Sunset, color: 'orange', start: 13, end: 16 },
+  evening: { label: '4pm - 10pm', icon: Moon, color: 'indigo', start: 16, end: 22 },
+};
+
+// Helper to extract borough from QR code
+const getBoroughFromOrder = (order) => {
+  if (order.qr_code && order.qr_code.length > 0) {
+    const firstChar = order.qr_code.charAt(0).toUpperCase();
+    if (boroughConfig[firstChar]) return firstChar;
+  }
+  // Fallback: try to detect from city name
+  const city = order.delivery_address?.city?.toLowerCase() || '';
+  if (city.includes('queens')) return 'Q';
+  if (city.includes('brooklyn')) return 'B';
+  if (city.includes('manhattan') || city.includes('new york')) return 'M';
+  if (city.includes('staten')) return 'S';
+  if (city.includes('bronx')) return 'X';
+  return null;
+};
+
+// Helper to determine time window from order
+const getTimeWindowFromOrder = (order) => {
+  const timeWindow = order.time_window;
+  if (timeWindow) {
+    if (timeWindow.includes('8am') || timeWindow.includes('morning') || timeWindow === '8am-1pm') return 'morning';
+    if (timeWindow.includes('1pm') || timeWindow.includes('afternoon') || timeWindow === '1pm-4pm') return 'afternoon';
+    if (timeWindow.includes('4pm') || timeWindow.includes('evening') || timeWindow === '4pm-10pm') return 'evening';
+  }
+  // For priority/same-day, default to morning
+  if (order.delivery_type === 'priority') return 'morning';
+  if (order.delivery_type === 'same_day') return 'afternoon';
+  return 'morning'; // Default
+};
+
 export const OrdersManagement = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +136,10 @@ export const OrdersManagement = () => {
   const [newStatus, setNewStatus] = useState('');
   const [statusNotes, setStatusNotes] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [pagination, setPagination] = useState({ skip: 0, limit: 20, total: 0 });
+  const [pagination, setPagination] = useState({ skip: 0, limit: 100, total: 0 });
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'smart'
+  const [expandedBoroughs, setExpandedBoroughs] = useState({});
+  const [expandedTimeWindows, setExpandedTimeWindows] = useState({});
 
   const fetchOrders = useCallback(async () => {
     try {
