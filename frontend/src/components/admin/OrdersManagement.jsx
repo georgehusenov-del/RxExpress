@@ -453,6 +453,18 @@ export const OrdersManagement = () => {
             </div>
           )}
           <DialogFooter>
+            {selectedOrder && (
+              <Button
+                onClick={() => {
+                  setShowDetailsModal(false);
+                  openStatusModal(selectedOrder);
+                }}
+                className="bg-teal-600 hover:bg-teal-700"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Change Status
+              </Button>
+            )}
             {selectedOrder && !['delivered', 'cancelled', 'failed'].includes(selectedOrder.status) && (
               <Button
                 variant="destructive"
@@ -467,6 +479,85 @@ export const OrdersManagement = () => {
             )}
             <Button variant="outline" onClick={() => setShowDetailsModal(false)} className="border-slate-600">
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Status Modal */}
+      <Dialog open={showStatusModal} onOpenChange={setShowStatusModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-teal-400" />
+              Change Order Status
+            </DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="p-3 bg-slate-700/50 rounded-lg">
+                <p className="font-mono text-sm text-teal-400">{selectedOrder.order_number}</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Current Status: <Badge variant="outline" className={statusColors[selectedOrder.status]}>
+                    {statusLabels[selectedOrder.status] || selectedOrder.status}
+                  </Badge>
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-slate-300">New Status</Label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white" data-testid="new-status-select">
+                    <SelectValue placeholder="Select new status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
+                    <SelectItem value="assigned">Assigned</SelectItem>
+                    <SelectItem value="picked_up">Picked Up</SelectItem>
+                    <SelectItem value="in_transit">In Transit</SelectItem>
+                    <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-slate-300">Notes (Optional)</Label>
+                <Textarea
+                  value={statusNotes}
+                  onChange={(e) => setStatusNotes(e.target.value)}
+                  placeholder="Add notes about this status change..."
+                  className="bg-slate-700 border-slate-600 text-white resize-none"
+                  rows={3}
+                  data-testid="status-notes-input"
+                />
+              </div>
+
+              {newStatus !== selectedOrder.status && (
+                <div className="flex items-center gap-2 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg">
+                  <Edit className="w-4 h-4 text-amber-400" />
+                  <p className="text-sm text-amber-400">
+                    Status will change from <strong>{statusLabels[selectedOrder.status]}</strong> to <strong>{statusLabels[newStatus]}</strong>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStatusModal(false)} className="border-slate-600">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateStatus}
+              disabled={updatingStatus || !newStatus || newStatus === selectedOrder?.status}
+              className="bg-teal-600 hover:bg-teal-700"
+              data-testid="update-status-btn"
+            >
+              {updatingStatus ? 'Updating...' : 'Update Status'}
             </Button>
           </DialogFooter>
         </DialogContent>
