@@ -58,15 +58,18 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - **Quick Actions:** View details and change status directly from the organized view
 - **Toggle View:** Switch between List view and Smart Organizer view
 - **Drag & Drop:** Drag orders between time windows to reassign delivery slots
-- **Driver Assignment Modal:** Click to assign available drivers to orders
+- **Quick Driver Assignment:** Click truck icon on any order to instantly assign/unassign drivers from a dropdown
 - **Backend Endpoint:** `PUT /api/admin/orders/{order_id}/reassign` for time window and driver reassignment
 - **Route Optimization Preview:** Click "Optimize" button on time windows with 2+ orders to see:
   - Total distance, duration, and stops summary
   - Optimized delivery sequence using nearest neighbor algorithm
+  - **Live Google Maps visualization** with dark theme, route path, and numbered markers
+  - Click markers for stop details (recipient, address, ETA)
   - Estimated arrival times (ETA) for each stop
   - Distance and drive time between stops
   - "Apply Sequence" button to confirm optimized order
 - **Backend Endpoint:** `POST /api/admin/orders/optimize-route` for route optimization calculations
+- **Frontend Component:** `RouteMapPreview.jsx` using @react-google-maps/api
 - **Full workflow implemented:**
   1. **Create Plan** - Create delivery plans for specific dates with optional drivers
   2. **Import Stops** - Batch import orders to plans (converts orders to Circuit stops)
