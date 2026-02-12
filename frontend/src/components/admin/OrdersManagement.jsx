@@ -566,9 +566,27 @@ export const OrdersManagement = () => {
         </div>
       </div>
 
-      {/* Smart Organizer View */}
+      {/* Smart Organizer View with Drag & Drop */}
       {viewMode === 'smart' && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
         <div className="space-y-4" data-testid="smart-organizer">
+          {/* Instructions Banner */}
+          <div className="bg-gradient-to-r from-teal-900/50 to-teal-800/30 border border-teal-500/30 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <GripVertical className="w-5 h-5 text-teal-400" />
+              <div>
+                <p className="text-sm text-teal-300 font-medium">Drag & Drop Enabled</p>
+                <p className="text-xs text-teal-400/70">Drag orders between time windows to reassign. Click the driver icon to assign a driver.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {Object.entries(boroughConfig).map(([code, config]) => {
@@ -635,90 +653,52 @@ export const OrdersManagement = () => {
                     </CollapsibleTrigger>
                     
                     <CollapsibleContent>
-                      <CardContent className="p-0">
-                        {/* Time Window Sections */}
-                        {Object.entries(timeWindowConfig).map(([tw, twConfig]) => {
-                          const twOrders = data[tw];
-                          if (twOrders.length === 0) return null;
-                          
-                          const twKey = `${borough}-${tw}`;
-                          const isTwExpanded = expandedTimeWindows[twKey] !== false;
-                          const TimeIcon = twConfig.icon;
-                          
-                          return (
-                            <Collapsible key={tw} open={isTwExpanded} onOpenChange={() => toggleTimeWindow(borough, tw)}>
-                              <CollapsibleTrigger asChild>
-                                <div className={`flex items-center justify-between px-4 py-2 bg-slate-700/30 border-b border-slate-700 cursor-pointer hover:bg-slate-700/50`}>
-                                  <div className="flex items-center gap-2">
-                                    {isTwExpanded ? <ChevronDown className="w-4 h-4 text-slate-500" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
-                                    <TimeIcon className={`w-4 h-4 text-${twConfig.color}-400`} />
-                                    <span className="text-sm text-slate-300">{twConfig.label}</span>
-                                    <Badge className={`bg-${twConfig.color}-500/20 text-${twConfig.color}-400 border-${twConfig.color}-500/30`}>
-                                      {twOrders.length}
-                                    </Badge>
-                                  </div>
+                      <CardContent className="p-4">
+                        {/* Time Window Sections with Drop Zones */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                          {Object.entries(timeWindowConfig).map(([tw, twConfig]) => {
+                            const twOrders = data[tw] || [];
+                            const dropZoneId = `${borough}-${tw}`;
+                            const TimeIcon = twConfig.icon;
+                            
+                            return (
+                              <div key={tw} className="space-y-2">
+                                {/* Time Window Header */}
+                                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-${twConfig.color}-500/10 border border-${twConfig.color}-500/30`}>
+                                  <TimeIcon className={`w-4 h-4 text-${twConfig.color}-400`} />
+                                  <span className="text-sm font-medium text-white">{twConfig.label}</span>
+                                  <Badge className={`ml-auto bg-${twConfig.color}-500/20 text-${twConfig.color}-400`}>
+                                    {twOrders.length}
+                                  </Badge>
                                 </div>
-                              </CollapsibleTrigger>
-                              
-                              <CollapsibleContent>
-                                <div className="divide-y divide-slate-700/50">
-                                  {twOrders.map(order => (
-                                    <div 
-                                      key={order.id}
-                                      className="flex items-center justify-between px-4 py-3 hover:bg-slate-700/30 transition-colors"
-                                      data-testid={`smart-order-${order.id}`}
-                                    >
-                                      <div className="flex items-center gap-4">
-                                        <div className="w-8 h-8 rounded bg-slate-700 flex items-center justify-center">
-                                          <Package className="w-4 h-4 text-slate-400" />
-                                        </div>
-                                        <div>
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-mono text-sm text-white">{order.order_number}</span>
-                                            <Badge variant="outline" className={statusColors[order.status]}>
-                                              {statusLabels[order.status]}
-                                            </Badge>
-                                            {order.qr_code && (
-                                              <span className="text-xs font-mono text-slate-500">{order.qr_code}</span>
-                                            )}
-                                          </div>
-                                          <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
-                                            <span><User className="w-3 h-3 inline mr-1" />{order.recipient?.name}</span>
-                                            <span><MapPin className="w-3 h-3 inline mr-1" />{order.delivery_address?.street}</span>
-                                            {order.copay_amount > 0 && !order.copay_collected && (
-                                              <span className="text-amber-400"><DollarSign className="w-3 h-3 inline" />${order.copay_amount.toFixed(2)}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-slate-400 hover:text-white"
-                                          onClick={() => {
-                                            setSelectedOrder(order);
-                                            setShowDetailsModal(true);
-                                          }}
-                                        >
-                                          <Eye className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-teal-400 hover:text-teal-300"
-                                          onClick={() => openStatusModal(order)}
-                                        >
-                                          <RefreshCw className="w-4 h-4" />
-                                        </Button>
-                                      </div>
+                                
+                                {/* Droppable Zone */}
+                                <DroppableTimeWindow id={dropZoneId} timeWindowConfig={timeWindowConfig}>
+                                  {twOrders.length === 0 ? (
+                                    <div className="text-center py-6 text-slate-500 text-sm">
+                                      <Package className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                                      No orders
                                     </div>
-                                  ))}
-                                </div>
-                              </CollapsibleContent>
-                            </Collapsible>
-                          );
-                        })}
+                                  ) : (
+                                    twOrders.map(order => (
+                                      <DraggableOrderCard
+                                        key={order.id}
+                                        order={order}
+                                        onViewDetails={(o) => {
+                                          setSelectedOrder(o);
+                                          setShowDetailsModal(true);
+                                        }}
+                                        onChangeStatus={openStatusModal}
+                                        statusColors={statusColors}
+                                        statusLabels={statusLabels}
+                                      />
+                                    ))
+                                  )}
+                                </DroppableTimeWindow>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </CardContent>
                     </CollapsibleContent>
                   </Collapsible>
