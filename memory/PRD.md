@@ -1,7 +1,7 @@
 # RX Expresss - Pharmacy Delivery Service
 ## Product Requirements Document
 
-**Last Updated:** 2026-02-12
+**Last Updated:** 2026-02-12 (Copay Tracking Feature Completed)
 
 ---
 
@@ -20,6 +20,7 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - **Dedicated driver interface for scanning during deliveries**
 - **Admin control over delivery pricing**
 - **Full Circuit/Spoke route optimization workflow**
+- **Copay Tracking** - Pharmacies specify copay, drivers collect, admin tracks
 
 ---
 
@@ -41,6 +42,13 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - Distance matrix API available
 
 #### Phase 10: Circuit/Spoke Route Optimization ✅ (2026-02-12)
+
+#### Phase 11: Copay Tracking Feature ✅ (2026-02-12)
+- **Pharmacy Portal:** Copay input field in CreateDeliveryModal
+- **Driver Portal:** Collect copay endpoint (`POST /api/driver-portal/deliveries/{order_id}/collect-copay`)
+- **Admin Dashboard:** Copay Collection section with "Copay to Collect" and "Copay Collected" stats
+- **Backend:** MongoDB aggregation pipeline for copay statistics
+- **Test Results:** 100% pass rate (15/15 backend, all frontend verified)
 - **Full workflow implemented:**
   1. **Create Plan** - Create delivery plans for specific dates with optional drivers
   2. **Import Stops** - Batch import orders to plans (converts orders to Circuit stops)
@@ -189,8 +197,14 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 **Admin Order Control:**
 - `PUT /api/admin/orders/{id}/status` - Change status
 
+**Copay Tracking:**
+- `POST /api/orders/` - Create order with `copay_amount` field
+- `GET /api/admin/dashboard` - Returns `copay_to_collect`, `copay_collected` stats
+- `POST /api/driver-portal/deliveries/{order_id}/collect-copay` - Driver marks copay collected
+
 ---
 
 ### Test Reports
 
-- `/app/test_reports/iteration_7.json` - Latest (100% pass rate)
+- `/app/test_reports/iteration_8.json` - Latest (Copay Tracking - 100% pass rate)
+- `/app/test_reports/iteration_7.json` - Circuit/Spoke (100% pass rate)
