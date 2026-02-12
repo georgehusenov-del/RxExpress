@@ -59,6 +59,7 @@ export const AdminDashboard = () => {
     { id: 'pharmacies', label: 'Pharmacies', icon: Building2 },
     { id: 'drivers', label: 'Drivers', icon: Truck },
     { id: 'orders', label: 'Orders', icon: Package },
+    { id: 'routes', label: 'Routes', icon: Route },
     { id: 'pricing', label: 'Pricing', icon: DollarSign },
     { id: 'scanning', label: 'QR Scanning', icon: QrCode },
     { id: 'zones', label: 'Service Zones', icon: MapPin },
