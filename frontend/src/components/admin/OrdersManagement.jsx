@@ -1056,12 +1056,25 @@ export const OrdersManagement = () => {
                             <Badge variant="outline" className={statusColors[stop.status]}>
                               {statusLabels[stop.status]}
                             </Badge>
+                            {stop.time_window_label && (
+                              <Badge className="text-xs bg-slate-700/50 text-slate-400 border-slate-600">
+                                {stop.time_window_label}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-white mt-1">{stop.recipient_name}</p>
-                          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3 h-3" />
-                            {stop.address}
-                          </p>
+                          <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {stop.borough_name || stop.city}
+                            </span>
+                            {stop.time_window && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Due by {stop.deadline}
+                              </span>
+                            )}
+                          </div>
                           {stop.copay_amount > 0 && !stop.copay_collected && (
                             <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
                               <DollarSign className="w-3 h-3" />
@@ -1072,9 +1085,12 @@ export const OrdersManagement = () => {
                         
                         {/* ETA & Distance */}
                         <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-medium text-teal-400">{stop.estimated_arrival}</p>
-                          <p className="text-xs text-slate-500">{stop.distance_from_previous} mi</p>
-                          <p className="text-xs text-slate-600">{stop.estimated_drive_time} min drive</p>
+                          <p className={`text-sm font-medium ${stop.is_on_time === false ? 'text-red-400' : 'text-teal-400'}`}>
+                            {stop.estimated_arrival}
+                            {stop.is_on_time === false && <span className="text-xs ml-1">⚠️</span>}
+                          </p>
+                          <p className="text-xs text-slate-500">{stop.distance_from_previous} mi • {stop.estimated_drive_time}m</p>
+                          <p className="text-xs text-slate-600">+{stop.stop_duration || 5}m stop</p>
                         </div>
                       </div>
                       
