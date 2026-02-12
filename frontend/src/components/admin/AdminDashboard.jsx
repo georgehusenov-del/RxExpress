@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Building2, Truck, Package,
   MapPin, BarChart3, Settings, RefreshCw, Search,
   TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle,
-  LogOut, Menu, X
+  LogOut, Menu, X, QrCode
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { adminAPI } from '@/lib/api';
@@ -18,6 +18,7 @@ import { DriversManagement } from './DriversManagement';
 import { OrdersManagement } from './OrdersManagement';
 import { ServiceZonesManagement } from './ServiceZonesManagement';
 import { ReportsSection } from './ReportsSection';
+import { PackageScanManagement } from './PackageScanManagement';
 import { toast } from 'sonner';
 
 export const AdminDashboard = () => {
@@ -56,6 +57,7 @@ export const AdminDashboard = () => {
     { id: 'pharmacies', label: 'Pharmacies', icon: Building2 },
     { id: 'drivers', label: 'Drivers', icon: Truck },
     { id: 'orders', label: 'Orders', icon: Package },
+    { id: 'scanning', label: 'QR Scanning', icon: QrCode },
     { id: 'zones', label: 'Service Zones', icon: MapPin },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
   ];
