@@ -6,11 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Package, Truck, Clock, CheckCircle, AlertCircle,
   Plus, RefreshCw, MapPin, Calendar, TrendingUp,
-  Users, Building2, BarChart3
+  Users, Building2, BarChart3, QrCode
 } from 'lucide-react';
 import { ordersAPI, driversAPI } from '@/lib/api';
 import { OrdersList } from './OrdersList';
 import { CreateDeliveryModal } from './CreateDeliveryModal';
+import { QRScanner } from '@/components/scanner/QRScanner';
 import { toast } from 'sonner';
 
 const deliveryTypeLabels = {
@@ -30,6 +31,7 @@ export const PharmacyDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
 
   const fetchData = useCallback(async () => {
