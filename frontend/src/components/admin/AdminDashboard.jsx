@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Building2, Truck, Package,
   MapPin, BarChart3, Settings, RefreshCw, Search,
   TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle,
-  LogOut, Menu, X, QrCode, DollarSign, Route
+  LogOut, Menu, X, QrCode, DollarSign, Route, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { adminAPI } from '@/lib/api';
