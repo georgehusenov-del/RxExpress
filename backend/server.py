@@ -2089,6 +2089,111 @@ async def admin_optimize_route_preview(
     }
 
 
+@admin_router.get("/drivers/locations")
+async def admin_get_driver_locations(
+    active_only: bool = Query(True),
+    borough: Optional[str] = Query(None),
+    current_user: dict = Depends(require_admin)
+):
+    """Get real-time locations of all drivers for map tracking"""
+    query = {}
+    
+    if active_only:
+        query["status"] = {"$in": ["available", "on_delivery", "busy"]}
+    
+    drivers = await db.drivers.find(query, {"_id": 0}).to_list(100)
+    
+    driver_locations = []
+    for driver in drivers:
+        location = driver.get("current_location")
+        if location and location.get("latitude") and location.get("longitude"):
+            # Check if location is recent (within last 30 minutes)
+            location_time = location.get("timestamp")
+            is_recent = True
+            if location_time:
+                try:
+                    if isinstance(location_time, str):
+                        loc_dt = datetime.fromisoformat(location_time.replace('Z', '+00:00'))
+                    else:
+                        loc_dt = location_time
+                    age_minutes = (datetime.now(timezone.utc) - loc_dt).total_seconds() / 60
+                    is_recent = age_minutes < 30
+                except:
+                    pass
+            
+            # Get driver's current assigned orders
+            assigned_orders = await db.orders.find(
+                {"driver_id": driver["id"], "status": {"$in": ["assigned", "picked_up", "in_transit", "out_for_delivery"]}},
+                {"_id": 0, "id": 1, "order_number": 1, "status": 1}
+            ).to_list(10)
+            
+            driver_locations.append({
+                "driver_id": driver["id"],
+                "name": f"{driver.get('first_name', '')} {driver.get('last_name', '')}".strip() or driver.get("email", "Unknown"),
+                "phone": driver.get("phone"),
+                "status": driver.get("status", "unknown"),
+                "latitude": location["latitude"],
+                "longitude": location["longitude"],
+                "heading": location.get("heading"),
+                "speed": location.get("speed"),
+                "last_updated": location.get("timestamp"),
+                "is_recent": is_recent,
+                "assigned_orders_count": len(assigned_orders),
+                "assigned_orders": assigned_orders[:3],  # Limit to 3 for preview
+            })
+    
+    # Filter by borough if specified (based on assigned orders' QR codes)
+    if borough:
+        filtered_locations = []
+        for loc in driver_locations:
+            for order in loc.get("assigned_orders", []):
+                order_detail = await db.orders.find_one({"id": order["id"]}, {"_id": 0, "qr_code": 1})
+                if order_detail and order_detail.get("qr_code", "").startswith(borough):
+                    filtered_locations.append(loc)
+                    break
+        driver_locations = filtered_locations
+    
+    return {
+        "driver_locations": driver_locations,
+        "total": len(driver_locations),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@admin_router.post("/drivers/{driver_id}/simulate-location")
+async def admin_simulate_driver_location(
+    driver_id: str,
+    latitude: float = Query(...),
+    longitude: float = Query(...),
+    heading: float = Query(0),
+    speed: float = Query(0),
+    current_user: dict = Depends(require_admin)
+):
+    """Simulate driver location for testing (admin only)"""
+    driver = await db.drivers.find_one({"id": driver_id}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    
+    location_data = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "heading": heading,
+        "speed": speed,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.drivers.update_one(
+        {"id": driver_id},
+        {"$set": {"current_location": location_data}}
+    )
+    
+    return {
+        "message": "Driver location updated",
+        "driver_id": driver_id,
+        "location": location_data
+    }
+
+
 @admin_router.get("/scans")
 async def admin_list_scans(
     skip: int = 0,
