@@ -1921,14 +1921,23 @@ async def admin_optimize_route_preview(
     borough: Optional[str] = Query(None),
     time_window: Optional[str] = Query(None),
     depot_address: str = Query("123 Main St, New York, NY 10001"),
+    start_hour: Optional[int] = Query(None, description="Start hour in 24h format (e.g., 8 for 8am)"),
+    optimize_mode: str = Query("location_time", description="Optimization mode: location_only, time_only, location_time"),
     request_body: dict = Body(default={}),
     current_user: dict = Depends(require_admin)
 ):
     """
     Preview optimized route for a set of orders.
-    Can specify order_ids directly or filter by borough/time_window.
-    Returns optimized sequence with ETAs and distances.
+    Optimizes by both geographic location and time constraints.
+    
+    optimize_mode:
+    - location_only: Pure nearest neighbor by distance
+    - time_only: Group by time windows, then by distance within each
+    - location_time: Smart optimization considering both distance and delivery deadlines
     """
+    import math
+    from collections import defaultdict
+    
     order_ids = request_body.get("order_ids", [])
     
     # Build query to fetch orders
@@ -1949,18 +1958,68 @@ async def admin_optimize_route_preview(
     if not orders:
         return {"optimized_route": [], "total_distance": 0, "total_duration": 0, "message": "No orders found"}
     
-    # Extract coordinates and addresses for each order
+    # Time window definitions with priority (earlier windows have higher priority)
+    time_windows_config = {
+        "8am-1pm": {"start": 8, "end": 13, "priority": 1, "label": "Morning"},
+        "1pm-4pm": {"start": 13, "end": 16, "priority": 2, "label": "Afternoon"},
+        "4pm-10pm": {"start": 16, "end": 22, "priority": 3, "label": "Evening"},
+    }
+    
+    # Borough coordinates for clustering
+    borough_centers = {
+        "Q": {"lat": 40.7282, "lng": -73.7949, "name": "Queens"},
+        "B": {"lat": 40.6782, "lng": -73.9442, "name": "Brooklyn"},
+        "M": {"lat": 40.7831, "lng": -73.9712, "name": "Manhattan"},
+        "S": {"lat": 40.5795, "lng": -74.1502, "name": "Staten Island"},
+        "X": {"lat": 40.8448, "lng": -73.8648, "name": "Bronx"},
+    }
+    
+    def haversine_distance(lat1, lon1, lat2, lon2):
+        """Calculate distance between two points in miles"""
+        lat1, lon1 = math.radians(lat1), math.radians(lon1)
+        lat2, lon2 = math.radians(lat2), math.radians(lon2)
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        return 3956 * c  # Miles
+    
+    def get_time_window_info(order):
+        """Extract time window info from order"""
+        tw = order.get("time_window") or ""
+        delivery_type = order.get("delivery_type", "")
+        
+        # Try to match time window
+        for tw_key, tw_config in time_windows_config.items():
+            if tw_key in tw or tw_key.replace("-", " ") in tw.lower():
+                return tw_key, tw_config
+        
+        # Default based on delivery type
+        if delivery_type == "priority" or delivery_type == "same_day":
+            return "8am-1pm", time_windows_config["8am-1pm"]
+        elif delivery_type == "next_day":
+            return "1pm-4pm", time_windows_config["1pm-4pm"]
+        
+        return "8am-1pm", time_windows_config["8am-1pm"]
+    
+    def get_borough_from_qr(qr_code):
+        """Extract borough from QR code"""
+        if qr_code and len(qr_code) > 0:
+            first_char = qr_code[0].upper()
+            if first_char in borough_centers:
+                return first_char
+        return None
+    
+    # Extract coordinates and enrich stop data
     stops = []
     for order in orders:
         addr = order.get("delivery_address", {})
         full_address = f"{addr.get('street', '')}, {addr.get('city', '')}, {addr.get('state', '')} {addr.get('postal_code', '')}"
         
-        # Get existing coordinates or geocode
         lat = addr.get("latitude") or addr.get("lat")
         lng = addr.get("longitude") or addr.get("lng")
         
         if not lat or not lng:
-            # Try to geocode
             try:
                 geo_result = await maps_service.geocode_address(full_address)
                 if geo_result.get("success") and geo_result.get("location"):
@@ -1968,6 +2027,9 @@ async def admin_optimize_route_preview(
                     lng = geo_result["location"].get("lng")
             except:
                 pass
+        
+        tw_key, tw_config = get_time_window_info(order)
+        order_borough = get_borough_from_qr(order.get("qr_code"))
         
         stops.append({
             "order_id": order.get("id"),
@@ -1982,110 +2044,197 @@ async def admin_optimize_route_preview(
             "copay_collected": order.get("copay_collected", False),
             "status": order.get("status"),
             "packages_count": len(order.get("packages", [])),
+            "delivery_type": order.get("delivery_type"),
+            "time_window": tw_key,
+            "time_window_start": tw_config["start"],
+            "time_window_end": tw_config["end"],
+            "time_window_priority": tw_config["priority"],
+            "time_window_label": tw_config["label"],
+            "borough": order_borough,
+            "borough_name": borough_centers.get(order_borough, {}).get("name", "Unknown"),
         })
     
-    # Simple optimization: sort by geographic proximity using nearest neighbor algorithm
-    optimized_stops = []
-    remaining_stops = stops.copy()
-    
-    # Start from depot (use NYC center if no coordinates available)
-    current_lat = 40.7128  # NYC default
-    current_lng = -74.0060
-    
-    # Try to geocode depot
+    # Depot coordinates
+    depot_lat, depot_lng = 40.7128, -74.0060
     try:
         depot_geo = await maps_service.geocode_address(depot_address)
         if depot_geo.get("success") and depot_geo.get("location"):
-            current_lat = depot_geo["location"].get("lat", current_lat)
-            current_lng = depot_geo["location"].get("lng", current_lng)
+            depot_lat = depot_geo["location"].get("lat", depot_lat)
+            depot_lng = depot_geo["location"].get("lng", depot_lng)
     except:
         pass
     
+    optimized_stops = []
+    
+    if optimize_mode == "location_only":
+        # Pure nearest neighbor
+        remaining = stops.copy()
+        current_lat, current_lng = depot_lat, depot_lng
+        
+        while remaining:
+            nearest = min(
+                remaining,
+                key=lambda s: haversine_distance(current_lat, current_lng, s.get("latitude") or depot_lat, s.get("longitude") or depot_lng)
+            )
+            remaining.remove(nearest)
+            optimized_stops.append(nearest)
+            if nearest.get("latitude") and nearest.get("longitude"):
+                current_lat, current_lng = nearest["latitude"], nearest["longitude"]
+    
+    elif optimize_mode == "time_only":
+        # Group by time window, then sort by distance within each group
+        by_time_window = defaultdict(list)
+        for stop in stops:
+            by_time_window[stop["time_window"]].append(stop)
+        
+        for tw_key in ["8am-1pm", "1pm-4pm", "4pm-10pm"]:
+            if tw_key in by_time_window:
+                tw_stops = by_time_window[tw_key]
+                # Sort by distance from depot within time window
+                tw_stops.sort(key=lambda s: haversine_distance(depot_lat, depot_lng, s.get("latitude") or depot_lat, s.get("longitude") or depot_lng))
+                optimized_stops.extend(tw_stops)
+    
+    else:  # location_time (default - smart optimization)
+        # Group by time window first (respecting deadlines)
+        by_time_window = defaultdict(list)
+        for stop in stops:
+            by_time_window[stop["time_window"]].append(stop)
+        
+        current_lat, current_lng = depot_lat, depot_lng
+        
+        # Process each time window in order
+        for tw_key in ["8am-1pm", "1pm-4pm", "4pm-10pm"]:
+            if tw_key not in by_time_window:
+                continue
+            
+            tw_stops = by_time_window[tw_key]
+            
+            # Within each time window, cluster by borough then optimize within clusters
+            by_borough = defaultdict(list)
+            for stop in tw_stops:
+                borough_key = stop.get("borough") or "other"
+                by_borough[borough_key].append(stop)
+            
+            # Sort boroughs by distance from current position
+            borough_order = sorted(
+                by_borough.keys(),
+                key=lambda b: haversine_distance(
+                    current_lat, current_lng,
+                    borough_centers.get(b, {}).get("lat", depot_lat),
+                    borough_centers.get(b, {}).get("lng", depot_lng)
+                ) if b in borough_centers else float('inf')
+            )
+            
+            # Process each borough cluster with nearest neighbor
+            for borough_key in borough_order:
+                borough_stops = by_borough[borough_key]
+                remaining = borough_stops.copy()
+                
+                while remaining:
+                    nearest = min(
+                        remaining,
+                        key=lambda s: haversine_distance(current_lat, current_lng, s.get("latitude") or depot_lat, s.get("longitude") or depot_lng)
+                    )
+                    remaining.remove(nearest)
+                    optimized_stops.append(nearest)
+                    if nearest.get("latitude") and nearest.get("longitude"):
+                        current_lat, current_lng = nearest["latitude"], nearest["longitude"]
+    
+    # Calculate distances, times, and ETAs
     total_distance = 0
     total_duration = 0
+    current_lat, current_lng = depot_lat, depot_lng
     
-    # Nearest neighbor algorithm
-    while remaining_stops:
-        nearest = None
-        nearest_distance = float('inf')
+    # Determine start hour
+    if start_hour is not None:
+        route_start_hour = start_hour
+    elif optimized_stops:
+        route_start_hour = optimized_stops[0].get("time_window_start", 8)
+    else:
+        route_start_hour = 8
+    
+    current_time_mins = route_start_hour * 60  # Convert to minutes from midnight
+    
+    for i, stop in enumerate(optimized_stops):
+        stop_lat = stop.get("latitude") or depot_lat
+        stop_lng = stop.get("longitude") or depot_lng
         
-        for stop in remaining_stops:
-            if stop.get("latitude") and stop.get("longitude"):
-                # Calculate approximate distance (Haversine simplified)
-                import math
-                lat1, lon1 = math.radians(current_lat), math.radians(current_lng)
-                lat2, lon2 = math.radians(stop["latitude"]), math.radians(stop["longitude"])
-                
-                dlat = lat2 - lat1
-                dlon = lon2 - lon1
-                
-                a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-                c = 2 * math.asin(math.sqrt(a))
-                distance = 3956 * c  # Miles
-                
-                if distance < nearest_distance:
-                    nearest_distance = distance
-                    nearest = stop
-            else:
-                # No coordinates, add to end
-                if nearest is None:
-                    nearest = stop
-                    nearest_distance = 5  # Assume 5 miles
+        distance = haversine_distance(current_lat, current_lng, stop_lat, stop_lng)
+        drive_time = (distance / 18) * 60  # 18 mph average in NYC
+        stop_time = 5 + (stop.get("packages_count", 1) * 1)  # Base 5 min + 1 min per package
         
-        if nearest:
-            remaining_stops.remove(nearest)
-            
-            # Calculate ETA (assume 20 mph average in NYC with stops)
-            drive_time_mins = (nearest_distance / 20) * 60
-            stop_time_mins = 5  # 5 min per stop for parking/delivery
-            
-            total_distance += nearest_distance
-            total_duration += drive_time_mins + stop_time_mins
-            
-            nearest["sequence"] = len(optimized_stops) + 1
-            nearest["distance_from_previous"] = round(nearest_distance, 2)
-            nearest["estimated_drive_time"] = round(drive_time_mins, 1)
-            nearest["cumulative_time"] = round(total_duration, 1)
-            
-            optimized_stops.append(nearest)
-            
-            # Update current position
-            if nearest.get("latitude") and nearest.get("longitude"):
-                current_lat = nearest["latitude"]
-                current_lng = nearest["longitude"]
-    
-    # Calculate ETAs based on time window start
-    time_window_starts = {
-        "8am-1pm": 8,
-        "1pm-4pm": 13,
-        "4pm-10pm": 16,
-    }
-    
-    start_hour = time_window_starts.get(time_window, 8)
-    
-    for stop in optimized_stops:
-        # Calculate ETA as time from start
-        eta_mins = stop["cumulative_time"]
-        eta_hour = start_hour + (eta_mins // 60)
-        eta_min = int(eta_mins % 60)
+        total_distance += distance
+        total_duration += drive_time + stop_time
+        current_time_mins += drive_time + stop_time
         
-        # Format as 12-hour time
+        # Calculate actual clock time
+        eta_hour = int(current_time_mins // 60)
+        eta_min = int(current_time_mins % 60)
         period = "AM" if eta_hour < 12 else "PM"
         display_hour = eta_hour if eta_hour <= 12 else eta_hour - 12
         if display_hour == 0:
             display_hour = 12
         
+        # Check if within time window
+        is_on_time = eta_hour < stop.get("time_window_end", 24)
+        
+        stop["sequence"] = i + 1
+        stop["distance_from_previous"] = round(distance, 2)
+        stop["estimated_drive_time"] = round(drive_time, 1)
+        stop["stop_duration"] = round(stop_time, 1)
+        stop["cumulative_time"] = round(total_duration, 1)
+        stop["cumulative_distance"] = round(total_distance, 2)
         stop["estimated_arrival"] = f"{int(display_hour)}:{eta_min:02d} {period}"
+        stop["eta_hour_24"] = eta_hour
+        stop["eta_minutes"] = eta_min
+        stop["is_on_time"] = is_on_time
+        stop["deadline"] = f"{stop.get('time_window_end', 12)}:00 {'PM' if stop.get('time_window_end', 12) >= 12 else 'AM'}"
+        
+        current_lat, current_lng = stop_lat, stop_lng
+    
+    # Calculate summary stats
+    on_time_count = sum(1 for s in optimized_stops if s.get("is_on_time", True))
+    late_count = len(optimized_stops) - on_time_count
+    
+    # Group by time window for summary
+    by_tw_summary = defaultdict(lambda: {"count": 0, "distance": 0})
+    for stop in optimized_stops:
+        tw = stop.get("time_window", "unknown")
+        by_tw_summary[tw]["count"] += 1
+        by_tw_summary[tw]["distance"] += stop.get("distance_from_previous", 0)
+    
+    # Group by borough for summary
+    by_borough_summary = defaultdict(lambda: {"count": 0, "distance": 0})
+    for stop in optimized_stops:
+        b = stop.get("borough_name", "Unknown")
+        by_borough_summary[b]["count"] += 1
+        by_borough_summary[b]["distance"] += stop.get("distance_from_previous", 0)
+    
+    # Calculate route end time
+    end_time_mins = route_start_hour * 60 + total_duration
+    end_hour = int(end_time_mins // 60)
+    end_min = int(end_time_mins % 60)
+    end_period = "AM" if end_hour < 12 else "PM"
+    end_display_hour = end_hour if end_hour <= 12 else end_hour - 12
+    if end_display_hour == 0:
+        end_display_hour = 12
     
     return {
         "optimized_route": optimized_stops,
         "total_stops": len(optimized_stops),
         "total_distance_miles": round(total_distance, 2),
         "total_duration_minutes": round(total_duration, 1),
+        "total_duration_hours": round(total_duration / 60, 2),
         "depot_address": depot_address,
         "time_window": time_window,
         "borough": borough,
-        "optimization_method": "nearest_neighbor"
+        "optimization_mode": optimize_mode,
+        "route_start_time": f"{route_start_hour}:00 {'AM' if route_start_hour < 12 else 'PM'}",
+        "route_end_time": f"{int(end_display_hour)}:{end_min:02d} {end_period}",
+        "on_time_deliveries": on_time_count,
+        "late_deliveries": late_count,
+        "by_time_window": dict(by_tw_summary),
+        "by_borough": dict(by_borough_summary),
     }
 
 
