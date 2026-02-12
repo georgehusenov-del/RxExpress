@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Building2, Truck, Package,
   MapPin, BarChart3, Settings, RefreshCw, Search,
   TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle,
-  LogOut, Menu, X, QrCode, DollarSign
+  LogOut, Menu, X, QrCode, DollarSign, Route
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { adminAPI } from '@/lib/api';
@@ -20,6 +20,7 @@ import { ServiceZonesManagement } from './ServiceZonesManagement';
 import { ReportsSection } from './ReportsSection';
 import { PackageScanManagement } from './PackageScanManagement';
 import { PricingManagement } from './PricingManagement';
+import { RouteManagement } from './RouteManagement';
 import { toast } from 'sonner';
 
 export const AdminDashboard = () => {
