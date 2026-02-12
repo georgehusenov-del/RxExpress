@@ -2546,6 +2546,33 @@ async def update_driver_status(status: str, current_user: dict = Depends(require
     return {"message": f"Status updated to {status}"}
 
 
+# ============== Public Pricing Endpoint (For Pharmacy Portal) ==============
+@api_router.get("/pricing/active", tags=["Public"])
+async def get_active_pricing():
+    """Get active delivery pricing options - for pharmacy portal"""
+    pricing_list = await db.delivery_pricing.find({"is_active": True}, {"_id": 0}).to_list(50)
+    
+    # Group by delivery type
+    grouped = {
+        "next_day": [],
+        "same_day": [],
+        "priority": [],
+        "addons": []
+    }
+    
+    for p in pricing_list:
+        if p.get("is_addon"):
+            grouped["addons"].append(p)
+        elif p.get("delivery_type") in grouped:
+            grouped[p["delivery_type"]].append(p)
+    
+    return {
+        "pricing": pricing_list,
+        "grouped": grouped,
+        "count": len(pricing_list)
+    }
+
+
 # ============== Public Tracking Routes (No Auth Required) ==============
 @public_router.get("/{tracking_number}")
 async def public_track_order(tracking_number: str):
