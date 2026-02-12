@@ -253,6 +253,7 @@ public class Order
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 }
 
+[BsonIgnoreExtraElements]
 public class DeliveryPricing
 {
     [BsonId]
