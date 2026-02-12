@@ -23,7 +23,7 @@ from models import (
     Pharmacy, PharmacyCreate, PharmacyLocation, PharmacyLocationCreate,
     DriverProfile, DriverCreate, DriverLocationUpdate, DriverStatusUpdate,
     Order, OrderCreate, OrderUpdate, OrderStatusUpdate,
-    DeliveryProof, DeliveryProofCreate, DeliveryRecipient,
+    DeliveryProof, DeliveryProofCreate, DeliveryRecipient, DriverPodSubmit,
     PaymentTransaction, CreateCheckoutRequest,
     LocationPoint, Package, TrackingEvent, PublicTrackingInfo,
     RouteOptimizationRequest, RouteOptimizationResponse,
