@@ -297,6 +297,7 @@ public class DeliveryPricing
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 }
 
+[BsonIgnoreExtraElements]
 public class ServiceZone
 {
     [BsonId]
