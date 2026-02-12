@@ -101,6 +101,13 @@ export const adminAPI = {
   getPods: (params = {}) => api.get('/admin/pod', { params }),
   getPod: (podId) => api.get(`/admin/pod/${podId}`),
   getOrderPod: (orderId) => api.get(`/admin/orders/${orderId}/pod`),
+  // Pricing APIs
+  getPricing: (includeInactive = false) => api.get('/admin/pricing', { params: { include_inactive: includeInactive } }),
+  getPricingById: (pricingId) => api.get(`/admin/pricing/${pricingId}`),
+  createPricing: (pricingData) => api.post('/admin/pricing', pricingData),
+  updatePricing: (pricingId, pricingData) => api.put(`/admin/pricing/${pricingId}`, pricingData),
+  deletePricing: (pricingId) => api.delete(`/admin/pricing/${pricingId}`),
+  togglePricing: (pricingId) => api.put(`/admin/pricing/${pricingId}/toggle`),
 };
 
 // QR Scanning APIs
