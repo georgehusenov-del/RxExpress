@@ -696,6 +696,8 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
         "order_number": order.order_number,
         "tracking_number": order.tracking_number,
         "tracking_url": tracking_url,
+        "qr_code": order_qr_code,
+        "package_qr_codes": [pkg["qr_code"] for pkg in order_dict["packages"]],
         "delivery_type": order.delivery_type,
         "time_window": order.time_window,
         "estimated_delivery_start": estimated_delivery_start.isoformat() if estimated_delivery_start else None,
