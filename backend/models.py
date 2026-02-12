@@ -111,7 +111,7 @@ class PharmacyBase(BaseModel):
 
 
 class PharmacyCreate(PharmacyBase):
-    user_id: str
+    pass  # user_id will be taken from the authenticated user
 
 
 class Pharmacy(PharmacyBase):
