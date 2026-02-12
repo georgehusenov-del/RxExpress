@@ -717,7 +717,81 @@ export const OrdersManagement = () => {
             )}
           </div>
         </div>
+
+        {/* Drag Overlay - Shows dragged item */}
+        <DragOverlay>
+          {activeOrder ? (
+            <div className="bg-slate-800 border-2 border-teal-500 rounded-lg p-3 shadow-2xl opacity-90">
+              <div className="flex items-center gap-3">
+                <Package className="w-5 h-5 text-teal-400" />
+                <div>
+                  <p className="font-mono text-sm text-white">{activeOrder.order_number}</p>
+                  <p className="text-xs text-slate-400">{activeOrder.recipient?.name}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
+        </DndContext>
       )}
+
+      {/* Driver Assignment Modal */}
+      <Dialog open={showDriverModal} onOpenChange={setShowDriverModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-teal-400" />
+              Assign Driver
+            </DialogTitle>
+          </DialogHeader>
+          {selectedOrderForDriver && (
+            <div className="space-y-4">
+              <div className="bg-slate-700/50 rounded-lg p-3">
+                <p className="text-sm text-slate-400">Order</p>
+                <p className="font-mono text-white">{selectedOrderForDriver.order_number}</p>
+                <p className="text-xs text-slate-500">{selectedOrderForDriver.recipient?.name} • {selectedOrderForDriver.delivery_address?.city}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-slate-400">Select Driver</Label>
+                {drivers.length === 0 ? (
+                  <p className="text-sm text-slate-500 py-4 text-center">No available drivers</p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {drivers.map(driver => (
+                      <div
+                        key={driver.id}
+                        className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors"
+                        onClick={() => handleAssignDriver(driver.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center">
+                            <Truck className="w-4 h-4 text-teal-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-white">
+                              {driver.first_name || driver.email} {driver.last_name || ''}
+                            </p>
+                            <p className="text-xs text-slate-500">{driver.phone || 'No phone'}</p>
+                          </div>
+                        </div>
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                          {driver.status || 'available'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDriverModal(false)} className="border-slate-600 text-slate-300">
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* List View (Original Table) */}
       {viewMode === 'list' && (
