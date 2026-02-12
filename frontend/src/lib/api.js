@@ -68,6 +68,44 @@ export const mapsAPI = {
   estimateDelivery: (orderId) => api.get(`/maps/estimate/${orderId}`),
 };
 
+// Circuit/Spoke Route Management APIs
+export const circuitAPI = {
+  // Status and info
+  getStatus: () => api.get('/circuit/status'),
+  getDrivers: () => api.get('/circuit/drivers'),
+  getDepots: () => api.get('/circuit/depots'),
+  
+  // Plans
+  listPlans: (startsGte) => api.get('/circuit/plans', { params: startsGte ? { starts_gte: startsGte } : {} }),
+  createPlan: () => api.post('/circuit/plans'),
+  createPlanForDate: (data) => api.post('/circuit/plans/create-for-date', data),
+  getPlan: (planId) => api.get(`/circuit/plans/${planId}`),
+  getPlanFullStatus: (planId) => api.get(`/circuit/plans/${planId}/full-status`),
+  deletePlan: (planId) => api.delete(`/circuit/plans/${planId}`),
+  
+  // Stops
+  listStops: (planId) => api.get(`/circuit/plans/${planId}/stops`),
+  addOrderToPlan: (planId, orderId) => api.post(`/circuit/plans/${planId}/stops`, null, { params: { order_id: orderId } }),
+  batchImportOrders: (planId, orderIds) => api.post(`/circuit/plans/${planId}/batch-import`, { order_ids: orderIds }),
+  
+  // Optimization & Distribution
+  optimizePlan: (planId) => api.post(`/circuit/plans/${planId}/optimize`),
+  distributePlan: (planId) => api.post(`/circuit/plans/${planId}/distribute`),
+  optimizeAndDistribute: (planId) => api.post(`/circuit/plans/${planId}/optimize-and-distribute`),
+  
+  // Operations
+  getOperation: (operationId) => api.get(`/circuit/operations/${operationId}`),
+  
+  // Local route plans
+  listLocalPlans: (params) => api.get('/circuit/route-plans', { params }),
+  getPendingOrders: (params) => api.get('/circuit/pending-orders', { params }),
+  
+  // Sync
+  syncOrder: (orderId) => api.post(`/circuit/sync-order/${orderId}`),
+  getDeliveryProof: (planId, stopId) => api.get(`/circuit/plans/${planId}/stops/${stopId}/proof`),
+  getTracking: (planId, stopId) => api.get(`/circuit/plans/${planId}/stops/${stopId}/tracking`),
+};
+
 // Health check
 export const healthAPI = {
   check: () => api.get('/health'),
