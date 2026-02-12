@@ -2892,14 +2892,6 @@ async def sync_order_from_circuit(order_id: str, current_user: dict = Depends(ge
 
 # ============== Advanced Route Management Endpoints ==============
 
-class CreatePlanRequest(BaseModel):
-    title: Optional[str] = None
-    date: str  # YYYY-MM-DD format
-    driver_ids: List[str] = []  # List of Circuit driver IDs
-
-class BatchImportOrdersRequest(BaseModel):
-    order_ids: List[str]
-
 @circuit_router.post("/plans/create-for-date")
 async def create_plan_for_date(
     request: CreatePlanRequest,
