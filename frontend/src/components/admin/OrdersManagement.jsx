@@ -349,9 +349,10 @@ export const OrdersManagement = () => {
   const [statusNotes, setStatusNotes] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [pagination, setPagination] = useState({ skip: 0, limit: 100, total: 0 });
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'smart'
+  const [viewMode, setViewMode] = useState('categories'); // 'list', 'smart', or 'categories'
   const [expandedBoroughs, setExpandedBoroughs] = useState({});
   const [expandedTimeWindows, setExpandedTimeWindows] = useState({});
+  const [expandedCategories, setExpandedCategories] = useState({ ready_for_pickup: true, pending: true, assigned: true, confirmed: true });
   const [activeId, setActiveId] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
   const [drivers, setDrivers] = useState([]);
