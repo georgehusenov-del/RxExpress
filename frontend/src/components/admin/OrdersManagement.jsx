@@ -963,10 +963,21 @@ export const OrdersManagement = () => {
                 </Badge>
               </div>
 
+              {/* Live Map Visualization */}
+              {routePreviewData.optimized_route?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-400">Route Map</p>
+                  <RouteMapPreview 
+                    stops={routePreviewData.optimized_route} 
+                    borough={routePreviewData.borough}
+                  />
+                </div>
+              )}
+
               {/* Optimized Route Sequence */}
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-400">Delivery Sequence</p>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-[250px] overflow-y-auto">
                   {routePreviewData.optimized_route?.map((stop, index) => (
                     <div 
                       key={stop.order_id}
@@ -977,7 +988,6 @@ export const OrdersManagement = () => {
                         <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-500/40 flex items-center justify-center flex-shrink-0">
                           <span className="text-sm font-bold text-teal-400">{stop.sequence}</span>
                         </div>
-                        
                         {/* Stop Details */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
