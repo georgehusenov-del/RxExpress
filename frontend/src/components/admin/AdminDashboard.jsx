@@ -340,11 +340,11 @@ const OverviewSection = ({ stats, onRefresh }) => {
 
   // Borough stats for NYC deliveries
   const boroughStats = [
-    { code: 'Q', name: 'Queens', orders: statsData?.borough_stats?.Q || Math.floor(Math.random() * 20), color: 'blue' },
-    { code: 'B', name: 'Brooklyn', orders: statsData?.borough_stats?.B || Math.floor(Math.random() * 25), color: 'green' },
-    { code: 'M', name: 'Manhattan', orders: statsData?.borough_stats?.M || Math.floor(Math.random() * 30), color: 'amber' },
-    { code: 'S', name: 'Staten Island', orders: statsData?.borough_stats?.S || Math.floor(Math.random() * 10), color: 'purple' },
-    { code: 'X', name: 'Bronx', orders: statsData?.borough_stats?.X || Math.floor(Math.random() * 15), color: 'red' },
+    { code: 'Q', name: 'Queens', orders: statsData?.borough_stats?.Q || 0, color: 'blue' },
+    { code: 'B', name: 'Brooklyn', orders: statsData?.borough_stats?.B || 0, color: 'green' },
+    { code: 'M', name: 'Manhattan', orders: statsData?.borough_stats?.M || 0, color: 'amber' },
+    { code: 'S', name: 'Staten Island', orders: statsData?.borough_stats?.S || 0, color: 'purple' },
+    { code: 'X', name: 'Bronx', orders: statsData?.borough_stats?.X || 0, color: 'red' },
   ];
 
   const colorClasses = {
