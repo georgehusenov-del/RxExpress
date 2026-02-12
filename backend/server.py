@@ -70,6 +70,7 @@ tracking_router = APIRouter(prefix="/tracking", tags=["Tracking"])
 maps_router = APIRouter(prefix="/maps", tags=["Maps & Routing"])
 notifications_router = APIRouter(prefix="/notifications", tags=["Notifications"])
 circuit_router = APIRouter(prefix="/circuit", tags=["Circuit/Spoke Integration"])
+admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 # ============== WebSocket Manager for Real-Time Tracking ==============
