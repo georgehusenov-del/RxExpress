@@ -31,7 +31,7 @@ import {
   Package, Search, Eye, MoreVertical, MapPin, Truck,
   Clock, XCircle, ExternalLink, Calendar, User, Edit, RefreshCw,
   LayoutGrid, List, ChevronDown, ChevronRight, Sun, Sunset, Moon, DollarSign,
-  GripVertical, UserPlus, ArrowRight
+  GripVertical, UserPlus, ArrowRight, Route, Navigation, Timer, Zap, Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
