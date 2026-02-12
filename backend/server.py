@@ -2880,6 +2880,285 @@ async def sync_order_from_circuit(order_id: str, current_user: dict = Depends(ge
     }
 
 
+# ============== Advanced Route Management Endpoints ==============
+
+class CreatePlanRequest(BaseModel):
+    title: Optional[str] = None
+    date: str  # YYYY-MM-DD format
+    driver_ids: List[str] = []  # List of Circuit driver IDs
+
+class BatchImportOrdersRequest(BaseModel):
+    order_ids: List[str]
+
+@circuit_router.post("/plans/create-for-date")
+async def create_plan_for_date(
+    request: CreatePlanRequest,
+    current_user: dict = Depends(require_admin)
+):
+    """Create a delivery plan for a specific date with optional drivers"""
+    try:
+        date_parts = request.date.split("-")
+        year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
+    except (ValueError, IndexError):
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    title = request.title or f"RX Expresss Deliveries - {request.date}"
+    starts = {"day": day, "month": month, "year": year}
+    
+    result = await circuit_service.create_plan(title, starts, request.driver_ids)
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to create plan"))
+    
+    # Store plan in local DB for tracking
+    plan_record = {
+        "id": str(uuid.uuid4()),
+        "circuit_plan_id": result.get("id"),
+        "title": title,
+        "date": request.date,
+        "driver_ids": request.driver_ids,
+        "status": "created",
+        "optimization_status": result.get("optimization", "pending"),
+        "distributed": result.get("distributed", False),
+        "stops_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["sub"]
+    }
+    await db.route_plans.insert_one(plan_record)
+    
+    return {
+        "message": "Plan created successfully",
+        "plan": result,
+        "local_id": plan_record["id"]
+    }
+
+
+@circuit_router.post("/plans/{plan_id}/batch-import")
+async def batch_import_orders_to_plan(
+    plan_id: str,
+    request: BatchImportOrdersRequest,
+    current_user: dict = Depends(require_admin)
+):
+    """Batch import multiple orders to a Circuit plan"""
+    if not request.order_ids:
+        raise HTTPException(status_code=400, detail="No order IDs provided")
+    
+    # Get all orders
+    orders = await db.orders.find(
+        {"id": {"$in": request.order_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    if not orders:
+        raise HTTPException(status_code=404, detail="No orders found")
+    
+    # Prepare stops for batch import
+    stops = []
+    for order in orders:
+        delivery_address = order.get("delivery_address", {})
+        recipient = order.get("recipient", {})
+        
+        stop_data = {
+            "address": {
+                "addressLineOne": delivery_address.get("street", ""),
+                "city": delivery_address.get("city", ""),
+                "state": delivery_address.get("state", ""),
+                "zip": delivery_address.get("postal_code", ""),
+                "country": delivery_address.get("country", "US"),
+            },
+            "recipient": {
+                "name": recipient.get("name", ""),
+                "email": recipient.get("email"),
+                "phone": recipient.get("phone"),
+                "externalId": order.get("id")
+            },
+            "orderInfo": {
+                "sellerOrderId": order.get("order_number"),
+                "products": [rx.get("medication_name", "") for rx in order.get("prescriptions", [])]
+            },
+            "notes": order.get("delivery_notes", ""),
+            "packageCount": len(order.get("packages", [])) or 1,
+            "activity": "delivery"
+        }
+        
+        # Add coordinates if available
+        if delivery_address.get("latitude") and delivery_address.get("longitude"):
+            stop_data["address"]["latitude"] = delivery_address["latitude"]
+            stop_data["address"]["longitude"] = delivery_address["longitude"]
+        
+        stops.append(stop_data)
+    
+    # Batch import to Circuit
+    result = await circuit_service.batch_import_stops(plan_id, stops)
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to import stops"))
+    
+    # Update orders with Circuit stop IDs
+    success_stops = result.get("success", [])
+    for i, stop_id in enumerate(success_stops):
+        if i < len(orders):
+            await db.orders.update_one(
+                {"id": orders[i]["id"]},
+                {"$set": {
+                    "circuit_plan_id": plan_id,
+                    "circuit_stop_id": stop_id,
+                    "status": OrderStatus.CONFIRMED
+                }}
+            )
+    
+    # Update local plan record
+    await db.route_plans.update_one(
+        {"circuit_plan_id": plan_id},
+        {"$inc": {"stops_count": len(success_stops)}}
+    )
+    
+    return {
+        "message": f"Imported {len(success_stops)} orders to plan",
+        "success_count": len(success_stops),
+        "failed_count": len(result.get("failed", [])),
+        "success": success_stops,
+        "failed": result.get("failed", [])
+    }
+
+
+@circuit_router.post("/plans/{plan_id}/optimize-and-distribute")
+async def optimize_and_distribute_plan(
+    plan_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Optimize a plan and then distribute to drivers"""
+    # Start optimization
+    optimize_result = await circuit_service.optimize_plan(plan_id)
+    if not optimize_result or "error" in optimize_result:
+        raise HTTPException(status_code=500, detail=optimize_result.get("message", "Failed to start optimization"))
+    
+    operation_id = optimize_result.get("id")
+    
+    # Update local plan record
+    await db.route_plans.update_one(
+        {"circuit_plan_id": plan_id},
+        {"$set": {
+            "status": "optimizing",
+            "optimization_operation_id": operation_id
+        }}
+    )
+    
+    return {
+        "message": "Optimization started",
+        "operation_id": operation_id,
+        "status": "optimizing",
+        "next_step": f"Poll GET /api/circuit/operations/{operation_id} until done=true, then call POST /api/circuit/plans/{plan_id}/distribute"
+    }
+
+
+@circuit_router.get("/plans/{plan_id}/full-status")
+async def get_plan_full_status(
+    plan_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get comprehensive plan status including local and Circuit data"""
+    # Get Circuit plan
+    circuit_plan = await circuit_service.get_plan(plan_id)
+    if not circuit_plan:
+        raise HTTPException(status_code=404, detail="Plan not found in Circuit")
+    
+    # Get local plan record
+    local_plan = await db.route_plans.find_one({"circuit_plan_id": plan_id}, {"_id": 0})
+    
+    # Get stops
+    stops_result = await circuit_service.list_stops(plan_id, max_page_size=100)
+    stops = stops_result.get("stops", []) if stops_result else []
+    
+    # Get linked orders from DB
+    linked_orders = await db.orders.find(
+        {"circuit_plan_id": plan_id},
+        {"_id": 0, "id": 1, "order_number": 1, "status": 1, "circuit_stop_id": 1}
+    ).to_list(100)
+    
+    return {
+        "circuit_plan": circuit_plan,
+        "local_plan": local_plan,
+        "stops_count": len(stops),
+        "stops": stops,
+        "linked_orders": linked_orders,
+        "optimization_status": circuit_plan.get("optimization"),
+        "distributed": circuit_plan.get("distributed", False),
+        "drivers": circuit_plan.get("drivers", []),
+        "routes": circuit_plan.get("routes", [])
+    }
+
+
+@circuit_router.get("/route-plans")
+async def list_local_route_plans(
+    status: str = None,
+    date: str = None,
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
+):
+    """List locally stored route plans"""
+    query = {}
+    if status:
+        query["status"] = status
+    if date:
+        query["date"] = date
+    
+    plans = await db.route_plans.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    return {"plans": plans, "count": len(plans)}
+
+
+@circuit_router.get("/pending-orders")
+async def get_pending_orders_for_routing(
+    date: str = None,
+    delivery_type: str = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Get orders that are ready to be added to a route plan"""
+    query = {
+        "status": {"$in": [OrderStatus.PENDING, OrderStatus.CONFIRMED]},
+        "circuit_plan_id": {"$exists": False}
+    }
+    
+    if date:
+        # Filter by scheduled delivery date
+        query["scheduled_delivery_date"] = {"$regex": f"^{date}"}
+    
+    if delivery_type:
+        query["delivery_type"] = delivery_type
+    
+    orders = await db.orders.find(query, {"_id": 0}).to_list(100)
+    
+    # Group by delivery type
+    grouped = {}
+    for order in orders:
+        dt = order.get("delivery_type", "standard")
+        if dt not in grouped:
+            grouped[dt] = []
+        grouped[dt].append(order)
+    
+    return {
+        "total_count": len(orders),
+        "orders": orders,
+        "grouped_by_type": grouped
+    }
+
+
+@circuit_router.delete("/plans/{plan_id}")
+async def delete_circuit_plan(plan_id: str, current_user: dict = Depends(require_admin)):
+    """Delete a Circuit plan and clean up local records"""
+    # Delete from Circuit
+    result = await circuit_service.delete_plan(plan_id)
+    
+    # Remove circuit references from orders
+    await db.orders.update_many(
+        {"circuit_plan_id": plan_id},
+        {"$unset": {"circuit_plan_id": "", "circuit_stop_id": "", "tracking_url": ""}}
+    )
+    
+    # Delete local plan record
+    await db.route_plans.delete_one({"circuit_plan_id": plan_id})
+    
+    return {"message": "Plan deleted successfully"}
+
+
 # Include all routers
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
