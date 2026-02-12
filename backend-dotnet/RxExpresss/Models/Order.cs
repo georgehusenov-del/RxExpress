@@ -22,6 +22,7 @@ public class DeliveryRecipient
     public string Relationship { get; set; } = "self";
 }
 
+[BsonIgnoreExtraElements]
 public class PrescriptionItem
 {
     [BsonElement("medication_name")]
