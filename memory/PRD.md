@@ -162,6 +162,7 @@ Build a standalone backend API for a pharmacy delivery service similar to DrugLi
 |-------------|--------|-------|
 | MongoDB | ✅ Connected | Primary database |
 | Stripe | ✅ Configured | Using sk_test_emergent |
+| Circuit/Spoke | ✅ Connected | Route optimization, POD, driver tracking |
 | Google Maps | ⚠️ Not Configured | Mock data provided - add API key for real geocoding |
 | Twilio SMS | ⚠️ Not Configured | Add TWILIO_* credentials in .env |
 | SendGrid | ⚠️ Not Configured | Add SENDGRID_API_KEY in .env |
