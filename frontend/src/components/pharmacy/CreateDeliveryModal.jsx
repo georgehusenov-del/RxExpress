@@ -424,13 +424,44 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                     </div>
                   )}
 
-                  {/* Total */}
-                  <div className="bg-slate-100 rounded-xl p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-slate-500">Estimated Delivery Cost</p>
-                      <p className="text-3xl font-bold text-slate-900">${calculateTotal().toFixed(2)}</p>
+                  {/* Copay Collection */}
+                  <div className="border-t pt-4">
+                    <Label className="text-base font-medium flex items-center gap-2 mb-3">
+                      <DollarSign className="w-4 h-4 text-green-500" />
+                      Copay to Collect
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.copay_amount || ''}
+                          onChange={(e) => updateField('copay_amount', parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                          className="pl-8 text-lg font-semibold"
+                          data-testid="copay-input"
+                        />
+                      </div>
                     </div>
-                    <DollarSign className="w-10 h-10 text-teal-500 opacity-50" />
+                    <p className="text-xs text-slate-500 mt-2">
+                      Enter the copay amount the driver needs to collect from the patient
+                    </p>
+                  </div>
+
+                  {/* Total */}
+                  <div className="bg-slate-100 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-slate-500">Delivery Cost</p>
+                      <p className="text-xl font-bold text-slate-900">${calculateTotal().toFixed(2)}</p>
+                    </div>
+                    {formData.copay_amount > 0 && (
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                        <p className="text-sm text-green-600 font-medium">Copay to Collect</p>
+                        <p className="text-xl font-bold text-green-600">${formData.copay_amount.toFixed(2)}</p>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
