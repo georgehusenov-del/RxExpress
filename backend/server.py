@@ -620,7 +620,9 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
         service_zone_id=service_zone.get("id") if service_zone else None,
         delivery_fee=base_fee,
         priority_surcharge=priority_surcharge,
-        total_amount=total_amount
+        total_amount=total_amount,
+        copay_amount=order_data.copay_amount,
+        copay_collected=False
     )
     
     # Add initial tracking event
