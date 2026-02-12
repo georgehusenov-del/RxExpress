@@ -68,6 +68,13 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
   - Estimated arrival times (ETA) for each stop
   - Distance and drive time between stops
   - "Apply Sequence" button to confirm optimized order
+- **Live Driver Tracking:** 
+  - Real-time driver locations displayed on the route map with location pin markers
+  - Driver info popup showing name, status, speed, and assigned orders count
+  - "Track Live" button enables auto-refresh every 10 seconds
+  - Green "Live" badge indicates active tracking
+  - Legend shows driver count alongside route stops
+  - Backend endpoints: `GET /api/admin/drivers/locations`, `POST /api/admin/drivers/{id}/simulate-location`
 - **Backend Endpoint:** `POST /api/admin/orders/optimize-route` for route optimization calculations
 - **Frontend Component:** `RouteMapPreview.jsx` using @react-google-maps/api
 - **Full workflow implemented:**
