@@ -143,7 +143,6 @@ class DriverProfile(BaseModel):
 
 
 class DriverCreate(BaseModel):
-    user_id: str
     vehicle_type: str
     vehicle_number: str
     license_number: str
