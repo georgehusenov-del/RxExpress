@@ -47,6 +47,11 @@ export const driversAPI = {
 export const pharmaciesAPI = {
   list: () => api.get('/pharmacies/'),
   get: (pharmacyId) => api.get(`/pharmacies/${pharmacyId}`),
+  // Multi-location support
+  getLocations: (pharmacyId) => api.get(`/pharmacies/${pharmacyId}/locations`),
+  addLocation: (pharmacyId, locationData) => api.post(`/pharmacies/${pharmacyId}/locations`, locationData),
+  updateLocation: (pharmacyId, locationId, locationData) => api.put(`/pharmacies/${pharmacyId}/locations/${locationId}`, locationData),
+  deleteLocation: (pharmacyId, locationId) => api.delete(`/pharmacies/${pharmacyId}/locations/${locationId}`),
 };
 
 // Tracking APIs
