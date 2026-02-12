@@ -3,6 +3,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -27,7 +29,7 @@ import {
 } from '@/components/ui/select';
 import {
   Package, Search, Eye, MoreVertical, MapPin, Truck,
-  Clock, XCircle, ExternalLink, Calendar, User
+  Clock, XCircle, ExternalLink, Calendar, User, Edit, RefreshCw
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -49,6 +51,19 @@ const statusColors = {
   delivered: 'bg-green-500/20 text-green-400 border-green-500/30',
   failed: 'bg-red-500/20 text-red-400 border-red-500/30',
   cancelled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+};
+
+const statusLabels = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  ready_for_pickup: 'Ready for Pickup',
+  assigned: 'Assigned',
+  picked_up: 'Picked Up',
+  in_transit: 'In Transit',
+  out_for_delivery: 'Out for Delivery',
+  delivered: 'Delivered',
+  failed: 'Failed',
+  cancelled: 'Cancelled',
 };
 
 const deliveryTypeLabels = {
