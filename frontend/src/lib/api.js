@@ -148,6 +148,13 @@ export const adminAPI = {
     if (driverId) params.append('driver_id', driverId);
     return api.put(`/admin/orders/${orderId}/reassign?${params.toString()}`);
   },
+  optimizeRoutePreview: (orderIds = [], borough = null, timeWindow = null, depotAddress = null) => {
+    const params = new URLSearchParams();
+    if (borough) params.append('borough', borough);
+    if (timeWindow) params.append('time_window', timeWindow);
+    if (depotAddress) params.append('depot_address', depotAddress);
+    return api.post(`/admin/orders/optimize-route?${params.toString()}`, { order_ids: orderIds });
+  },
   getDailyReport: (date = null) => api.get('/admin/reports/daily', { params: date ? { date } : {} }),
   // Scan tracking APIs
   getScans: (params = {}) => api.get('/admin/scans', { params }),
