@@ -271,6 +271,12 @@ export const OrdersManagement = () => {
   const [drivers, setDrivers] = useState([]);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
+  
+  // Route optimization states
+  const [showRoutePreview, setShowRoutePreview] = useState(false);
+  const [routePreviewData, setRoutePreviewData] = useState(null);
+  const [optimizingRoute, setOptimizingRoute] = useState(false);
+  const [selectedRouteContext, setSelectedRouteContext] = useState({ borough: null, timeWindow: null });
 
   // DnD sensors
   const sensors = useSensors(
