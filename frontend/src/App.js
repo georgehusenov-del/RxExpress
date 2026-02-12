@@ -205,6 +205,16 @@ function AppRoutes() {
         }
       />
       
+      {/* Driver Portal */}
+      <Route
+        path="/driver"
+        element={
+          <ProtectedRoute allowedRoles={['driver', 'admin']}>
+            <DriverPortal />
+          </ProtectedRoute>
+        }
+      />
+      
       {/* Legacy Dispatch Dashboard (redirect to admin for admins) */}
       <Route
         path="/dashboard"
