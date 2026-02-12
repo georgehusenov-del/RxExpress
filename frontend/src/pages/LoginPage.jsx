@@ -28,6 +28,8 @@ export const LoginPage = () => {
         navigate('/admin');
       } else if (userRole === 'pharmacy') {
         navigate('/pharmacy');
+      } else if (userRole === 'driver') {
+        navigate('/driver');
       } else {
         navigate('/dashboard');
       }
