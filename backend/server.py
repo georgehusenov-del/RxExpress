@@ -1295,6 +1295,238 @@ async def admin_daily_report(date: str = None, current_user: dict = Depends(requ
     return report
 
 
+# ============== Service Zones Routes ==============
+@zones_router.get("/")
+async def list_service_zones(active_only: bool = True):
+    """List all service zones"""
+    query = {"is_active": True} if active_only else {}
+    zones = await db.service_zones.find(query, {"_id": 0}).to_list(100)
+    return {"zones": zones, "count": len(zones)}
+
+
+@zones_router.get("/{zone_id}")
+async def get_service_zone(zone_id: str):
+    """Get service zone details"""
+    zone = await db.service_zones.find_one({"id": zone_id}, {"_id": 0})
+    if not zone:
+        raise HTTPException(status_code=404, detail="Service zone not found")
+    return zone
+
+
+@zones_router.post("/")
+async def create_service_zone(zone_data: ServiceZoneCreate, current_user: dict = Depends(require_admin)):
+    """Create a new service zone (admin only)"""
+    zone = ServiceZone(
+        name=zone_data.name,
+        code=zone_data.code,
+        zip_codes=zone_data.zip_codes,
+        cities=zone_data.cities,
+        states=zone_data.states,
+        delivery_fee=zone_data.delivery_fee,
+        same_day_cutoff=zone_data.same_day_cutoff,
+        priority_surcharge=zone_data.priority_surcharge
+    )
+    
+    zone_dict = zone.model_dump()
+    zone_dict["created_at"] = zone_dict["created_at"].isoformat()
+    
+    await db.service_zones.insert_one(zone_dict)
+    
+    return {"message": "Service zone created", "zone_id": zone.id}
+
+
+@zones_router.put("/{zone_id}")
+async def update_service_zone(zone_id: str, zone_data: ServiceZoneCreate, current_user: dict = Depends(require_admin)):
+    """Update a service zone (admin only)"""
+    result = await db.service_zones.update_one(
+        {"id": zone_id},
+        {"$set": {
+            "name": zone_data.name,
+            "code": zone_data.code,
+            "zip_codes": zone_data.zip_codes,
+            "cities": zone_data.cities,
+            "states": zone_data.states,
+            "delivery_fee": zone_data.delivery_fee,
+            "same_day_cutoff": zone_data.same_day_cutoff,
+            "priority_surcharge": zone_data.priority_surcharge
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Service zone not found")
+    
+    return {"message": "Service zone updated"}
+
+
+@zones_router.delete("/{zone_id}")
+async def delete_service_zone(zone_id: str, current_user: dict = Depends(require_admin)):
+    """Deactivate a service zone (admin only)"""
+    result = await db.service_zones.update_one(
+        {"id": zone_id},
+        {"$set": {"is_active": False}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Service zone not found")
+    
+    return {"message": "Service zone deactivated"}
+
+
+@zones_router.get("/check/{zip_code}")
+async def check_service_availability(zip_code: str):
+    """Check if a zip code is in a service zone"""
+    zone = await db.service_zones.find_one(
+        {"zip_codes": zip_code, "is_active": True},
+        {"_id": 0}
+    )
+    
+    if zone:
+        return {
+            "available": True,
+            "zone_id": zone["id"],
+            "zone_name": zone["name"],
+            "delivery_fee": zone["delivery_fee"],
+            "same_day_cutoff": zone["same_day_cutoff"]
+        }
+    
+    return {"available": False, "message": "Service not available in this area"}
+
+
+# ============== Public Tracking Routes (No Auth Required) ==============
+@public_router.get("/{tracking_number}")
+async def public_track_order(tracking_number: str):
+    """Public tracking page for patients - no authentication required"""
+    # Find order by tracking number or order number
+    order = await db.orders.find_one(
+        {"$or": [{"tracking_number": tracking_number}, {"order_number": tracking_number}]},
+        {"_id": 0}
+    )
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Get pharmacy name
+    pharmacy = await db.pharmacies.find_one({"id": order.get("pharmacy_id")}, {"_id": 0})
+    pharmacy_name = pharmacy.get("name", "RX Expresss Pharmacy") if pharmacy else "RX Expresss Pharmacy"
+    
+    # Get driver location if in transit
+    driver_location = None
+    driver_name = None
+    if order.get("driver_id") and order.get("status") in ["assigned", "picked_up", "in_transit", "out_for_delivery"]:
+        driver = await db.drivers.find_one({"id": order["driver_id"]}, {"_id": 0})
+        if driver:
+            driver_location = driver.get("current_location")
+            driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0})
+            if driver_user:
+                driver_name = f"{driver_user.get('first_name', '')} {driver_user.get('last_name', '')[:1]}."
+    
+    # Build tracking events
+    tracking_events = order.get("tracking_updates", [])
+    
+    # Build status message
+    status_messages = {
+        "pending": "Order received and being processed",
+        "confirmed": "Order confirmed by pharmacy",
+        "ready_for_pickup": "Order ready for driver pickup",
+        "assigned": "Driver assigned to your delivery",
+        "picked_up": "Order picked up from pharmacy",
+        "in_transit": "Your order is on the way",
+        "out_for_delivery": "Driver is approaching your location",
+        "delivered": "Order delivered successfully",
+        "failed": "Delivery attempt failed",
+        "cancelled": "Order has been cancelled"
+    }
+    
+    # Get proof of delivery if delivered
+    proof_of_delivery = None
+    if order.get("status") == "delivered":
+        proof = await db.delivery_proofs.find_one({"order_id": order["id"]}, {"_id": 0})
+        if proof:
+            proof_of_delivery = {
+                "delivered_at": order.get("actual_delivery_time"),
+                "recipient_name": proof.get("recipient_name"),
+                "signature_url": proof.get("signature_url"),
+                "photo_urls": proof.get("photo_urls", [])
+            }
+    
+    return {
+        "tracking_number": order.get("tracking_number"),
+        "order_number": order.get("order_number"),
+        "status": order.get("status"),
+        "status_message": status_messages.get(order.get("status"), "Processing"),
+        "pharmacy_name": pharmacy_name,
+        "delivery_type": order.get("delivery_type"),
+        "time_window": order.get("time_window"),
+        "estimated_delivery_start": order.get("estimated_delivery_start"),
+        "estimated_delivery_end": order.get("estimated_delivery_end"),
+        "actual_delivery_time": order.get("actual_delivery_time"),
+        "driver_name": driver_name,
+        "driver_location": driver_location,
+        "delivery_address": {
+            "street": order.get("delivery_address", {}).get("street"),
+            "city": order.get("delivery_address", {}).get("city"),
+            "state": order.get("delivery_address", {}).get("state")
+        },
+        "tracking_events": tracking_events,
+        "proof_of_delivery": proof_of_delivery,
+        "circuit_tracking_url": order.get("circuit_tracking_url")
+    }
+
+
+# ============== QR Code Scanning Routes ==============
+@orders_router.post("/scan")
+async def scan_package_qr(scan_data: QRCodeScan, current_user: dict = Depends(get_current_user)):
+    """Scan a package QR code"""
+    # Find package by QR code
+    order = await db.orders.find_one(
+        {"packages.qr_code": scan_data.qr_code},
+        {"_id": 0}
+    )
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    # Find the specific package
+    package = None
+    for pkg in order.get("packages", []):
+        if pkg.get("qr_code") == scan_data.qr_code:
+            package = pkg
+            break
+    
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    # Update package scan time
+    await db.orders.update_one(
+        {"id": order["id"], "packages.qr_code": scan_data.qr_code},
+        {"$set": {"packages.$.scanned_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Log the scan
+    scan_log = {
+        "id": str(uuid.uuid4()),
+        "qr_code": scan_data.qr_code,
+        "order_id": order["id"],
+        "scanned_by": scan_data.scanned_by,
+        "scanned_at": scan_data.scanned_at.isoformat(),
+        "action": scan_data.action,
+        "location": scan_data.location.model_dump() if scan_data.location else None
+    }
+    await db.scan_logs.insert_one(scan_log)
+    
+    return {
+        "package_id": package.get("id"),
+        "order_id": order["id"],
+        "order_number": order.get("order_number"),
+        "recipient_name": order.get("recipient", {}).get("name"),
+        "delivery_address": f"{order.get('delivery_address', {}).get('street')}, {order.get('delivery_address', {}).get('city')}",
+        "status": order.get("status"),
+        "prescriptions": package.get("prescriptions", []),
+        "requires_signature": package.get("requires_signature", True),
+        "requires_refrigeration": package.get("requires_refrigeration", False)
+    }
+
+
 # ============== Circuit/Spoke Integration Routes ==============
 @circuit_router.get("/status")
 async def circuit_status():
