@@ -57,6 +57,7 @@ import {
 } from '@dnd-kit/core';
 import { adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
+import { RouteMapPreview } from './RouteMapPreview';
 
 const statusColors = {
   pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
