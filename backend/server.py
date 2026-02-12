@@ -2403,12 +2403,7 @@ async def driver_scan_package(
 @driver_portal_router.post("/deliveries/{order_id}/pod")
 async def submit_proof_of_delivery(
     order_id: str,
-    signature_data: Optional[str] = None,  # Base64 encoded signature image
-    photo_data: Optional[str] = None,  # Base64 encoded photo
-    recipient_name: Optional[str] = None,
-    notes: Optional[str] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
+    pod_data: DriverPodSubmit,
     current_user: dict = Depends(require_driver)
 ):
     """Submit Proof of Delivery (POD) with signature and/or photo"""
@@ -2423,7 +2418,7 @@ async def submit_proof_of_delivery(
     
     # Check if signature is required but not provided
     requires_signature = any(pkg.get("requires_signature") for pkg in order.get("packages", []))
-    if requires_signature and not signature_data:
+    if requires_signature and not pod_data.signature_data:
         raise HTTPException(status_code=400, detail="Signature is required for this delivery")
     
     now = datetime.now(timezone.utc)
@@ -2434,11 +2429,11 @@ async def submit_proof_of_delivery(
         "id": pod_id,
         "order_id": order_id,
         "driver_id": driver["id"],
-        "signature_data": signature_data,
-        "photo_data": photo_data,
-        "recipient_name": recipient_name or order.get("recipient", {}).get("name"),
-        "notes": notes,
-        "location": {"latitude": latitude, "longitude": longitude} if latitude and longitude else None,
+        "signature_data": pod_data.signature_data,
+        "photo_data": pod_data.photo_data,
+        "recipient_name": pod_data.recipient_name or order.get("recipient", {}).get("name"),
+        "notes": pod_data.notes,
+        "location": {"latitude": pod_data.latitude, "longitude": pod_data.longitude} if pod_data.latitude and pod_data.longitude else None,
         "submitted_at": now.isoformat(),
         "submitted_by": current_user["sub"]
     }
