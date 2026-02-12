@@ -92,13 +92,29 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Convert time format from "08:00-13:00" to "8am-1pm"
+  const formatTimeWindowForApi = (start, end) => {
+    if (!start || !end) return null;
+    const formatTime = (t) => {
+      const [h] = t.split(':');
+      const hour = parseInt(h);
+      const ampm = hour >= 12 ? 'pm' : 'am';
+      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+      return `${displayHour}${ampm}`;
+    };
+    return `${formatTime(start)}-${formatTime(end)}`;
+  };
+
   const selectPricing = (pricingOption) => {
+    const timeWindow = pricingOption.time_window_start && pricingOption.time_window_end
+      ? formatTimeWindowForApi(pricingOption.time_window_start, pricingOption.time_window_end)
+      : null;
+    
     setFormData(prev => ({
       ...prev,
       delivery_type: pricingOption.delivery_type,
       selected_pricing_id: pricingOption.id,
-      time_window: pricingOption.time_window_start ? 
-        `${pricingOption.time_window_start}-${pricingOption.time_window_end}` : null
+      time_window: timeWindow
     }));
   };
 
