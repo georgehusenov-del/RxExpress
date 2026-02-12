@@ -1381,7 +1381,7 @@ async def admin_dashboard(current_user: dict = Depends(require_admin)):
     
     # Orders by status
     orders_by_status = {}
-    for status in ["pending", "confirmed", "assigned", "picked_up", "in_transit", "delivered", "cancelled"]:
+    for status in ["pending", "confirmed", "ready_for_pickup", "assigned", "picked_up", "in_transit", "delivered", "cancelled"]:
         orders_by_status[status] = await db.orders.count_documents({"status": status})
     
     # Recent orders
@@ -1390,6 +1390,38 @@ async def admin_dashboard(current_user: dict = Depends(require_admin)):
     # Active drivers
     active_drivers = await db.drivers.count_documents({"status": {"$ne": "offline"}})
     
+    # Copay statistics
+    copay_pipeline = [
+        {"$match": {"copay_amount": {"$gt": 0}}},
+        {"$group": {
+            "_id": None,
+            "total_copay_to_collect": {"$sum": {"$cond": [{"$eq": ["$copay_collected", False]}, "$copay_amount", 0]}},
+            "total_copay_collected": {"$sum": {"$cond": [{"$eq": ["$copay_collected", True]}, "$copay_amount", 0]}},
+            "orders_with_copay": {"$sum": 1},
+            "orders_copay_pending": {"$sum": {"$cond": [{"$eq": ["$copay_collected", False]}, 1, 0]}},
+            "orders_copay_collected": {"$sum": {"$cond": [{"$eq": ["$copay_collected", True]}, 1, 0]}}
+        }}
+    ]
+    copay_result = await db.orders.aggregate(copay_pipeline).to_list(1)
+    copay_stats = copay_result[0] if copay_result else {
+        "total_copay_to_collect": 0,
+        "total_copay_collected": 0,
+        "orders_with_copay": 0,
+        "orders_copay_pending": 0,
+        "orders_copay_collected": 0
+    }
+    
+    # Borough statistics
+    borough_pipeline = [
+        {"$match": {"status": {"$nin": ["delivered", "cancelled"]}}},
+        {"$group": {
+            "_id": {"$substr": ["$qr_code", 0, 1]},
+            "count": {"$sum": 1}
+        }}
+    ]
+    borough_result = await db.orders.aggregate(borough_pipeline).to_list(10)
+    borough_stats = {item["_id"]: item["count"] for item in borough_result if item["_id"]}
+    
     return {
         "stats": {
             "total_users": users_count,
@@ -1397,7 +1429,12 @@ async def admin_dashboard(current_user: dict = Depends(require_admin)):
             "total_drivers": drivers_count,
             "active_drivers": active_drivers,
             "total_orders": orders_count,
-            "orders_by_status": orders_by_status
+            "orders_by_status": orders_by_status,
+            "copay_to_collect": copay_stats.get("total_copay_to_collect", 0),
+            "copay_collected": copay_stats.get("total_copay_collected", 0),
+            "orders_copay_pending": copay_stats.get("orders_copay_pending", 0),
+            "orders_copay_collected": copay_stats.get("orders_copay_collected", 0),
+            "borough_stats": borough_stats
         },
         "recent_orders": recent_orders
     }
