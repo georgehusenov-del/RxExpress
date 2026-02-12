@@ -29,7 +29,8 @@ from models import (
     RouteOptimizationRequest, RouteOptimizationResponse,
     NotificationRequest, DistanceMatrixRequest, GeocodeRequest, GeocodeResponse,
     PrescriptionItem, Address,
-    ServiceZone, ServiceZoneCreate, QRCodeScan, QRCodeResponse
+    ServiceZone, ServiceZoneCreate, QRCodeScan, QRCodeResponse,
+    DeliveryPricing, DeliveryPricingCreate, DeliveryPricingUpdate
 )
 from auth import (
     get_password_hash, verify_password, create_access_token,
