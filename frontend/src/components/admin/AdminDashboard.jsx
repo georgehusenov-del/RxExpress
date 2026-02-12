@@ -182,6 +182,7 @@ export const AdminDashboard = () => {
           {activeTab === 'pharmacies' && <PharmaciesManagement />}
           {activeTab === 'drivers' && <DriversManagement />}
           {activeTab === 'orders' && <OrdersManagement />}
+          {activeTab === 'scanning' && <PackageScanManagement />}
           {activeTab === 'zones' && <ServiceZonesManagement />}
           {activeTab === 'reports' && <ReportsSection />}
         </div>
