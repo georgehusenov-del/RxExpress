@@ -21,11 +21,12 @@ import { Label } from '@/components/ui/label';
 import {
   Truck, Package, MapPin, Clock, CheckCircle, AlertCircle,
   QrCode, Navigation, Phone, User, RefreshCw, LogOut,
-  ChevronRight, Star, Thermometer, FileSignature, XCircle
+  ChevronRight, Star, Thermometer, FileSignature, XCircle, Camera
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { driverPortalAPI } from '@/lib/api';
 import { QRScanner } from '@/components/scanner/QRScanner';
+import { ProofOfDeliveryModal } from '@/components/pod/ProofOfDeliveryModal';
 import { toast } from 'sonner';
 
 const statusColors = {
@@ -68,6 +69,7 @@ export const DriverPortal = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [scanAction, setScanAction] = useState('pickup');
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showPodModal, setShowPodModal] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [statusNotes, setStatusNotes] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
