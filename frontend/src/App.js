@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { LoginPage } from "@/pages/LoginPage";
 import { DispatchDashboard } from "@/components/dispatch/DispatchDashboard";
 import { PharmacyDashboard } from "@/components/pharmacy/PharmacyDashboard";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { PublicTrackingPage } from "@/components/tracking/PublicTrackingPage";
 import { Activity, Truck } from "lucide-react";
 
