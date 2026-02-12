@@ -1,11 +1,15 @@
+"""
+Enhanced Models for RX Expresss - DrugLift-like functionality
+"""
+
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+from datetime import datetime, timezone, time
 from enum import Enum
 import uuid
 
 
-# Enums
+# ============== Enums ==============
 class UserRole(str, Enum):
     PATIENT = "patient"
     PHARMACY = "pharmacy"
@@ -13,13 +17,29 @@ class UserRole(str, Enum):
     ADMIN = "admin"
 
 
+class DeliveryType(str, Enum):
+    SAME_DAY = "same_day"           # Cutoff 2pm, deliver same day
+    NEXT_DAY = "next_day"           # Pickup today, deliver tomorrow with 2-3hr ETA window
+    PRIORITY = "priority"            # First deliveries of the day
+    TIME_WINDOW = "time_window"      # Specific time windows
+
+
+class TimeWindow(str, Enum):
+    MORNING = "8am-1pm"
+    AFTERNOON = "1pm-6pm"
+    EVENING = "4pm-9pm"
+
+
 class OrderStatus(str, Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
+    READY_FOR_PICKUP = "ready_for_pickup"
     ASSIGNED = "assigned"
     PICKED_UP = "picked_up"
     IN_TRANSIT = "in_transit"
+    OUT_FOR_DELIVERY = "out_for_delivery"
     DELIVERED = "delivered"
+    FAILED = "failed"
     CANCELLED = "cancelled"
 
 
@@ -38,7 +58,7 @@ class PaymentStatus(str, Enum):
     REFUNDED = "refunded"
 
 
-# Base Models
+# ============== Location & Address Models ==============
 class LocationPoint(BaseModel):
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
@@ -48,15 +68,45 @@ class LocationPoint(BaseModel):
 
 class Address(BaseModel):
     street: str
+    apt_unit: Optional[str] = None
     city: str
     state: str
     postal_code: str
     country: str = "USA"
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    delivery_instructions: Optional[str] = None
 
 
-# User Models
+# ============== Service Zone Models ==============
+class ServiceZone(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # e.g., "NYC", "Long Island", "New Jersey"
+    code: str  # e.g., "NYC", "LI", "NJ"
+    is_active: bool = True
+    zip_codes: List[str] = []  # Covered zip codes
+    cities: List[str] = []  # Covered cities
+    states: List[str] = []  # Covered states
+    delivery_fee: float = 5.99
+    same_day_cutoff: str = "14:00"  # 2pm cutoff
+    priority_surcharge: float = 5.00
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ServiceZoneCreate(BaseModel):
+    name: str
+    code: str
+    zip_codes: List[str] = []
+    cities: List[str] = []
+    states: List[str] = []
+    delivery_fee: float = 5.99
+    same_day_cutoff: str = "14:00"
+    priority_surcharge: float = 5.00
+
+
+# ============== User Models ==============
 class UserBase(BaseModel):
     email: EmailStr
     phone: str
@@ -74,6 +124,7 @@ class User(UserBase):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     is_active: bool = True
+    is_verified: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -100,18 +151,30 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
-# Pharmacy Models
+# ============== Pharmacy Models ==============
+class PharmacyLocation(BaseModel):
+    """Individual pharmacy location for multi-location support"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # e.g., "Main Street Branch"
+    address: Address
+    phone: str
+    is_primary: bool = False
+    is_active: bool = True
+    operating_hours: Optional[Dict[str, str]] = None
+    pickup_instructions: Optional[str] = None
+
+
 class PharmacyBase(BaseModel):
     name: str
     license_number: str
-    address: Address
+    npi_number: Optional[str] = None  # National Provider Identifier
     phone: str
     email: EmailStr
-    operating_hours: Optional[Dict[str, str]] = None
+    website: Optional[str] = None
 
 
 class PharmacyCreate(PharmacyBase):
-    pass  # user_id will be taken from the authenticated user
+    address: Address  # Primary location address
 
 
 class Pharmacy(PharmacyBase):
@@ -119,13 +182,27 @@ class Pharmacy(PharmacyBase):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
+    locations: List[PharmacyLocation] = []
+    service_zones: List[str] = []  # Zone IDs pharmacy serves
     is_active: bool = True
+    is_verified: bool = False
     rating: float = 0.0
     total_deliveries: int = 0
+    api_key: Optional[str] = None  # For pharmacy software integration
+    webhook_url: Optional[str] = None  # For delivery status callbacks
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-# Driver Models
+class PharmacyLocationCreate(BaseModel):
+    name: str
+    address: Address
+    phone: str
+    is_primary: bool = False
+    operating_hours: Optional[Dict[str, str]] = None
+    pickup_instructions: Optional[str] = None
+
+
+# ============== Driver Models ==============
 class DriverProfile(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
@@ -134,11 +211,14 @@ class DriverProfile(BaseModel):
     vehicle_type: str
     vehicle_number: str
     license_number: str
+    insurance_info: Optional[str] = None
     status: DriverStatus = DriverStatus.OFFLINE
     current_location: Optional[LocationPoint] = None
+    service_zones: List[str] = []  # Zone IDs driver serves
     rating: float = 0.0
     total_deliveries: int = 0
     is_verified: bool = False
+    circuit_driver_id: Optional[str] = None  # Link to Circuit driver
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -146,6 +226,8 @@ class DriverCreate(BaseModel):
     vehicle_type: str
     vehicle_number: str
     license_number: str
+    insurance_info: Optional[str] = None
+    service_zones: List[str] = []
 
 
 class DriverLocationUpdate(BaseModel):
@@ -159,25 +241,55 @@ class DriverStatusUpdate(BaseModel):
     status: DriverStatus
 
 
-# Prescription/Order Models
+# ============== Package/Prescription Models ==============
 class PrescriptionItem(BaseModel):
     medication_name: str
+    rx_number: Optional[str] = None
     quantity: int
     dosage: str
     instructions: Optional[str] = None
     requires_refrigeration: bool = False
     controlled_substance: bool = False
+    requires_id_verification: bool = False
+
+
+class Package(BaseModel):
+    """Individual package in a delivery"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    qr_code: str = Field(default_factory=lambda: f"RX-PKG-{uuid.uuid4().hex[:8].upper()}")
+    barcode: Optional[str] = None
+    prescriptions: List[PrescriptionItem] = []
+    weight_lbs: Optional[float] = None
+    requires_refrigeration: bool = False
+    requires_signature: bool = True
+    requires_id_verification: bool = False
+    special_instructions: Optional[str] = None
+    scanned_at: Optional[datetime] = None
+
+
+# ============== Order/Delivery Models ==============
+class DeliveryRecipient(BaseModel):
+    """Recipient info (patient)"""
+    name: str
+    phone: str
+    email: Optional[str] = None
+    date_of_birth: Optional[str] = None  # For ID verification
+    relationship: str = "self"  # self, spouse, caregiver, etc.
 
 
 class OrderCreate(BaseModel):
     pharmacy_id: str
-    patient_id: str
+    pharmacy_location_id: Optional[str] = None  # For multi-location
+    delivery_type: DeliveryType = DeliveryType.NEXT_DAY
+    time_window: Optional[TimeWindow] = None  # Required if delivery_type is TIME_WINDOW
+    recipient: DeliveryRecipient
     delivery_address: Address
-    prescriptions: List[PrescriptionItem]
+    packages: List[Package] = []
     delivery_notes: Optional[str] = None
-    scheduled_delivery_time: Optional[datetime] = None
+    scheduled_date: Optional[str] = None  # YYYY-MM-DD for next-day/scheduled
     requires_signature: bool = True
     requires_photo_proof: bool = True
+    requires_id_verification: bool = False
 
 
 class Order(BaseModel):
@@ -185,28 +297,72 @@ class Order(BaseModel):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     order_number: str = Field(default_factory=lambda: f"RX-{uuid.uuid4().hex[:8].upper()}")
+    tracking_number: str = Field(default_factory=lambda: f"TRK-{uuid.uuid4().hex[:10].upper()}")
+    
+    # Pharmacy info
     pharmacy_id: str
-    patient_id: str
-    driver_id: Optional[str] = None
+    pharmacy_location_id: Optional[str] = None
+    pharmacy_name: Optional[str] = None
+    
+    # Delivery type
+    delivery_type: DeliveryType = DeliveryType.NEXT_DAY
+    time_window: Optional[TimeWindow] = None
+    
+    # Recipient
+    recipient: DeliveryRecipient
     delivery_address: Address
     pickup_address: Optional[Address] = None
-    prescriptions: List[PrescriptionItem]
+    
+    # Packages
+    packages: List[Package] = []
+    total_packages: int = 0
+    
+    # Driver
+    driver_id: Optional[str] = None
+    driver_name: Optional[str] = None
+    
+    # Status & Timing
     status: OrderStatus = OrderStatus.PENDING
-    delivery_notes: Optional[str] = None
-    scheduled_delivery_time: Optional[datetime] = None
+    scheduled_date: Optional[str] = None
+    estimated_pickup_time: Optional[datetime] = None
+    estimated_delivery_start: Optional[datetime] = None
+    estimated_delivery_end: Optional[datetime] = None  # For 2-3hr window
     actual_pickup_time: Optional[datetime] = None
     actual_delivery_time: Optional[datetime] = None
+    
+    # Delivery requirements
+    delivery_notes: Optional[str] = None
     requires_signature: bool = True
     requires_photo_proof: bool = True
-    signature_data: Optional[str] = None  # Base64 encoded signature
-    delivery_photo_url: Optional[str] = None
-    delivery_fee: float = 0.0
-    total_amount: float = 0.0
+    requires_id_verification: bool = False
+    
+    # Proof of delivery
+    signature_url: Optional[str] = None
+    photo_urls: List[str] = []
+    recipient_name_signed: Optional[str] = None
+    id_verified: bool = False
+    delivery_location: Optional[LocationPoint] = None
+    
+    # Circuit integration
+    circuit_plan_id: Optional[str] = None
+    circuit_stop_id: Optional[str] = None
+    circuit_tracking_url: Optional[str] = None
+    
+    # Pricing
+    service_zone_id: Optional[str] = None
+    delivery_fee: float = 5.99
+    priority_surcharge: float = 0.0
+    total_amount: float = 5.99
+    
+    # Payment
     payment_status: PaymentStatus = PaymentStatus.PENDING
     payment_session_id: Optional[str] = None
+    
+    # Tracking
     tracking_url: Optional[str] = None
-    estimated_delivery_time: Optional[datetime] = None
-    distance_miles: Optional[float] = None
+    tracking_updates: List[Dict[str, Any]] = []
+    
+    # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -215,47 +371,90 @@ class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
     driver_id: Optional[str] = None
     delivery_notes: Optional[str] = None
-    scheduled_delivery_time: Optional[datetime] = None
+    time_window: Optional[TimeWindow] = None
 
 
 class OrderStatusUpdate(BaseModel):
     order_id: str
     status: OrderStatus
     notes: Optional[str] = None
+    location: Optional[LocationPoint] = None
 
 
-# Delivery Proof Models
+# ============== Delivery Proof Models ==============
 class DeliveryProof(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     order_id: str
     driver_id: str
-    signature_data: Optional[str] = None  # Base64 encoded
-    photo_url: Optional[str] = None
+    
+    # Proof data
+    signature_url: Optional[str] = None
+    photo_urls: List[str] = []
     recipient_name: str
+    relationship_to_patient: str = "self"
+    
+    # Verification
+    id_verified: bool = False
+    id_type: Optional[str] = None  # Driver's license, State ID, etc.
+    
+    # Location & time
+    delivery_location: LocationPoint
+    delivered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Notes
     delivery_notes: Optional[str] = None
-    location: LocationPoint
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    delivery_attempts: int = 1
 
 
 class DeliveryProofCreate(BaseModel):
     order_id: str
-    signature_data: Optional[str] = None
-    photo_base64: Optional[str] = None
+    signature_data: Optional[str] = None  # Base64 encoded
+    photo_base64: Optional[str] = None  # Base64 encoded
     recipient_name: str
+    relationship_to_patient: str = "self"
+    id_verified: bool = False
+    id_type: Optional[str] = None
     delivery_notes: Optional[str] = None
     latitude: float
     longitude: float
 
 
-# Payment Models
+# ============== Tracking Models ==============
+class TrackingEvent(BaseModel):
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    status: OrderStatus
+    message: str
+    location: Optional[LocationPoint] = None
+    driver_name: Optional[str] = None
+
+
+class PublicTrackingInfo(BaseModel):
+    """Public tracking info for patients"""
+    tracking_number: str
+    order_number: str
+    status: OrderStatus
+    status_message: str
+    pharmacy_name: str
+    delivery_type: DeliveryType
+    time_window: Optional[TimeWindow] = None
+    estimated_delivery_start: Optional[datetime] = None
+    estimated_delivery_end: Optional[datetime] = None
+    actual_delivery_time: Optional[datetime] = None
+    driver_name: Optional[str] = None
+    driver_location: Optional[LocationPoint] = None
+    tracking_events: List[TrackingEvent] = []
+    proof_of_delivery: Optional[Dict[str, Any]] = None
+
+
+# ============== Payment Models ==============
 class PaymentTransaction(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     order_id: str
-    user_id: str
+    pharmacy_id: str
     amount: float
     currency: str = "usd"
     session_id: str
@@ -270,24 +469,92 @@ class CreateCheckoutRequest(BaseModel):
     origin_url: str
 
 
-# Location Tracking Models
-class LocationHistory(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    
+# ============== Reporting Models ==============
+class DailyReport(BaseModel):
+    date: str
+    total_deliveries: int
+    completed_deliveries: int
+    failed_deliveries: int
+    on_time_percentage: float
+    average_delivery_time_minutes: float
+    total_revenue: float
+    deliveries_by_type: Dict[str, int]
+    deliveries_by_zone: Dict[str, int]
+
+
+class PharmacyReport(BaseModel):
+    pharmacy_id: str
+    pharmacy_name: str
+    period: str  # daily, weekly, monthly
+    total_deliveries: int
+    completed_deliveries: int
+    failed_deliveries: int
+    average_rating: float
+    total_spent: float
+    deliveries_by_type: Dict[str, int]
+
+
+# ============== API Integration Models ==============
+class WebhookEvent(BaseModel):
+    event_type: str  # order.created, order.picked_up, order.delivered, etc.
+    order_id: str
+    tracking_number: str
+    status: OrderStatus
+    timestamp: datetime
+    data: Dict[str, Any]
+
+
+class PharmacyAPIKey(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    driver_id: str
-    order_id: Optional[str] = None
+    pharmacy_id: str
+    api_key: str = Field(default_factory=lambda: f"rx_live_{uuid.uuid4().hex}")
+    name: str  # e.g., "PioneerRx Integration"
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_used: Optional[datetime] = None
+
+
+# ============== Notification Models ==============
+class NotificationPreferences(BaseModel):
+    sms_enabled: bool = True
+    email_enabled: bool = True
+    push_enabled: bool = False
+    notify_on_pickup: bool = True
+    notify_on_out_for_delivery: bool = True
+    notify_on_delivered: bool = True
+    notify_on_failed: bool = True
+
+
+class NotificationRequest(BaseModel):
+    user_id: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    notification_type: str  # sms, email, push
+    template: str  # order_confirmation, out_for_delivery, delivered, etc.
+    data: Dict[str, Any] = {}
+
+
+# ============== Maps & Routing Models ==============
+class GeocodeRequest(BaseModel):
+    address: str
+
+
+class GeocodeResponse(BaseModel):
+    formatted_address: str
     latitude: float
     longitude: float
-    speed: Optional[float] = None
-    heading: Optional[float] = None
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    place_id: Optional[str] = None
 
 
-# Route Models
+class DistanceMatrixRequest(BaseModel):
+    origins: List[Dict[str, float]]
+    destinations: List[Dict[str, float]]
+    mode: str = "driving"
+
+
 class RouteOptimizationRequest(BaseModel):
     driver_id: str
-    waypoints: List[Dict[str, float]]  # [{"latitude": float, "longitude": float}]
+    waypoints: List[Dict[str, float]]
 
 
 class RouteOptimizationResponse(BaseModel):
@@ -298,31 +565,20 @@ class RouteOptimizationResponse(BaseModel):
     waypoint_order: List[int]
 
 
-# Notification Models
-class NotificationRequest(BaseModel):
-    user_id: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    notification_type: str  # sms, email, push
-    subject: Optional[str] = None
-    message: str
-    data: Optional[Dict[str, Any]] = None
+# ============== QR Code Models ==============
+class QRCodeScan(BaseModel):
+    qr_code: str
+    scanned_by: str  # user_id
+    scanned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    location: Optional[LocationPoint] = None
+    action: str  # pickup, delivery, verify
 
 
-# Distance Matrix Models
-class DistanceMatrixRequest(BaseModel):
-    origins: List[Dict[str, float]]
-    destinations: List[Dict[str, float]]
-    mode: str = "driving"
-
-
-# Geocoding Models
-class GeocodeRequest(BaseModel):
-    address: str
-
-
-class GeocodeResponse(BaseModel):
-    formatted_address: str
-    latitude: float
-    longitude: float
-    place_id: Optional[str] = None
+class QRCodeResponse(BaseModel):
+    package_id: str
+    order_id: str
+    order_number: str
+    recipient_name: str
+    delivery_address: str
+    status: OrderStatus
+    prescriptions: List[PrescriptionItem]
