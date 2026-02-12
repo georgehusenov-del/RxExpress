@@ -155,6 +155,16 @@ export const adminAPI = {
     if (depotAddress) params.append('depot_address', depotAddress);
     return api.post(`/admin/orders/optimize-route?${params.toString()}`, { order_ids: orderIds });
   },
+  // Driver tracking
+  getDriverLocations: (activeOnly = true, borough = null) => {
+    const params = new URLSearchParams();
+    params.append('active_only', activeOnly);
+    if (borough) params.append('borough', borough);
+    return api.get(`/admin/drivers/locations?${params.toString()}`);
+  },
+  simulateDriverLocation: (driverId, lat, lng, heading = 0, speed = 0) => {
+    return api.post(`/admin/drivers/${driverId}/simulate-location?latitude=${lat}&longitude=${lng}&heading=${heading}&speed=${speed}`);
+  },
   getDailyReport: (date = null) => api.get('/admin/reports/daily', { params: date ? { date } : {} }),
   // Scan tracking APIs
   getScans: (params = {}) => api.get('/admin/scans', { params }),
