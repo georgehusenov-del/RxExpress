@@ -2779,9 +2779,21 @@ async def add_order_to_circuit(plan_id: str, order_id: str, current_user: dict =
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    # Get recipient from order
+    # Get recipient from order (handle both old and new order formats)
     recipient = order.get("recipient", {})
     if not recipient:
+        # Try to get patient info for backward compatibility
+        patient_id = order.get("patient_id")
+        if patient_id:
+            patient = await db.users.find_one({"id": patient_id}, {"_id": 0})
+            if patient:
+                recipient = {
+                    "name": f"{patient.get('first_name', '')} {patient.get('last_name', '')}".strip(),
+                    "email": patient.get("email"),
+                    "phone": patient.get("phone")
+                }
+    
+    if not recipient or not recipient.get("name"):
         raise HTTPException(status_code=400, detail="Order has no recipient information")
     
     # Get pharmacy
