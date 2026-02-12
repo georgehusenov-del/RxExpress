@@ -2066,11 +2066,6 @@ async def admin_optimize_route_preview(
         optimized_stops.append(nearest)
         if nearest.get("latitude") and nearest.get("longitude"):
             current_lat, current_lng = nearest["latitude"], nearest["longitude"]
-                    )
-                    remaining.remove(nearest)
-                    optimized_stops.append(nearest)
-                    if nearest.get("latitude") and nearest.get("longitude"):
-                        current_lat, current_lng = nearest["latitude"], nearest["longitude"]
     
     # Calculate distances, times, and ETAs
     total_distance = 0
