@@ -2319,6 +2319,7 @@ api_router.include_router(notifications_router)
 api_router.include_router(circuit_router)
 api_router.include_router(admin_router)
 api_router.include_router(zones_router)
+api_router.include_router(driver_portal_router)
 api_router.include_router(public_router)
 
 app.include_router(api_router)
