@@ -39,6 +39,7 @@ from auth import (
 from notifications import notification_service
 from maps_service import maps_service
 from circuit_service import circuit_service
+from pydantic import BaseModel as PydanticBaseModel
 
 # Configure logging
 logging.basicConfig(
@@ -51,6 +52,15 @@ logger = logging.getLogger(__name__)
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'rxexpress_db')]
+
+# ============== Route Management Request Models ==============
+class CreatePlanRequest(PydanticBaseModel):
+    title: Optional[str] = None
+    date: str  # YYYY-MM-DD format
+    driver_ids: List[str] = []  # List of Circuit driver IDs
+
+class BatchImportOrdersRequest(PydanticBaseModel):
+    order_ids: List[str]
 
 # Create the main app
 app = FastAPI(
