@@ -3149,14 +3149,17 @@ async def delete_circuit_plan(plan_id: str, current_user: dict = Depends(require
     # Delete from Circuit
     result = await circuit_service.delete_plan(plan_id)
     
+    # Build full plan ID for local queries (handle both formats)
+    full_plan_id = plan_id if plan_id.startswith("plans/") else f"plans/{plan_id}"
+    
     # Remove circuit references from orders
     await db.orders.update_many(
-        {"circuit_plan_id": plan_id},
+        {"circuit_plan_id": {"$in": [plan_id, full_plan_id]}},
         {"$unset": {"circuit_plan_id": "", "circuit_stop_id": "", "tracking_url": ""}}
     )
     
-    # Delete local plan record
-    await db.route_plans.delete_one({"circuit_plan_id": plan_id})
+    # Delete local plan record (try both formats)
+    await db.route_plans.delete_one({"circuit_plan_id": {"$in": [plan_id, full_plan_id]}})
     
     return {"message": "Plan deleted successfully"}
 
