@@ -1845,6 +1845,77 @@ async def admin_update_order_status(order_id: str, status: str, notes: Optional[
     }
 
 
+@admin_router.put("/orders/{order_id}/reassign")
+async def admin_reassign_order(
+    order_id: str,
+    time_window: Optional[str] = None,
+    driver_id: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Reassign order to different time window and/or driver (for Smart Organizer drag-drop)"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    changes = []
+    
+    # Update time window if provided
+    if time_window:
+        valid_windows = ["8am-1pm", "1pm-4pm", "4pm-10pm"]
+        if time_window not in valid_windows:
+            raise HTTPException(status_code=400, detail=f"Invalid time window. Valid options: {valid_windows}")
+        
+        old_window = order.get("time_window")
+        update_data["time_window"] = time_window
+        changes.append(f"time window: {old_window} → {time_window}")
+    
+    # Update driver assignment if provided
+    if driver_id:
+        if driver_id == "unassign":
+            # Remove driver assignment
+            update_data["driver_id"] = None
+            update_data["status"] = "pending"
+            changes.append("driver unassigned")
+        else:
+            # Verify driver exists
+            driver = await db.drivers.find_one({"id": driver_id}, {"_id": 0})
+            if not driver:
+                raise HTTPException(status_code=404, detail="Driver not found")
+            
+            old_driver_id = order.get("driver_id")
+            update_data["driver_id"] = driver_id
+            
+            # Update status to assigned if not already in transit
+            if order.get("status") in ["pending", "confirmed", "ready_for_pickup"]:
+                update_data["status"] = "assigned"
+            
+            driver_name = f"{driver.get('first_name', '')} {driver.get('last_name', '')}".strip() or driver.get('email', 'Unknown')
+            changes.append(f"assigned to driver: {driver_name}")
+    
+    if not changes:
+        return {"message": "No changes specified", "order_id": order_id}
+    
+    await db.orders.update_one({"id": order_id}, {"$set": update_data})
+    
+    # Log the change
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "order_id": order_id,
+        "action": "reassignment",
+        "changes": changes,
+        "changed_by": current_user.get("sub"),
+        "changed_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.status_logs.insert_one(log_entry)
+    
+    return {
+        "message": f"Order reassigned successfully: {', '.join(changes)}",
+        "order_id": order_id,
+        "changes": changes
+    }
+
+
 @admin_router.get("/scans")
 async def admin_list_scans(
     skip: int = 0,
