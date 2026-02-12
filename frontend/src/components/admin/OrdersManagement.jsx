@@ -677,6 +677,16 @@ export const OrdersManagement = () => {
             <Button
               variant="ghost"
               size="sm"
+              className={`px-3 py-1.5 ${viewMode === 'categories' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              onClick={() => setViewMode('categories')}
+              data-testid="view-mode-categories"
+            >
+              <Layers className="w-4 h-4 mr-1" />
+              Categories
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               className={`px-3 py-1.5 ${viewMode === 'list' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setViewMode('list')}
               data-testid="view-mode-list"
