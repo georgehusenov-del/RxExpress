@@ -462,7 +462,7 @@ const OverviewSection = ({ stats, onRefresh }) => {
           <CardHeader className="pb-3 border-b border-cyan-500/30">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white flex items-center gap-2 text-base">
-                <Package className="w-5 h-5 text-cyan-400 animate-pulse" />
+                <Package className="w-5 h-5 text-cyan-400" />
                 Ready for Pickup
                 <Badge className="bg-cyan-500 text-white ml-2">
                   {statsData?.orders_by_status?.ready_for_pickup || readyForPickupOrders.length || 0}
