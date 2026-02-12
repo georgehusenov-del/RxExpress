@@ -136,7 +136,7 @@ export const driverPortalAPI = {
   updateLocation: (latitude, longitude) => api.put(`/driver-portal/location?latitude=${latitude}&longitude=${longitude}`),
   updateStatus: (status) => api.put(`/driver-portal/status?status=${status}`),
   // POD APIs
-  submitPod: (orderId, podData) => api.post(`/driver-portal/deliveries/${orderId}/pod`, null, { params: podData }),
+  submitPod: (orderId, podData) => api.post(`/driver-portal/deliveries/${orderId}/pod`, podData),
   getPod: (orderId) => api.get(`/driver-portal/deliveries/${orderId}/pod`),
 };
 
