@@ -2611,6 +2611,42 @@ async def update_driver_status(status: str, current_user: dict = Depends(require
     return {"message": f"Status updated to {status}"}
 
 
+@driver_portal_router.post("/deliveries/{order_id}/collect-copay")
+async def collect_copay(
+    order_id: str,
+    amount: float,
+    collection_method: str = "cash",
+    current_user: dict = Depends(require_driver)
+):
+    """Mark copay as collected by driver"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    order = await db.orders.find_one({"id": order_id, "driver_id": driver["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found or not assigned to you")
+    
+    if order.get("copay_collected"):
+        raise HTTPException(status_code=400, detail="Copay already collected")
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "copay_collected": True,
+            "copay_collected_at": datetime.now(timezone.utc).isoformat(),
+            "copay_collection_method": collection_method,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "message": "Copay collected successfully",
+        "amount": amount,
+        "method": collection_method
+    }
+
+
 # ============== Public Pricing Endpoint (For Pharmacy Portal) ==============
 @api_router.get("/pricing/active", tags=["Public"])
 async def get_active_pricing():
