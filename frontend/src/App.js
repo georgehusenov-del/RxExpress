@@ -6,6 +6,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { DispatchDashboard } from "@/components/dispatch/DispatchDashboard";
 import { PharmacyDashboard } from "@/components/pharmacy/PharmacyDashboard";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { DriverPortal } from "@/components/driver/DriverPortal";
 import { PublicTrackingPage } from "@/components/tracking/PublicTrackingPage";
 import { Activity, Truck } from "lucide-react";
 
