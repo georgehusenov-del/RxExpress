@@ -214,14 +214,16 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
         requires_photo_proof: formData.requires_photo_proof,
         requires_id_verification: formData.requires_id_verification,
         delivery_notes: formData.delivery_notes || null,
-        estimated_cost: calculateTotal()
+        estimated_cost: calculateTotal(),
+        copay_amount: formData.copay_amount || 0
       };
 
       const response = await ordersAPI.create(orderData);
       // Show success modal with QR code
       setCreatedOrder({
         ...response.data,
-        time_window: formData.time_window
+        time_window: formData.time_window,
+        copay_amount: formData.copay_amount
       });
     } catch (err) {
       console.error('Failed to create delivery:', err);
