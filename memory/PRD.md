@@ -61,12 +61,21 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - **Quick Driver Assignment:** Click truck icon on any order to instantly assign/unassign drivers from a dropdown
 - **Backend Endpoint:** `PUT /api/admin/orders/{order_id}/reassign` for time window and driver reassignment
 - **Route Optimization Preview:** Click "Optimize" button on time windows with 2+ orders to see:
-  - Total distance, duration, and stops summary
-  - Optimized delivery sequence using nearest neighbor algorithm
+  - Total distance, duration (hours), and stops summary
+  - **On-time tracking:** Shows X/Y deliveries on schedule with green/red indicator
+  - **Route schedule:** Start time → End time with total duration
+  - **Optimization modes:** Location + Time (default), Location Only, Time Priority
+  - **By Time Window breakdown:** Morning/Afternoon/Evening order counts
+  - **By Borough breakdown:** Order counts and distances per borough
+  - Optimized delivery sequence using smart algorithm that:
+    - Respects delivery time windows (8am-1pm, 1pm-4pm, 4pm-10pm)
+    - Clusters stops by borough for efficient routing
+    - Uses nearest neighbor within each cluster
+    - Calculates realistic ETAs with NYC traffic (18 mph average)
   - **Live Google Maps visualization** with dark theme, route path, and numbered markers
+  - Per-stop details: Time window label, deadline, ETA, distance, drive time, stop duration
+  - Late delivery warnings (⚠️) when ETA exceeds time window
   - Click markers for stop details (recipient, address, ETA)
-  - Estimated arrival times (ETA) for each stop
-  - Distance and drive time between stops
   - "Apply Sequence" button to confirm optimized order
 - **Live Driver Tracking:** 
   - Real-time driver locations displayed on the route map with location pin markers
