@@ -1916,6 +1916,177 @@ async def admin_reassign_order(
     }
 
 
+@admin_router.post("/orders/optimize-route")
+async def admin_optimize_route_preview(
+    order_ids: List[str] = [],
+    borough: Optional[str] = None,
+    time_window: Optional[str] = None,
+    depot_address: str = "123 Main St, New York, NY 10001",
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Preview optimized route for a set of orders.
+    Can specify order_ids directly or filter by borough/time_window.
+    Returns optimized sequence with ETAs and distances.
+    """
+    # Build query to fetch orders
+    query = {"status": {"$nin": ["delivered", "cancelled", "failed"]}}
+    
+    if order_ids:
+        query["id"] = {"$in": order_ids}
+    else:
+        # Filter by borough (from QR code prefix)
+        if borough:
+            query["qr_code"] = {"$regex": f"^{borough}", "$options": "i"}
+        # Filter by time window
+        if time_window:
+            query["time_window"] = time_window
+    
+    orders = await db.orders.find(query, {"_id": 0}).to_list(100)
+    
+    if not orders:
+        return {"optimized_route": [], "total_distance": 0, "total_duration": 0, "message": "No orders found"}
+    
+    # Extract coordinates and addresses for each order
+    stops = []
+    for order in orders:
+        addr = order.get("delivery_address", {})
+        full_address = f"{addr.get('street', '')}, {addr.get('city', '')}, {addr.get('state', '')} {addr.get('postal_code', '')}"
+        
+        # Get existing coordinates or geocode
+        lat = addr.get("latitude") or addr.get("lat")
+        lng = addr.get("longitude") or addr.get("lng")
+        
+        if not lat or not lng:
+            # Try to geocode
+            try:
+                geo_result = await maps_service.geocode_address(full_address)
+                if geo_result.get("success") and geo_result.get("location"):
+                    lat = geo_result["location"].get("lat")
+                    lng = geo_result["location"].get("lng")
+            except:
+                pass
+        
+        stops.append({
+            "order_id": order.get("id"),
+            "order_number": order.get("order_number"),
+            "qr_code": order.get("qr_code"),
+            "recipient_name": order.get("recipient", {}).get("name", "Unknown"),
+            "address": full_address,
+            "city": addr.get("city", ""),
+            "latitude": lat,
+            "longitude": lng,
+            "copay_amount": order.get("copay_amount", 0),
+            "copay_collected": order.get("copay_collected", False),
+            "status": order.get("status"),
+            "packages_count": len(order.get("packages", [])),
+        })
+    
+    # Simple optimization: sort by geographic proximity using nearest neighbor algorithm
+    optimized_stops = []
+    remaining_stops = stops.copy()
+    
+    # Start from depot (use NYC center if no coordinates available)
+    current_lat = 40.7128  # NYC default
+    current_lng = -74.0060
+    
+    # Try to geocode depot
+    try:
+        depot_geo = await maps_service.geocode_address(depot_address)
+        if depot_geo.get("success") and depot_geo.get("location"):
+            current_lat = depot_geo["location"].get("lat", current_lat)
+            current_lng = depot_geo["location"].get("lng", current_lng)
+    except:
+        pass
+    
+    total_distance = 0
+    total_duration = 0
+    
+    # Nearest neighbor algorithm
+    while remaining_stops:
+        nearest = None
+        nearest_distance = float('inf')
+        
+        for stop in remaining_stops:
+            if stop.get("latitude") and stop.get("longitude"):
+                # Calculate approximate distance (Haversine simplified)
+                import math
+                lat1, lon1 = math.radians(current_lat), math.radians(current_lng)
+                lat2, lon2 = math.radians(stop["latitude"]), math.radians(stop["longitude"])
+                
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                
+                a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+                c = 2 * math.asin(math.sqrt(a))
+                distance = 3956 * c  # Miles
+                
+                if distance < nearest_distance:
+                    nearest_distance = distance
+                    nearest = stop
+            else:
+                # No coordinates, add to end
+                if nearest is None:
+                    nearest = stop
+                    nearest_distance = 5  # Assume 5 miles
+        
+        if nearest:
+            remaining_stops.remove(nearest)
+            
+            # Calculate ETA (assume 20 mph average in NYC with stops)
+            drive_time_mins = (nearest_distance / 20) * 60
+            stop_time_mins = 5  # 5 min per stop for parking/delivery
+            
+            total_distance += nearest_distance
+            total_duration += drive_time_mins + stop_time_mins
+            
+            nearest["sequence"] = len(optimized_stops) + 1
+            nearest["distance_from_previous"] = round(nearest_distance, 2)
+            nearest["estimated_drive_time"] = round(drive_time_mins, 1)
+            nearest["cumulative_time"] = round(total_duration, 1)
+            
+            optimized_stops.append(nearest)
+            
+            # Update current position
+            if nearest.get("latitude") and nearest.get("longitude"):
+                current_lat = nearest["latitude"]
+                current_lng = nearest["longitude"]
+    
+    # Calculate ETAs based on time window start
+    time_window_starts = {
+        "8am-1pm": 8,
+        "1pm-4pm": 13,
+        "4pm-10pm": 16,
+    }
+    
+    start_hour = time_window_starts.get(time_window, 8)
+    
+    for stop in optimized_stops:
+        # Calculate ETA as time from start
+        eta_mins = stop["cumulative_time"]
+        eta_hour = start_hour + (eta_mins // 60)
+        eta_min = int(eta_mins % 60)
+        
+        # Format as 12-hour time
+        period = "AM" if eta_hour < 12 else "PM"
+        display_hour = eta_hour if eta_hour <= 12 else eta_hour - 12
+        if display_hour == 0:
+            display_hour = 12
+        
+        stop["estimated_arrival"] = f"{int(display_hour)}:{eta_min:02d} {period}"
+    
+    return {
+        "optimized_route": optimized_stops,
+        "total_stops": len(optimized_stops),
+        "total_distance_miles": round(total_distance, 2),
+        "total_duration_minutes": round(total_duration, 1),
+        "depot_address": depot_address,
+        "time_window": time_window,
+        "borough": borough,
+        "optimization_method": "nearest_neighbor"
+    }
+
+
 @admin_router.get("/scans")
 async def admin_list_scans(
     skip: int = 0,
