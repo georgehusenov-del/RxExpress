@@ -1045,8 +1045,218 @@ async def health_check():
         "services": {
             "database": "connected",
             "maps": "configured" if maps_service.is_configured() else "not_configured",
-            "notifications": "configured" if notification_service.twilio_client or notification_service.sendgrid_client else "not_configured"
+            "notifications": "configured" if notification_service.twilio_client or notification_service.sendgrid_client else "not_configured",
+            "circuit": "configured" if circuit_service.is_configured() else "not_configured"
         }
+    }
+
+
+# ============== Circuit/Spoke Integration Routes ==============
+@circuit_router.get("/status")
+async def circuit_status():
+    """Check Circuit API connection status"""
+    if not circuit_service.is_configured():
+        return {"status": "not_configured", "message": "Circuit API key not set"}
+    
+    # Test connection by listing drivers
+    result = await circuit_service.list_drivers()
+    if result and "error" not in result:
+        return {
+            "status": "connected",
+            "drivers_count": len(result.get("drivers", [])),
+            "message": "Circuit API connected successfully"
+        }
+    return {"status": "error", "message": result.get("message", "Connection failed")}
+
+
+@circuit_router.get("/drivers")
+async def list_circuit_drivers(current_user: dict = Depends(get_current_user)):
+    """List all drivers from Circuit"""
+    result = await circuit_service.list_drivers()
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to fetch drivers"))
+    return result
+
+
+@circuit_router.get("/depots")
+async def list_circuit_depots(current_user: dict = Depends(get_current_user)):
+    """List all depots from Circuit"""
+    result = await circuit_service.list_depots()
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to fetch depots"))
+    return result
+
+
+@circuit_router.get("/plans")
+async def list_circuit_plans(starts_gte: str = None, current_user: dict = Depends(get_current_user)):
+    """List delivery plans from Circuit"""
+    result = await circuit_service.list_plans(starts_gte=starts_gte)
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to fetch plans"))
+    return result
+
+
+@circuit_router.post("/plans")
+async def create_circuit_plan(current_user: dict = Depends(get_current_user)):
+    """Create a new delivery plan in Circuit for today"""
+    result = await circuit_service.create_rx_delivery_plan()
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to create plan"))
+    return result
+
+
+@circuit_router.get("/plans/{plan_id}")
+async def get_circuit_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific plan from Circuit"""
+    result = await circuit_service.get_plan(plan_id)
+    if not result or "error" in result:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return result
+
+
+@circuit_router.post("/plans/{plan_id}/optimize")
+async def optimize_circuit_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+    """Optimize a delivery plan's route"""
+    result = await circuit_service.optimize_plan(plan_id)
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to optimize plan"))
+    return result
+
+
+@circuit_router.post("/plans/{plan_id}/distribute")
+async def distribute_circuit_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+    """Distribute a plan to drivers (send to Circuit Spoke app)"""
+    result = await circuit_service.distribute_plan(plan_id)
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to distribute plan"))
+    return result
+
+
+@circuit_router.get("/plans/{plan_id}/stops")
+async def list_circuit_stops(plan_id: str, current_user: dict = Depends(get_current_user)):
+    """List all stops in a Circuit plan"""
+    result = await circuit_service.list_stops(plan_id)
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to fetch stops"))
+    return result
+
+
+@circuit_router.post("/plans/{plan_id}/stops")
+async def add_order_to_circuit(plan_id: str, order_id: str, current_user: dict = Depends(get_current_user)):
+    """Add an RX Expresss order as a stop in Circuit"""
+    # Get order
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Get patient
+    patient = await db.users.find_one({"id": order["patient_id"]}, {"_id": 0})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    # Get pharmacy
+    pharmacy = await db.pharmacies.find_one({"id": order["pharmacy_id"]}, {"_id": 0})
+    if not pharmacy:
+        pharmacy = {"name": "RX Expresss Pharmacy"}
+    
+    # Add to Circuit
+    result = await circuit_service.add_order_to_circuit(plan_id, order, patient, pharmacy)
+    if not result or "error" in result:
+        raise HTTPException(status_code=500, detail=result.get("message", "Failed to add order to Circuit"))
+    
+    # Update order with Circuit stop ID
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "circuit_plan_id": plan_id,
+            "circuit_stop_id": result.get("id"),
+            "tracking_url": result.get("trackingLink")
+        }}
+    )
+    
+    return {
+        "message": "Order added to Circuit",
+        "stop_id": result.get("id"),
+        "tracking_link": result.get("trackingLink")
+    }
+
+
+@circuit_router.get("/plans/{plan_id}/stops/{stop_id}/proof")
+async def get_circuit_delivery_proof(plan_id: str, stop_id: str, current_user: dict = Depends(get_current_user)):
+    """Get delivery proof (signature, photos) from Circuit"""
+    result = await circuit_service.get_delivery_proof(plan_id, stop_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Delivery proof not found")
+    return result
+
+
+@circuit_router.get("/plans/{plan_id}/stops/{stop_id}/tracking")
+async def get_circuit_tracking(plan_id: str, stop_id: str):
+    """Get tracking info for a stop (public endpoint)"""
+    result = await circuit_service.sync_delivery_status(plan_id, stop_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Stop not found")
+    return result
+
+
+@circuit_router.get("/operations/{operation_id}")
+async def get_circuit_operation(operation_id: str, current_user: dict = Depends(get_current_user)):
+    """Get operation status (e.g., optimization progress)"""
+    result = await circuit_service.get_operation(operation_id)
+    if not result or "error" in result:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    return result
+
+
+@circuit_router.post("/sync-order/{order_id}")
+async def sync_order_from_circuit(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Sync delivery status from Circuit back to RX Expresss"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    circuit_plan_id = order.get("circuit_plan_id")
+    circuit_stop_id = order.get("circuit_stop_id")
+    
+    if not circuit_plan_id or not circuit_stop_id:
+        raise HTTPException(status_code=400, detail="Order not linked to Circuit")
+    
+    # Extract just the stop ID from the full path (e.g., "plans/xxx/stops/yyy" -> "yyy")
+    stop_id_parts = circuit_stop_id.split("/")
+    stop_id = stop_id_parts[-1] if stop_id_parts else circuit_stop_id
+    
+    # Get delivery info from Circuit
+    delivery_info = await circuit_service.get_delivery_proof(circuit_plan_id, stop_id)
+    tracking_info = await circuit_service.sync_delivery_status(circuit_plan_id, stop_id)
+    
+    update_data = {}
+    
+    if delivery_info:
+        if delivery_info.get("succeeded"):
+            update_data["status"] = OrderStatus.DELIVERED
+            update_data["actual_delivery_time"] = datetime.fromtimestamp(
+                delivery_info.get("attemptedAt", 0) / 1000, tz=timezone.utc
+            ).isoformat() if delivery_info.get("attemptedAt") else datetime.now(timezone.utc).isoformat()
+        
+        if delivery_info.get("signatureUrl"):
+            update_data["signature_data"] = delivery_info["signatureUrl"]
+        
+        if delivery_info.get("photoUrls"):
+            update_data["delivery_photo_url"] = delivery_info["photoUrls"][0]
+    
+    if tracking_info:
+        if tracking_info.get("tracking_link"):
+            update_data["tracking_url"] = tracking_info["tracking_link"]
+    
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.orders.update_one({"id": order_id}, {"$set": update_data})
+    
+    return {
+        "message": "Order synced from Circuit",
+        "delivery_info": delivery_info,
+        "tracking_info": tracking_info,
+        "updates_applied": list(update_data.keys())
     }
 
 
