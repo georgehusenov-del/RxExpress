@@ -653,6 +653,8 @@ export const OrdersManagement = () => {
           </Button>
         </div>
       </div>
+      </>
+      )}
 
       {/* Order Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
