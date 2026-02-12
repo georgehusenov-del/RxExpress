@@ -111,6 +111,15 @@ export const LoginPage = () => {
                 variant="outline"
                 size="sm"
                 className="flex-1"
+                onClick={loginAsAdmin}
+                data-testid="demo-admin-btn"
+              >
+                Admin
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
                 onClick={loginAsPharmacy}
                 data-testid="demo-pharmacy-btn"
               >
