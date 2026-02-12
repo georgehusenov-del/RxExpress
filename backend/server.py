@@ -829,12 +829,12 @@ async def update_order_status(order_id: str, status_update: OrderStatusUpdate, b
     
     # Send delivery completion notification
     if status_update.status == OrderStatus.DELIVERED:
-        patient = await db.users.find_one({"id": order["patient_id"]}, {"_id": 0})
-        if patient:
+        recipient = order.get("recipient", {})
+        if recipient:
             background_tasks.add_task(
                 notification_service.send_delivery_completed,
-                patient.get("email"),
-                patient.get("phone"),
+                recipient.get("email"),
+                recipient.get("phone"),
                 {
                     "order_number": order.get("order_number"),
                     "delivered_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
@@ -2769,18 +2769,18 @@ async def add_order_to_circuit(plan_id: str, order_id: str, current_user: dict =
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    # Get patient
-    patient = await db.users.find_one({"id": order["patient_id"]}, {"_id": 0})
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
+    # Get recipient from order
+    recipient = order.get("recipient", {})
+    if not recipient:
+        raise HTTPException(status_code=400, detail="Order has no recipient information")
     
     # Get pharmacy
     pharmacy = await db.pharmacies.find_one({"id": order["pharmacy_id"]}, {"_id": 0})
     if not pharmacy:
         pharmacy = {"name": "RX Expresss Pharmacy"}
     
-    # Add to Circuit
-    result = await circuit_service.add_order_to_circuit(plan_id, order, patient, pharmacy)
+    # Add to Circuit - pass recipient info instead of patient
+    result = await circuit_service.add_order_to_circuit(plan_id, order, recipient, pharmacy)
     if not result or "error" in result:
         raise HTTPException(status_code=500, detail=result.get("message", "Failed to add order to Circuit"))
     
