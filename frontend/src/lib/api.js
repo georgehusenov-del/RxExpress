@@ -142,6 +142,12 @@ export const adminAPI = {
   getOrders: (params = {}) => api.get('/admin/orders', { params }),
   cancelOrder: (orderId, reason = 'Cancelled by admin') => api.put(`/admin/orders/${orderId}/cancel?reason=${encodeURIComponent(reason)}`),
   updateOrderStatus: (orderId, status, notes = null) => api.put(`/admin/orders/${orderId}/status?status=${status}${notes ? `&notes=${encodeURIComponent(notes)}` : ''}`),
+  reassignOrder: (orderId, timeWindow = null, driverId = null) => {
+    const params = new URLSearchParams();
+    if (timeWindow) params.append('time_window', timeWindow);
+    if (driverId) params.append('driver_id', driverId);
+    return api.put(`/admin/orders/${orderId}/reassign?${params.toString()}`);
+  },
   getDailyReport: (date = null) => api.get('/admin/reports/daily', { params: date ? { date } : {} }),
   // Scan tracking APIs
   getScans: (params = {}) => api.get('/admin/scans', { params }),
