@@ -1886,6 +1886,9 @@ async def admin_create_pricing(
     
     await db.delivery_pricing.insert_one(pricing_dict)
     
+    # Remove MongoDB _id before returning
+    pricing_dict.pop("_id", None)
+    
     return {
         "message": "Pricing configuration created successfully",
         "pricing_id": pricing.id,
