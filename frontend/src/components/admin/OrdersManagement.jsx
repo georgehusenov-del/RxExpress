@@ -691,9 +691,32 @@ export const OrdersManagement = () => {
                                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-${twConfig.color}-500/10 border border-${twConfig.color}-500/30`}>
                                   <TimeIcon className={`w-4 h-4 text-${twConfig.color}-400`} />
                                   <span className="text-sm font-medium text-white">{twConfig.label}</span>
-                                  <Badge className={`ml-auto bg-${twConfig.color}-500/20 text-${twConfig.color}-400`}>
+                                  <Badge className={`bg-${twConfig.color}-500/20 text-${twConfig.color}-400`}>
                                     {twOrders.length}
                                   </Badge>
+                                  {/* Optimize Route Button */}
+                                  {twOrders.length >= 2 && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="ml-auto h-7 px-2 text-teal-400 hover:text-teal-300 hover:bg-teal-500/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOptimizeRoute(borough, tw, twOrders.map(o => o.id));
+                                      }}
+                                      disabled={optimizingRoute}
+                                      data-testid={`optimize-route-${borough}-${tw}`}
+                                    >
+                                      {optimizingRoute && selectedRouteContext.borough === borough && selectedRouteContext.timeWindow === tw ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <>
+                                          <Route className="w-3 h-3 mr-1" />
+                                          <span className="text-xs">Optimize</span>
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
                                 </div>
                                 
                                 {/* Droppable Zone */}
