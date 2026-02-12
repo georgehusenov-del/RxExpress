@@ -209,6 +209,74 @@ export const OrdersManagement = () => {
     order.pharmacy_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Smart Organizer: Group orders by borough and time window
+  const organizedOrders = useMemo(() => {
+    // Only include active orders (not delivered/cancelled)
+    const activeOrders = filteredOrders.filter(order => 
+      !['delivered', 'cancelled', 'failed'].includes(order.status)
+    );
+
+    const organized = {};
+    
+    // Initialize all boroughs
+    Object.keys(boroughConfig).forEach(borough => {
+      organized[borough] = {
+        morning: [],
+        afternoon: [],
+        evening: [],
+      };
+    });
+    organized['other'] = { morning: [], afternoon: [], evening: [] };
+
+    // Group orders
+    activeOrders.forEach(order => {
+      const borough = getBoroughFromOrder(order) || 'other';
+      const timeWindow = getTimeWindowFromOrder(order);
+      
+      if (organized[borough]) {
+        organized[borough][timeWindow].push(order);
+      } else {
+        organized['other'][timeWindow].push(order);
+      }
+    });
+
+    // Calculate totals and remove empty boroughs
+    const result = {};
+    Object.keys(organized).forEach(borough => {
+      const total = organized[borough].morning.length + 
+                    organized[borough].afternoon.length + 
+                    organized[borough].evening.length;
+      if (total > 0) {
+        result[borough] = {
+          ...organized[borough],
+          total,
+          totalCopay: activeOrders
+            .filter(o => getBoroughFromOrder(o) === borough || (borough === 'other' && !getBoroughFromOrder(o)))
+            .reduce((sum, o) => sum + (o.copay_collected ? 0 : (o.copay_amount || 0)), 0)
+        };
+      }
+    });
+
+    return result;
+  }, [filteredOrders]);
+
+  // Toggle borough expansion
+  const toggleBorough = (borough) => {
+    setExpandedBoroughs(prev => ({
+      ...prev,
+      [borough]: !prev[borough]
+    }));
+  };
+
+  // Toggle time window expansion
+  const toggleTimeWindow = (borough, timeWindow) => {
+    const key = `${borough}-${timeWindow}`;
+    setExpandedTimeWindows(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
