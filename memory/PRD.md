@@ -1,7 +1,7 @@
 # RX Expresss - Pharmacy Delivery Service
 ## Product Requirements Document
 
-**Last Updated:** 2026-02-12 (Copay Tracking Feature Completed)
+**Last Updated:** 2026-02-12 (Categories View Added)
 
 ---
 
@@ -56,60 +56,24 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - **Collapsible Sections:** Easy navigation through orders by area and time
 - **Time Window Icons:** Visual indicators (☀️ morning, 🌅 afternoon, 🌙 evening)
 - **Quick Actions:** View details and change status directly from the organized view
-- **Toggle View:** Switch between List view and Smart Organizer view
+- **Toggle View:** Switch between List view, Smart Organizer view, and Categories view
 - **Drag & Drop:** Drag orders between time windows to reassign delivery slots
 - **Quick Driver Assignment:** Click truck icon on any order to instantly assign/unassign drivers from a dropdown
 - **Backend Endpoint:** `PUT /api/admin/orders/{order_id}/reassign` for time window and driver reassignment
-- **Route Optimization Preview:** Click "Optimize" button on time windows with 2+ orders to see:
-  - Total distance, duration (hours), and stops summary
-  - **On-time tracking:** Shows X/Y deliveries on schedule with green/red indicator
-  - **Route schedule:** Start time → End time with total duration
-  - **Optimization modes:** Location + Time (default), Location Only, Time Priority
-  - **By Time Window breakdown:** Morning/Afternoon/Evening order counts
-  - **By Borough breakdown:** Order counts and distances per borough
-  - Optimized delivery sequence using smart algorithm that:
-    - Respects delivery time windows (8am-1pm, 1pm-4pm, 4pm-10pm)
-    - Clusters stops by borough for efficient routing
-    - Uses nearest neighbor within each cluster
-    - Calculates realistic ETAs with NYC traffic (18 mph average)
-  - **Live Google Maps visualization** with dark theme, route path, and numbered markers
-  - Per-stop details: Time window label, deadline, ETA, distance, drive time, stop duration
-  - Late delivery warnings (⚠️) when ETA exceeds time window
-  - Click markers for stop details (recipient, address, ETA)
-  - "Apply Sequence" button to confirm optimized order
-- **Live Driver Tracking:** 
-  - Real-time driver locations displayed on the route map with location pin markers
-  - Driver info popup showing name, status, speed, and assigned orders count
-  - "Track Live" button enables auto-refresh every 10 seconds
-  - Green "Live" badge indicates active tracking
-  - Legend shows driver count alongside route stops
-  - Backend endpoints: `GET /api/admin/drivers/locations`, `POST /api/admin/drivers/{id}/simulate-location`
-- **Backend Endpoint:** `POST /api/admin/orders/optimize-route` for route optimization calculations
-- **Frontend Component:** `RouteMapPreview.jsx` using @react-google-maps/api
-- **Full workflow implemented:**
-  1. **Create Plan** - Create delivery plans for specific dates with optional drivers
-  2. **Import Stops** - Batch import orders to plans (converts orders to Circuit stops)
-  3. **Optimize** - Trigger async route optimization via Circuit API
-  4. **Distribute** - Send optimized routes to drivers' Circuit Go app
 
-- **Backend Endpoints:**
-  - `GET /api/circuit/status` - Check Circuit API connection
-  - `GET /api/circuit/drivers` - List Circuit drivers (4 drivers available)
-  - `POST /api/circuit/plans/create-for-date` - Create plan with date/drivers
-  - `GET /api/circuit/route-plans` - List locally stored plans
-  - `GET /api/circuit/pending-orders` - Get orders ready for routing
-  - `POST /api/circuit/plans/{id}/batch-import` - Add orders to plan
-  - `GET /api/circuit/plans/{id}/full-status` - Comprehensive plan status
-  - `POST /api/circuit/plans/{id}/optimize-and-distribute` - Start optimization
-  - `DELETE /api/circuit/plans/{id}` - Delete plan and cleanup
-
-- **Frontend Route Management Tab:**
-  - Stats cards (Active Plans, Pending Orders, Circuit Drivers, Distributed)
-  - Route Plans list with action buttons
-  - Create Plan modal with date picker and driver selection
-  - Add Orders modal with order selection
-  - Plan Details modal with optimization status
-  - Pending Orders table with filters
+#### Phase 13: Categories View ✅ (2026-02-12)
+- **New "Categories" View Mode:** Organizes all orders by status:
+  - Ready for Pickup (cyan) - Packages ready to be picked up by drivers
+  - Pending (amber) - Orders awaiting confirmation
+  - Assigned (indigo) - Orders assigned to drivers
+  - Confirmed (blue) - Confirmed orders ready to be processed
+- **Summary Stat Cards:** Quick overview of order counts per status category
+- **Collapsible Category Sections:** Expand/collapse to view orders in each status
+- **Order Details:** Shows order number, QR code, recipient, location, time window, delivery type
+- **Driver Assignment Badge:** Visual indicator for orders with drivers assigned
+- **Quick Actions:** View details, change status, assign driver, track order, cancel order
+- **Copay Display:** Shows copay amount for orders with pending copay collection
+- **Default View:** Categories view is now the default view mode
 
 ---
 
