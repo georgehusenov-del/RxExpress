@@ -298,9 +298,9 @@ const OverviewSection = ({ stats, onRefresh }) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
-            {stats?.recent_orders?.length > 0 ? (
+            {recentOrders?.length > 0 ? (
               <div className="space-y-3">
-                {stats.recent_orders.slice(0, 5).map((order, idx) => (
+                {recentOrders.slice(0, 5).map((order, idx) => (
                   <div
                     key={idx}
                     className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg"
