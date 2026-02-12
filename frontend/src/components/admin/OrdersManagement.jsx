@@ -988,28 +988,6 @@ export const OrdersManagement = () => {
                   </div>
                 </div>
               )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* By Borough Breakdown */}
-              {routePreviewData.by_borough && Object.keys(routePreviewData.by_borough).length > 0 && (
-                <div className="bg-slate-700/30 rounded-lg p-3">
-                  <p className="text-xs text-slate-400 mb-2">By Borough</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(routePreviewData.by_borough).map(([borough, data]) => (
-                      <div key={borough} className="flex items-center gap-2 bg-slate-800/50 rounded px-2 py-1">
-                        <MapPin className="w-3 h-3 text-teal-400" />
-                        <span className="text-xs text-slate-300">{borough}</span>
-                        <Badge className="text-xs bg-slate-700 text-slate-300">{data.count}</Badge>
-                        <span className="text-xs text-slate-500">{data.distance?.toFixed(1)}mi</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Live Map Visualization */}
               {routePreviewData.optimized_route?.length > 0 && (
