@@ -508,9 +508,22 @@ export const DriverPortal = () => {
                     Scan Delivery
                   </Button>
                 </div>
+                {/* Complete Delivery with POD */}
+                <Button
+                  onClick={() => {
+                    setShowDeliveryModal(false);
+                    setShowPodModal(true);
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  data-testid="complete-delivery-btn"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Complete Delivery (POD)
+                </Button>
                 <Button
                   onClick={() => openStatusModal(selectedDelivery)}
-                  className="w-full bg-teal-600 hover:bg-teal-700"
+                  variant="outline"
+                  className="w-full border-slate-600"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Update Status
@@ -533,6 +546,22 @@ export const DriverPortal = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* POD Modal */}
+      {showPodModal && selectedDelivery && (
+        <ProofOfDeliveryModal
+          delivery={selectedDelivery}
+          onClose={() => {
+            setShowPodModal(false);
+            setSelectedDelivery(null);
+          }}
+          onSuccess={() => {
+            setShowPodModal(false);
+            setSelectedDelivery(null);
+            fetchData();
+          }}
+        />
+      )}
 
       {/* Status Update Modal */}
       <Dialog open={showStatusModal} onOpenChange={setShowStatusModal}>
