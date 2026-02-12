@@ -98,6 +98,15 @@ export const PharmacyDashboard = () => {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowScanner(true)}
+                data-testid="scan-package-btn"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Scan Package
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={fetchData}
                 data-testid="refresh-dashboard-btn"
               >
