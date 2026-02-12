@@ -83,6 +83,22 @@ export const adminAPI = {
   getOrders: (params = {}) => api.get('/admin/orders', { params }),
   cancelOrder: (orderId, reason = 'Cancelled by admin') => api.put(`/admin/orders/${orderId}/cancel?reason=${encodeURIComponent(reason)}`),
   getDailyReport: (date = null) => api.get('/admin/reports/daily', { params: date ? { date } : {} }),
+  // Scan tracking APIs
+  getScans: (params = {}) => api.get('/admin/scans', { params }),
+  getScanStats: () => api.get('/admin/scans/stats'),
+  getPackages: (params = {}) => api.get('/admin/packages', { params }),
+  verifyPackage: (qrCode) => api.post(`/admin/packages/verify/${qrCode}`),
+};
+
+// QR Scanning APIs
+export const scanAPI = {
+  scanPackage: (qrCode, scannedBy, action, location = null) => api.post('/orders/scan', {
+    qr_code: qrCode,
+    scanned_by: scannedBy,
+    scanned_at: new Date().toISOString(),
+    action: action,
+    location: location
+  }),
 };
 
 // Service Zones APIs
