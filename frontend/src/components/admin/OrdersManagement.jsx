@@ -433,7 +433,7 @@ export const OrdersManagement = () => {
     setActiveOrder(null);
   };
 
-  // Assign driver to order
+  // Assign driver to order (from modal)
   const handleAssignDriver = async (driverId) => {
     if (!selectedOrderForDriver) return;
 
@@ -442,6 +442,23 @@ export const OrdersManagement = () => {
       toast.success('Driver assigned successfully');
       setShowDriverModal(false);
       setSelectedOrderForDriver(null);
+      fetchOrders();
+    } catch (err) {
+      console.error('Failed to assign driver:', err);
+      toast.error('Failed to assign driver');
+    }
+  };
+
+  // Quick assign driver directly from order card
+  const handleQuickAssignDriver = async (orderId, driverId) => {
+    try {
+      await adminAPI.reassignOrder(orderId, null, driverId);
+      if (driverId === 'unassign') {
+        toast.success('Driver unassigned');
+      } else {
+        const driver = drivers.find(d => d.id === driverId);
+        toast.success(`Assigned to ${driver?.first_name || driver?.email || 'driver'}`);
+      }
       fetchOrders();
     } catch (err) {
       console.error('Failed to assign driver:', err);
