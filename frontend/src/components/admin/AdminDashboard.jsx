@@ -198,31 +198,35 @@ export const AdminDashboard = () => {
 
 // Overview Section Component
 const OverviewSection = ({ stats, onRefresh }) => {
+  // API returns { stats: {...}, recent_orders: [...] }
+  const statsData = stats?.stats || stats || {};
+  const recentOrders = stats?.recent_orders || [];
+  
   const statCards = [
     {
       label: 'Total Users',
-      value: stats?.total_users || 0,
+      value: statsData?.total_users || 0,
       icon: Users,
       color: 'teal',
       change: '+12%'
     },
     {
       label: 'Active Pharmacies',
-      value: stats?.active_pharmacies || 0,
+      value: statsData?.total_pharmacies || 0,
       icon: Building2,
       color: 'blue',
       change: '+5%'
     },
     {
       label: 'Active Drivers',
-      value: stats?.active_drivers || 0,
+      value: statsData?.active_drivers || 0,
       icon: Truck,
       color: 'green',
       change: '+8%'
     },
     {
       label: 'Pending Orders',
-      value: stats?.pending_orders || 0,
+      value: statsData?.orders_by_status?.pending || 0,
       icon: Package,
       color: 'amber',
       change: null
