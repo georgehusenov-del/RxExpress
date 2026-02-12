@@ -510,6 +510,7 @@ export const OrdersManagement = () => {
 
       {/* List View (Original Table) */}
       {viewMode === 'list' && (
+      <>
       <Card className="bg-slate-800 border-slate-700">
         <CardContent className="p-0">
           <Table>
