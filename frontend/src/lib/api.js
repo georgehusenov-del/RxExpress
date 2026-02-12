@@ -68,4 +68,36 @@ export const healthAPI = {
   check: () => api.get('/health'),
 };
 
+// Admin APIs
+export const adminAPI = {
+  getDashboard: () => api.get('/admin/dashboard'),
+  getUsers: (params = {}) => api.get('/admin/users', { params }),
+  getUser: (userId) => api.get(`/admin/users/${userId}`),
+  activateUser: (userId) => api.put(`/admin/users/${userId}/activate`),
+  deactivateUser: (userId) => api.put(`/admin/users/${userId}/deactivate`),
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+  getPharmacies: (params = {}) => api.get('/admin/pharmacies', { params }),
+  verifyPharmacy: (pharmacyId) => api.put(`/admin/pharmacies/${pharmacyId}/verify`),
+  getDrivers: (params = {}) => api.get('/admin/drivers', { params }),
+  verifyDriver: (driverId) => api.put(`/admin/drivers/${driverId}/verify`),
+  getOrders: (params = {}) => api.get('/admin/orders', { params }),
+  cancelOrder: (orderId, reason = 'Cancelled by admin') => api.put(`/admin/orders/${orderId}/cancel?reason=${encodeURIComponent(reason)}`),
+  getDailyReport: (date = null) => api.get('/admin/reports/daily', { params: date ? { date } : {} }),
+};
+
+// Service Zones APIs
+export const zonesAPI = {
+  list: () => api.get('/zones/'),
+  get: (zoneId) => api.get(`/zones/${zoneId}`),
+  create: (zoneData) => api.post('/zones/', zoneData),
+  update: (zoneId, zoneData) => api.put(`/zones/${zoneId}`, zoneData),
+  delete: (zoneId) => api.delete(`/zones/${zoneId}`),
+  checkAvailability: (zipCode) => api.get(`/zones/check/${zipCode}`),
+};
+
+// Public Tracking API (no auth required)
+export const publicTrackingAPI = {
+  track: (trackingNumber) => api.get(`/track/${trackingNumber}`),
+};
+
 export default api;
