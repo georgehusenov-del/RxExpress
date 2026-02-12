@@ -184,6 +184,7 @@ export const AdminDashboard = () => {
           {activeTab === 'pharmacies' && <PharmaciesManagement />}
           {activeTab === 'drivers' && <DriversManagement />}
           {activeTab === 'orders' && <OrdersManagement />}
+          {activeTab === 'pricing' && <PricingManagement />}
           {activeTab === 'scanning' && <PackageScanManagement />}
           {activeTab === 'zones' && <ServiceZonesManagement />}
           {activeTab === 'reports' && <ReportsSection />}
