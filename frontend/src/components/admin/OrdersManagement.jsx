@@ -109,6 +109,38 @@ const timeWindowConfig = {
   evening: { label: '4pm - 10pm', icon: Moon, color: 'indigo', start: 16, end: 22 },
 };
 
+// Status Category configuration for Categories View
+const statusCategoryConfig = {
+  ready_for_pickup: { 
+    label: 'Ready for Pickup', 
+    icon: Package, 
+    color: 'cyan',
+    bgClass: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30',
+    description: 'Packages ready to be picked up by drivers'
+  },
+  pending: { 
+    label: 'Pending', 
+    icon: Clock, 
+    color: 'amber',
+    bgClass: 'from-amber-500/20 to-amber-600/10 border-amber-500/30',
+    description: 'Orders awaiting confirmation'
+  },
+  assigned: { 
+    label: 'Assigned', 
+    icon: UserCheck, 
+    color: 'indigo',
+    bgClass: 'from-indigo-500/20 to-indigo-600/10 border-indigo-500/30',
+    description: 'Orders assigned to drivers'
+  },
+  confirmed: { 
+    label: 'Confirmed', 
+    icon: CheckCircle2, 
+    color: 'blue',
+    bgClass: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
+    description: 'Confirmed orders ready to be processed'
+  },
+};
+
 // Helper to extract borough from QR code
 const getBoroughFromOrder = (order) => {
   if (order.qr_code && order.qr_code.length > 0) {
