@@ -1271,6 +1271,7 @@ api_router.include_router(payments_router)
 api_router.include_router(tracking_router)
 api_router.include_router(maps_router)
 api_router.include_router(notifications_router)
+api_router.include_router(circuit_router)
 
 app.include_router(api_router)
 
