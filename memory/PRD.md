@@ -1,4 +1,4 @@
-# RX Express - Pharmacy Delivery Service
+# RX Expresss - Pharmacy Delivery Service
 ## Product Requirements Document
 
 **Last Updated:** 2026-02-12

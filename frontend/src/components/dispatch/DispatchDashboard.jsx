@@ -130,7 +130,7 @@ export const DispatchDashboard = () => {
               <Truck className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-heading font-bold text-slate-900">RX Express</h1>
+              <h1 className="text-xl font-heading font-bold text-slate-900">RX Expresss</h1>
               <p className="text-xs text-slate-500">Dispatch Center</p>
             </div>
           </div>

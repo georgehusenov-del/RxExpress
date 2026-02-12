@@ -91,7 +91,7 @@ const HomePage = () => {
           </svg>
         </div>
         <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-4">
-          RX Express
+          RX Expresss
         </h1>
         <p className="text-xl text-teal-100 mb-8">
           Fast & Secure Pharmacy Delivery Service
@@ -115,7 +115,7 @@ const HomePage = () => {
           </a>
         </div>
         <p className="text-sm text-teal-200 mt-12">
-          Powered by RX Express Technology • www.rxexpresss.com
+          Powered by RX Expresss Technology • www.rxexpresss.com
         </p>
       </div>
     </div>

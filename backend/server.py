@@ -51,7 +51,7 @@ db = client[os.environ.get('DB_NAME', 'rxexpress_db')]
 
 # Create the main app
 app = FastAPI(
-    title="RX Express API",
+    title="RX Expresss API",
     description="Pharmacy Delivery Service Backend API - Similar to DrugLift",
     version="1.0.0"
 )
@@ -923,7 +923,7 @@ async def send_notification(request: NotificationRequest, background_tasks: Back
     elif request.notification_type == "email" and request.email:
         results["email"] = await notification_service.send_email(
             request.email,
-            request.subject or "RX Express Notification",
+            request.subject or "RX Expresss Notification",
             request.message
         )
     
@@ -1028,7 +1028,7 @@ async def stripe_webhook(request: Request):
 async def root():
     """API root endpoint"""
     return {
-        "message": "RX Express API - Pharmacy Delivery Service",
+        "message": "RX Expresss API - Pharmacy Delivery Service",
         "version": "1.0.0",
         "documentation": "/docs"
     }
@@ -1075,7 +1075,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize database indexes on startup"""
-    logger.info("Starting RX Express API...")
+    logger.info("Starting RX Expresss API...")
     
     # Create indexes
     await db.users.create_index("email", unique=True)

@@ -92,7 +92,7 @@ class NotificationService:
         <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background-color: #0066cc; color: white; padding: 20px; text-align: center;">
-                <h1>RX Express</h1>
+                <h1>RX Expresss</h1>
             </div>
             <div style="padding: 20px;">
                 <h2>Order Confirmation</h2>
@@ -103,10 +103,10 @@ class NotificationService:
                     <p><strong>Estimated Delivery:</strong> {order_data.get('estimated_delivery', 'Within 2 hours')}</p>
                 </div>
                 <p>We'll notify you when your delivery is on its way!</p>
-                <p>Thank you for choosing RX Express.</p>
+                <p>Thank you for choosing RX Expresss.</p>
             </div>
             <div style="background-color: #f5f5f5; padding: 10px; text-align: center; font-size: 12px;">
-                <p>RX Express - Fast & Secure Pharmacy Delivery</p>
+                <p>RX Expresss - Fast & Secure Pharmacy Delivery</p>
             </div>
         </body>
         </html>
@@ -120,7 +120,7 @@ class NotificationService:
             )
         
         # SMS notification
-        sms_message = f"RX Express: Your order {order_data.get('order_number', '')} has been confirmed. Track at: {order_data.get('tracking_url', 'rxexpresss.com')}"
+        sms_message = f"RX Expresss: Your order {order_data.get('order_number', '')} has been confirmed. Track at: {order_data.get('tracking_url', 'rxexpresss.com')}"
         if patient_phone:
             results["sms"] = await self.send_sms(patient_phone, sms_message)
         
@@ -134,7 +134,7 @@ class NotificationService:
         <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background-color: #0066cc; color: white; padding: 20px; text-align: center;">
-                <h1>RX Express</h1>
+                <h1>RX Expresss</h1>
             </div>
             <div style="padding: 20px;">
                 <h2>Driver Assigned!</h2>
@@ -158,7 +158,7 @@ class NotificationService:
                 html_content
             )
         
-        sms_message = f"RX Express: Driver {driver_data.get('name', '')} is on the way with your order {order_data.get('order_number', '')}. ETA: {order_data.get('eta', 'Soon')}"
+        sms_message = f"RX Expresss: Driver {driver_data.get('name', '')} is on the way with your order {order_data.get('order_number', '')}. ETA: {order_data.get('eta', 'Soon')}"
         if patient_phone:
             results["sms"] = await self.send_sms(patient_phone, sms_message)
         
@@ -181,7 +181,7 @@ class NotificationService:
                     <p><strong>Delivered At:</strong> {order_data.get('delivered_at', 'N/A')}</p>
                     <p><strong>Received By:</strong> {order_data.get('received_by', 'N/A')}</p>
                 </div>
-                <p>Thank you for using RX Express!</p>
+                <p>Thank you for using RX Expresss!</p>
                 <p>Please rate your delivery experience.</p>
             </div>
         </body>
@@ -195,7 +195,7 @@ class NotificationService:
                 html_content
             )
         
-        sms_message = f"RX Express: Your order {order_data.get('order_number', '')} has been delivered. Thank you for choosing us!"
+        sms_message = f"RX Expresss: Your order {order_data.get('order_number', '')} has been delivered. Thank you for choosing us!"
         if patient_phone:
             results["sms"] = await self.send_sms(patient_phone, sms_message)
         
@@ -226,7 +226,7 @@ class NotificationService:
 
     async def send_driver_new_assignment(self, driver_phone: str, order_data: dict) -> dict:
         """Notify driver of new delivery assignment"""
-        sms_message = f"RX Express: New delivery assigned! Order {order_data.get('order_number', '')}. Pickup at: {order_data.get('pickup_address', 'Check app')}. Deliver to: {order_data.get('delivery_address', 'Check app')}"
+        sms_message = f"RX Expresss: New delivery assigned! Order {order_data.get('order_number', '')}. Pickup at: {order_data.get('pickup_address', 'Check app')}. Deliver to: {order_data.get('delivery_address', 'Check app')}"
         return await self.send_sms(driver_phone, sms_message)
 
 

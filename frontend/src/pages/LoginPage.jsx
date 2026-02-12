@@ -48,7 +48,7 @@ export const LoginPage = () => {
           <div className="mx-auto w-16 h-16 rounded-2xl bg-teal-600 flex items-center justify-center mb-4">
             <Truck className="w-8 h-8 text-white" />
           </div>
-          <CardTitle className="text-2xl font-heading">RX Express</CardTitle>
+          <CardTitle className="text-2xl font-heading">RX Expresss</CardTitle>
           <CardDescription>Dispatch Center Login</CardDescription>
         </CardHeader>
         <CardContent>
