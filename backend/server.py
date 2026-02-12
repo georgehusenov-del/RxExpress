@@ -1355,6 +1355,77 @@ async def admin_cancel_order(order_id: str, reason: str = "Cancelled by admin", 
     return {"message": "Order cancelled"}
 
 
+@admin_router.put("/orders/{order_id}/status")
+async def admin_update_order_status(order_id: str, status: str, notes: Optional[str] = None, current_user: dict = Depends(require_admin)):
+    """Update order status (admin only) - Full control over delivery status"""
+    # Validate status
+    valid_statuses = [s.value for s in OrderStatus]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Valid statuses: {valid_statuses}")
+    
+    # Get current order
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    old_status = order.get("status")
+    
+    # Update order status
+    update_data = {
+        "status": status,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Add status-specific fields
+    if status == "delivered":
+        update_data["delivered_at"] = datetime.now(timezone.utc).isoformat()
+    elif status == "picked_up":
+        update_data["picked_up_at"] = datetime.now(timezone.utc).isoformat()
+    elif status == "cancelled":
+        update_data["cancellation_reason"] = notes or "Status changed by admin"
+        update_data["cancelled_by"] = current_user.get("sub")
+    
+    result = await db.orders.update_one(
+        {"id": order_id},
+        {"$set": update_data}
+    )
+    
+    # Log the status change
+    status_log = {
+        "id": str(uuid.uuid4()),
+        "order_id": order_id,
+        "old_status": old_status,
+        "new_status": status,
+        "changed_by": current_user.get("sub"),
+        "changed_at": datetime.now(timezone.utc).isoformat(),
+        "notes": notes,
+        "changed_by_role": "admin"
+    }
+    await db.status_logs.insert_one(status_log)
+    
+    # Handle driver status based on order status change
+    if order.get("driver_id"):
+        if status in ["delivered", "cancelled", "failed"]:
+            # Release driver
+            await db.drivers.update_one(
+                {"id": order["driver_id"]},
+                {"$set": {"status": DriverStatus.AVAILABLE}}
+            )
+        elif status in ["assigned", "picked_up", "in_transit", "out_for_delivery"]:
+            # Mark driver as on route
+            await db.drivers.update_one(
+                {"id": order["driver_id"]},
+                {"$set": {"status": DriverStatus.ON_ROUTE}}
+            )
+    
+    return {
+        "message": f"Order status updated from {old_status} to {status}",
+        "order_id": order_id,
+        "old_status": old_status,
+        "new_status": status
+    }
+
+
 @admin_router.get("/scans")
 async def admin_list_scans(
     skip: int = 0,
