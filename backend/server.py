@@ -267,6 +267,145 @@ async def get_pharmacy(pharmacy_id: str):
     return pharmacy
 
 
+@pharmacies_router.get("/{pharmacy_id}/locations")
+async def get_pharmacy_locations(pharmacy_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all locations for a pharmacy"""
+    pharmacy = await db.pharmacies.find_one({"id": pharmacy_id}, {"_id": 0})
+    if not pharmacy:
+        raise HTTPException(status_code=404, detail="Pharmacy not found")
+    
+    locations = pharmacy.get("locations", [])
+    return {"locations": locations, "count": len(locations)}
+
+
+@pharmacies_router.post("/{pharmacy_id}/locations")
+async def add_pharmacy_location(
+    pharmacy_id: str,
+    location_data: PharmacyLocationCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Add a new location to a pharmacy"""
+    pharmacy = await db.pharmacies.find_one({"id": pharmacy_id}, {"_id": 0})
+    if not pharmacy:
+        raise HTTPException(status_code=404, detail="Pharmacy not found")
+    
+    # Check ownership or admin
+    if pharmacy.get("user_id") != current_user["sub"] and current_user.get("role") not in ["admin", UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this pharmacy")
+    
+    # Create location
+    location = PharmacyLocation(
+        name=location_data.name,
+        address=location_data.address,
+        phone=location_data.phone,
+        is_primary=location_data.is_primary,
+        operating_hours=location_data.operating_hours,
+        pickup_instructions=location_data.pickup_instructions
+    )
+    
+    location_dict = location.model_dump()
+    location_dict["address"] = location_data.address.model_dump()
+    
+    # If this is primary, unset other primaries
+    if location_data.is_primary:
+        existing_locations = pharmacy.get("locations", [])
+        for loc in existing_locations:
+            loc["is_primary"] = False
+    
+    # Add location to pharmacy
+    await db.pharmacies.update_one(
+        {"id": pharmacy_id},
+        {"$push": {"locations": location_dict}}
+    )
+    
+    return {
+        "message": "Location added successfully",
+        "location_id": location.id,
+        "location": location_dict
+    }
+
+
+@pharmacies_router.put("/{pharmacy_id}/locations/{location_id}")
+async def update_pharmacy_location(
+    pharmacy_id: str,
+    location_id: str,
+    location_data: PharmacyLocationCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a pharmacy location"""
+    pharmacy = await db.pharmacies.find_one({"id": pharmacy_id}, {"_id": 0})
+    if not pharmacy:
+        raise HTTPException(status_code=404, detail="Pharmacy not found")
+    
+    # Check ownership or admin
+    if pharmacy.get("user_id") != current_user["sub"] and current_user.get("role") not in ["admin", UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this pharmacy")
+    
+    # Find and update location
+    locations = pharmacy.get("locations", [])
+    location_found = False
+    
+    for i, loc in enumerate(locations):
+        if loc.get("id") == location_id:
+            locations[i] = {
+                **loc,
+                "name": location_data.name,
+                "address": location_data.address.model_dump(),
+                "phone": location_data.phone,
+                "is_primary": location_data.is_primary,
+                "operating_hours": location_data.operating_hours,
+                "pickup_instructions": location_data.pickup_instructions
+            }
+            location_found = True
+            break
+    
+    if not location_found:
+        raise HTTPException(status_code=404, detail="Location not found")
+    
+    # If this is primary, unset other primaries
+    if location_data.is_primary:
+        for loc in locations:
+            if loc.get("id") != location_id:
+                loc["is_primary"] = False
+    
+    await db.pharmacies.update_one(
+        {"id": pharmacy_id},
+        {"$set": {"locations": locations}}
+    )
+    
+    return {"message": "Location updated successfully"}
+
+
+@pharmacies_router.delete("/{pharmacy_id}/locations/{location_id}")
+async def delete_pharmacy_location(
+    pharmacy_id: str,
+    location_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a pharmacy location"""
+    pharmacy = await db.pharmacies.find_one({"id": pharmacy_id}, {"_id": 0})
+    if not pharmacy:
+        raise HTTPException(status_code=404, detail="Pharmacy not found")
+    
+    # Check ownership or admin
+    if pharmacy.get("user_id") != current_user["sub"] and current_user.get("role") not in ["admin", UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this pharmacy")
+    
+    # Remove location
+    locations = pharmacy.get("locations", [])
+    new_locations = [loc for loc in locations if loc.get("id") != location_id]
+    
+    if len(new_locations) == len(locations):
+        raise HTTPException(status_code=404, detail="Location not found")
+    
+    await db.pharmacies.update_one(
+        {"id": pharmacy_id},
+        {"$set": {"locations": new_locations}}
+    )
+    
+    return {"message": "Location deleted successfully"}
+
+
 # ============== Driver Routes ==============
 @drivers_router.post("/register")
 async def register_driver(driver_data: DriverCreate, current_user: dict = Depends(get_current_user)):
