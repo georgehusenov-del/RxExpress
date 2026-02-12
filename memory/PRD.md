@@ -57,6 +57,9 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - **Time Window Icons:** Visual indicators (☀️ morning, 🌅 afternoon, 🌙 evening)
 - **Quick Actions:** View details and change status directly from the organized view
 - **Toggle View:** Switch between List view and Smart Organizer view
+- **Drag & Drop:** Drag orders between time windows to reassign delivery slots
+- **Driver Assignment Modal:** Click to assign available drivers to orders
+- **Backend Endpoint:** `PUT /api/admin/orders/{order_id}/reassign` for time window and driver reassignment
 - **Full workflow implemented:**
   1. **Create Plan** - Create delivery plans for specific dates with optional drivers
   2. **Import Stops** - Batch import orders to plans (converts orders to Circuit stops)
