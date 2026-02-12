@@ -69,6 +69,9 @@ export const mapsAPI = {
 };
 
 // Circuit/Spoke Route Management APIs
+// Helper to extract plan ID from full path (e.g., "plans/abc123" -> "abc123")
+const extractPlanId = (planId) => planId?.replace(/^plans\//, '') || planId;
+
 export const circuitAPI = {
   // Status and info
   getStatus: () => api.get('/circuit/status'),
@@ -79,19 +82,19 @@ export const circuitAPI = {
   listPlans: (startsGte) => api.get('/circuit/plans', { params: startsGte ? { starts_gte: startsGte } : {} }),
   createPlan: () => api.post('/circuit/plans'),
   createPlanForDate: (data) => api.post('/circuit/plans/create-for-date', data),
-  getPlan: (planId) => api.get(`/circuit/plans/${planId}`),
-  getPlanFullStatus: (planId) => api.get(`/circuit/plans/${planId}/full-status`),
-  deletePlan: (planId) => api.delete(`/circuit/plans/${planId}`),
+  getPlan: (planId) => api.get(`/circuit/plans/${extractPlanId(planId)}`),
+  getPlanFullStatus: (planId) => api.get(`/circuit/plans/${extractPlanId(planId)}/full-status`),
+  deletePlan: (planId) => api.delete(`/circuit/plans/${extractPlanId(planId)}`),
   
   // Stops
-  listStops: (planId) => api.get(`/circuit/plans/${planId}/stops`),
-  addOrderToPlan: (planId, orderId) => api.post(`/circuit/plans/${planId}/stops`, null, { params: { order_id: orderId } }),
-  batchImportOrders: (planId, orderIds) => api.post(`/circuit/plans/${planId}/batch-import`, { order_ids: orderIds }),
+  listStops: (planId) => api.get(`/circuit/plans/${extractPlanId(planId)}/stops`),
+  addOrderToPlan: (planId, orderId) => api.post(`/circuit/plans/${extractPlanId(planId)}/stops`, null, { params: { order_id: orderId } }),
+  batchImportOrders: (planId, orderIds) => api.post(`/circuit/plans/${extractPlanId(planId)}/batch-import`, { order_ids: orderIds }),
   
   // Optimization & Distribution
-  optimizePlan: (planId) => api.post(`/circuit/plans/${planId}/optimize`),
-  distributePlan: (planId) => api.post(`/circuit/plans/${planId}/distribute`),
-  optimizeAndDistribute: (planId) => api.post(`/circuit/plans/${planId}/optimize-and-distribute`),
+  optimizePlan: (planId) => api.post(`/circuit/plans/${extractPlanId(planId)}/optimize`),
+  distributePlan: (planId) => api.post(`/circuit/plans/${extractPlanId(planId)}/distribute`),
+  optimizeAndDistribute: (planId) => api.post(`/circuit/plans/${extractPlanId(planId)}/optimize-and-distribute`),
   
   // Operations
   getOperation: (operationId) => api.get(`/circuit/operations/${operationId}`),
@@ -102,8 +105,8 @@ export const circuitAPI = {
   
   // Sync
   syncOrder: (orderId) => api.post(`/circuit/sync-order/${orderId}`),
-  getDeliveryProof: (planId, stopId) => api.get(`/circuit/plans/${planId}/stops/${stopId}/proof`),
-  getTracking: (planId, stopId) => api.get(`/circuit/plans/${planId}/stops/${stopId}/tracking`),
+  getDeliveryProof: (planId, stopId) => api.get(`/circuit/plans/${extractPlanId(planId)}/stops/${stopId}/proof`),
+  getTracking: (planId, stopId) => api.get(`/circuit/plans/${extractPlanId(planId)}/stops/${stopId}/tracking`),
 };
 
 // Health check
