@@ -1052,6 +1052,246 @@ async def health_check():
     }
 
 
+# ============== Admin Helper ==============
+async def require_admin(current_user: dict = Depends(get_current_user)):
+    """Dependency to require admin role"""
+    if current_user.get("role") not in ["admin", UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+
+# ============== Admin Routes ==============
+@admin_router.get("/dashboard")
+async def admin_dashboard(current_user: dict = Depends(require_admin)):
+    """Get admin dashboard statistics"""
+    # Count all entities
+    users_count = await db.users.count_documents({})
+    pharmacies_count = await db.pharmacies.count_documents({})
+    drivers_count = await db.drivers.count_documents({})
+    orders_count = await db.orders.count_documents({})
+    
+    # Orders by status
+    orders_by_status = {}
+    for status in ["pending", "confirmed", "assigned", "picked_up", "in_transit", "delivered", "cancelled"]:
+        orders_by_status[status] = await db.orders.count_documents({"status": status})
+    
+    # Recent orders
+    recent_orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).limit(10).to_list(10)
+    
+    # Active drivers
+    active_drivers = await db.drivers.count_documents({"status": {"$ne": "offline"}})
+    
+    return {
+        "stats": {
+            "total_users": users_count,
+            "total_pharmacies": pharmacies_count,
+            "total_drivers": drivers_count,
+            "active_drivers": active_drivers,
+            "total_orders": orders_count,
+            "orders_by_status": orders_by_status
+        },
+        "recent_orders": recent_orders
+    }
+
+
+@admin_router.get("/users")
+async def admin_list_users(
+    role: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(require_admin)
+):
+    """List all users (admin only)"""
+    query = {}
+    if role:
+        query["role"] = role
+    
+    users = await db.users.find(query, {"_id": 0, "password_hash": 0}).skip(skip).limit(limit).to_list(limit)
+    total = await db.users.count_documents(query)
+    
+    return {"users": users, "total": total, "skip": skip, "limit": limit}
+
+
+@admin_router.get("/users/{user_id}")
+async def admin_get_user(user_id: str, current_user: dict = Depends(require_admin)):
+    """Get user details (admin only)"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@admin_router.put("/users/{user_id}/activate")
+async def admin_activate_user(user_id: str, current_user: dict = Depends(require_admin)):
+    """Activate a user account"""
+    result = await db.users.update_one({"id": user_id}, {"$set": {"is_active": True}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "User activated"}
+
+
+@admin_router.put("/users/{user_id}/deactivate")
+async def admin_deactivate_user(user_id: str, current_user: dict = Depends(require_admin)):
+    """Deactivate a user account"""
+    result = await db.users.update_one({"id": user_id}, {"$set": {"is_active": False}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "User deactivated"}
+
+
+@admin_router.delete("/users/{user_id}")
+async def admin_delete_user(user_id: str, current_user: dict = Depends(require_admin)):
+    """Delete a user (admin only)"""
+    # Don't allow deleting yourself
+    if user_id == current_user.get("sub"):
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Also delete related profiles
+    await db.drivers.delete_one({"user_id": user_id})
+    await db.pharmacies.delete_one({"user_id": user_id})
+    
+    return {"message": "User deleted"}
+
+
+@admin_router.get("/pharmacies")
+async def admin_list_pharmacies(
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(require_admin)
+):
+    """List all pharmacies (admin only)"""
+    pharmacies = await db.pharmacies.find({}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+    total = await db.pharmacies.count_documents({})
+    return {"pharmacies": pharmacies, "total": total}
+
+
+@admin_router.put("/pharmacies/{pharmacy_id}/verify")
+async def admin_verify_pharmacy(pharmacy_id: str, current_user: dict = Depends(require_admin)):
+    """Verify a pharmacy"""
+    result = await db.pharmacies.update_one({"id": pharmacy_id}, {"$set": {"is_verified": True}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Pharmacy not found")
+    return {"message": "Pharmacy verified"}
+
+
+@admin_router.get("/drivers")
+async def admin_list_drivers(
+    status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(require_admin)
+):
+    """List all drivers with details (admin only)"""
+    query = {}
+    if status:
+        query["status"] = status
+    
+    drivers = await db.drivers.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+    total = await db.drivers.count_documents(query)
+    
+    # Enrich with user info
+    for driver in drivers:
+        user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password_hash": 0})
+        if user:
+            driver["user"] = user
+    
+    return {"drivers": drivers, "total": total}
+
+
+@admin_router.put("/drivers/{driver_id}/verify")
+async def admin_verify_driver(driver_id: str, current_user: dict = Depends(require_admin)):
+    """Verify a driver"""
+    result = await db.drivers.update_one({"id": driver_id}, {"$set": {"is_verified": True}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    return {"message": "Driver verified"}
+
+
+@admin_router.get("/orders")
+async def admin_list_all_orders(
+    status: Optional[str] = None,
+    pharmacy_id: Optional[str] = None,
+    driver_id: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(require_admin)
+):
+    """List all orders with full access (admin only)"""
+    query = {}
+    if status:
+        query["status"] = status
+    if pharmacy_id:
+        query["pharmacy_id"] = pharmacy_id
+    if driver_id:
+        query["driver_id"] = driver_id
+    
+    orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.orders.count_documents(query)
+    
+    return {"orders": orders, "total": total, "skip": skip, "limit": limit}
+
+
+@admin_router.put("/orders/{order_id}/cancel")
+async def admin_cancel_order(order_id: str, reason: str = "Cancelled by admin", current_user: dict = Depends(require_admin)):
+    """Cancel an order (admin only)"""
+    result = await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "status": OrderStatus.CANCELLED,
+            "cancellation_reason": reason,
+            "cancelled_by": current_user.get("sub"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Release driver if assigned
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if order and order.get("driver_id"):
+        await db.drivers.update_one(
+            {"id": order["driver_id"]},
+            {"$set": {"status": DriverStatus.AVAILABLE}}
+        )
+    
+    return {"message": "Order cancelled"}
+
+
+@admin_router.get("/reports/daily")
+async def admin_daily_report(date: str = None, current_user: dict = Depends(require_admin)):
+    """Get daily delivery report"""
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Count orders for the day
+    start_of_day = f"{date}T00:00:00"
+    end_of_day = f"{date}T23:59:59"
+    
+    pipeline = [
+        {"$match": {"created_at": {"$gte": start_of_day, "$lte": end_of_day}}},
+        {"$group": {
+            "_id": "$status",
+            "count": {"$sum": 1},
+            "total_fees": {"$sum": "$delivery_fee"}
+        }}
+    ]
+    
+    results = await db.orders.aggregate(pipeline).to_list(100)
+    
+    report = {
+        "date": date,
+        "summary": {status["_id"]: {"count": status["count"], "fees": status["total_fees"]} for status in results},
+        "total_orders": sum(s["count"] for s in results),
+        "total_revenue": sum(s["total_fees"] for s in results)
+    }
+    
+    return report
+
+
 # ============== Circuit/Spoke Integration Routes ==============
 @circuit_router.get("/status")
 async def circuit_status():
