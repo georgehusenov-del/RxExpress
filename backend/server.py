@@ -1841,6 +1841,117 @@ async def admin_daily_report(date: str = None, current_user: dict = Depends(requ
     return report
 
 
+# ============== Admin Delivery Pricing Routes ==============
+@admin_router.get("/pricing")
+async def admin_list_pricing(
+    include_inactive: bool = False,
+    current_user: dict = Depends(require_admin)
+):
+    """List all delivery pricing configurations (admin only)"""
+    query = {} if include_inactive else {"is_active": True}
+    pricing_list = await db.delivery_pricing.find(query, {"_id": 0}).to_list(100)
+    return {"pricing": pricing_list, "count": len(pricing_list)}
+
+
+@admin_router.get("/pricing/{pricing_id}")
+async def admin_get_pricing(pricing_id: str, current_user: dict = Depends(require_admin)):
+    """Get specific pricing configuration (admin only)"""
+    pricing = await db.delivery_pricing.find_one({"id": pricing_id}, {"_id": 0})
+    if not pricing:
+        raise HTTPException(status_code=404, detail="Pricing configuration not found")
+    return pricing
+
+
+@admin_router.post("/pricing")
+async def admin_create_pricing(
+    pricing_data: DeliveryPricingCreate,
+    current_user: dict = Depends(require_admin)
+):
+    """Create a new delivery pricing configuration (admin only)"""
+    pricing = DeliveryPricing(
+        delivery_type=pricing_data.delivery_type,
+        name=pricing_data.name,
+        description=pricing_data.description,
+        base_price=pricing_data.base_price,
+        is_active=pricing_data.is_active,
+        time_window_start=pricing_data.time_window_start,
+        time_window_end=pricing_data.time_window_end,
+        cutoff_time=pricing_data.cutoff_time,
+        is_addon=pricing_data.is_addon
+    )
+    
+    pricing_dict = pricing.model_dump()
+    pricing_dict["created_at"] = pricing_dict["created_at"].isoformat()
+    pricing_dict["updated_at"] = pricing_dict["updated_at"].isoformat()
+    
+    await db.delivery_pricing.insert_one(pricing_dict)
+    
+    return {
+        "message": "Pricing configuration created successfully",
+        "pricing_id": pricing.id,
+        "pricing": pricing_dict
+    }
+
+
+@admin_router.put("/pricing/{pricing_id}")
+async def admin_update_pricing(
+    pricing_id: str,
+    pricing_data: DeliveryPricingUpdate,
+    current_user: dict = Depends(require_admin)
+):
+    """Update a delivery pricing configuration (admin only)"""
+    existing = await db.delivery_pricing.find_one({"id": pricing_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Pricing configuration not found")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if pricing_data.name is not None:
+        update_data["name"] = pricing_data.name
+    if pricing_data.description is not None:
+        update_data["description"] = pricing_data.description
+    if pricing_data.base_price is not None:
+        update_data["base_price"] = pricing_data.base_price
+    if pricing_data.is_active is not None:
+        update_data["is_active"] = pricing_data.is_active
+    if pricing_data.time_window_start is not None:
+        update_data["time_window_start"] = pricing_data.time_window_start
+    if pricing_data.time_window_end is not None:
+        update_data["time_window_end"] = pricing_data.time_window_end
+    if pricing_data.cutoff_time is not None:
+        update_data["cutoff_time"] = pricing_data.cutoff_time
+    
+    await db.delivery_pricing.update_one({"id": pricing_id}, {"$set": update_data})
+    
+    updated = await db.delivery_pricing.find_one({"id": pricing_id}, {"_id": 0})
+    return {"message": "Pricing updated successfully", "pricing": updated}
+
+
+@admin_router.delete("/pricing/{pricing_id}")
+async def admin_delete_pricing(pricing_id: str, current_user: dict = Depends(require_admin)):
+    """Delete a delivery pricing configuration (admin only)"""
+    result = await db.delivery_pricing.delete_one({"id": pricing_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Pricing configuration not found")
+    return {"message": "Pricing configuration deleted successfully"}
+
+
+@admin_router.put("/pricing/{pricing_id}/toggle")
+async def admin_toggle_pricing(pricing_id: str, current_user: dict = Depends(require_admin)):
+    """Toggle a pricing configuration active/inactive (admin only)"""
+    existing = await db.delivery_pricing.find_one({"id": pricing_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Pricing configuration not found")
+    
+    new_status = not existing.get("is_active", True)
+    await db.delivery_pricing.update_one(
+        {"id": pricing_id},
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": f"Pricing {'activated' if new_status else 'deactivated'}", "is_active": new_status}
+
+
 # ============== Service Zones Routes ==============
 @zones_router.get("/")
 async def list_service_zones(active_only: bool = True):
