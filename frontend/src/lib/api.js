@@ -148,11 +148,13 @@ export const adminAPI = {
     if (driverId) params.append('driver_id', driverId);
     return api.put(`/admin/orders/${orderId}/reassign?${params.toString()}`);
   },
-  optimizeRoutePreview: (orderIds = [], borough = null, timeWindow = null, depotAddress = null) => {
+  optimizeRoutePreview: (orderIds = [], borough = null, timeWindow = null, depotAddress = null, startHour = null, optimizeMode = 'location_time') => {
     const params = new URLSearchParams();
     if (borough) params.append('borough', borough);
     if (timeWindow) params.append('time_window', timeWindow);
     if (depotAddress) params.append('depot_address', depotAddress);
+    if (startHour !== null) params.append('start_hour', startHour);
+    params.append('optimize_mode', optimizeMode);
     return api.post(`/admin/orders/optimize-route?${params.toString()}`, { order_ids: orderIds });
   },
   // Driver tracking
