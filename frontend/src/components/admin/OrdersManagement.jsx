@@ -80,6 +80,10 @@ export const OrdersManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [newStatus, setNewStatus] = useState('');
+  const [statusNotes, setStatusNotes] = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [pagination, setPagination] = useState({ skip: 0, limit: 20, total: 0 });
 
   const fetchOrders = useCallback(async () => {
@@ -115,6 +119,32 @@ export const OrdersManagement = () => {
     } catch (err) {
       toast.error('Failed to cancel order');
     }
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!selectedOrder || !newStatus) return;
+    
+    setUpdatingStatus(true);
+    try {
+      await adminAPI.updateOrderStatus(selectedOrder.id, newStatus, statusNotes || null);
+      toast.success(`Order status updated to ${statusLabels[newStatus]}`);
+      setShowStatusModal(false);
+      setSelectedOrder(null);
+      setNewStatus('');
+      setStatusNotes('');
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update status');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const openStatusModal = (order) => {
+    setSelectedOrder(order);
+    setNewStatus(order.status);
+    setStatusNotes('');
+    setShowStatusModal(true);
   };
 
   const filteredOrders = orders.filter(order =>
