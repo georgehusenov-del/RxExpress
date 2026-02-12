@@ -109,6 +109,11 @@ export const circuitAPI = {
   getTracking: (planId, stopId) => api.get(`/circuit/plans/${extractPlanId(planId)}/stops/${stopId}/tracking`),
 };
 
+// Public APIs (no auth required)
+export const publicAPI = {
+  getActivePricing: () => api.get('/pricing/active'),
+};
+
 // Health check
 export const healthAPI = {
   check: () => api.get('/health'),
