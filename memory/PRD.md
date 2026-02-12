@@ -15,7 +15,9 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - Notifications (SMS/email/push)
 - Payment processing
 - Admin dashboard for platform management
-- **QR Code scanning for package verification**
+- QR Code scanning for package verification
+- **Admin can change delivery status anytime**
+- **Dedicated driver interface for scanning during deliveries**
 
 ---
 
@@ -30,13 +32,16 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
    - Register pharmacy profile
    - Create delivery orders (Same-Day, Next-Day, Priority, Time Window)
    - Track delivery status
-   - **Scan packages during preparation for pickup verification**
+   - Scan packages during preparation for pickup verification
    - View delivery history and reports
 
 3. **Drivers** - Delivery personnel (managed via Circuit/Spoke)
-   - Receive delivery assignments
-   - Update location in real-time
+   - **Dedicated Driver Portal at /driver**
+   - View assigned deliveries with full details
+   - **Update their status (Available, On Break, Offline)**
    - **Scan packages during pickup and delivery**
+   - **Update delivery status in real-time**
+   - Navigate to delivery addresses
    - Submit delivery proof (signature/photo)
 
 4. **Administrators** - Platform managers
@@ -44,7 +49,8 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
    - Verify pharmacies and drivers
    - Manage service zones
    - View system-wide analytics and reports
-   - **Full control over package tracking, scanning history, and verification**
+   - Full control over package tracking, scanning history, and verification
+   - **Change any order status at any time**
    - Cancel orders when needed
 
 ---
@@ -74,34 +80,50 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - Create delivery modal
 - Order list with filtering
 - Order details view
-- **QR Code scanner for package verification during pickup**
+- QR Code scanner for package verification during pickup
 
-#### Phase 4: Admin Dashboard ✅ (Completed 2026-02-12)
-- **Overview Tab**: Dashboard with stats (Total Users, Pharmacies, Drivers, Orders), Recent Orders, Today's Performance
-- **Users Management**: List, search, filter by role, view details, activate/deactivate, delete users
-- **Pharmacies Management**: List, search, view details, verify pharmacies
-- **Drivers Management**: List, search, view details, verify drivers
-- **Orders Management**: List, search, filter by status, view details, cancel orders
-- **Service Zones Management**: List, create, edit, delete zones with delivery fees and cutoff times
-- **Reports**: Daily reports with metrics
+#### Phase 4: Admin Dashboard ✅
+- Overview Tab: Dashboard with stats
+- Users Management: Full CRUD
+- Pharmacies Management: Verify pharmacies
+- Drivers Management: Verify drivers
+- Orders Management: **Full status control**
+- Service Zones Management: CRUD zones
+- QR Scanning Tab: Package tracking, scan history, analytics
+- Reports: Daily metrics
 
-#### Phase 5: QR Code Scanning ✅ (Completed 2026-02-12)
-- **QRScanner Component**: Reusable component supporting camera scanning and manual entry
-- **Admin QR Scanning Tab**: 
-  - Stats cards (Total Scans, Last 24 Hours, Pickups, Deliveries)
-  - Packages tab with full package list
-  - Scan History tab with audit trail
-  - Analytics tab with scan performance charts
-  - Admin package verification capability
-- **Pharmacy Portal Scanning**: Scan Package button for pickup verification
-- **Backend APIs**:
-  - `GET /api/admin/scans` - List all scans with filters
-  - `GET /api/admin/scans/stats` - Scan statistics
-  - `GET /api/admin/packages` - List all packages
-  - `POST /api/admin/packages/verify/{qr_code}` - Admin verification
-  - `POST /api/orders/scan` - Package scan endpoint
+#### Phase 5: QR Code Scanning ✅
+- QRScanner Component: Camera and manual entry support
+- Admin QR Scanning Tab with full package tracking
+- Pharmacy Portal scanning for pickup verification
+- Backend APIs for scan logging and verification
 
-#### Phase 6: Public Tracking ✅
+#### Phase 6: Admin Status Control ✅ (Completed 2026-02-12)
+- **PUT /api/admin/orders/{order_id}/status** endpoint
+- Change Status modal in Orders Management
+- Status dropdown with all options (Pending → Cancelled)
+- Optional notes field for status changes
+- Status change logging
+
+#### Phase 7: Driver Portal ✅ (Completed 2026-02-12)
+- **Dedicated /driver route**
+- Driver profile card with stats
+- **Status toggle (Available, On Break, Offline)**
+- Active/Completed delivery tabs
+- **Delivery cards with QR scan buttons (Pickup/Delivery)**
+- **Update delivery status modal**
+- Navigate to delivery addresses
+- Refresh deliveries button
+- Mobile-optimized responsive design
+- **Backend APIs:**
+  - `GET /api/driver-portal/profile`
+  - `GET /api/driver-portal/deliveries`
+  - `PUT /api/driver-portal/deliveries/{order_id}/status`
+  - `POST /api/driver-portal/deliveries/{order_id}/scan`
+  - `PUT /api/driver-portal/location`
+  - `PUT /api/driver-portal/status`
+
+#### Phase 8: Public Tracking ✅
 - Public tracking page accessible via tracking number
 - No authentication required
 - Real-time status updates
@@ -134,7 +156,7 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 
 ### Prioritized Backlog
 
-**P0 - Critical (Done):**
+**P0 - Critical (All Done):**
 - ✅ Core API endpoints
 - ✅ Authentication system (4 roles)
 - ✅ Order management
@@ -144,13 +166,15 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - ✅ Admin dashboard
 - ✅ Public tracking page
 - ✅ QR Code scanning
+- ✅ Admin status control
+- ✅ Driver portal
 
 **P1 - High Priority:**
 - Configure Google Maps API key for real geocoding
 - Configure Twilio for SMS notifications
 - Configure SendGrid for email notifications
 - Multi-location support for pharmacies
-- Driver mobile interface for scanning during delivery
+- Proof of Delivery with photo/signature capture
 
 **P2 - Medium Priority:**
 - Enhanced reporting & analytics
@@ -188,7 +212,8 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - `/app/backend/circuit_service.py` - Circuit/Spoke integration
 - `/app/frontend/src/App.js` - React router
 - `/app/frontend/src/components/admin/` - Admin dashboard components
-- `/app/frontend/src/components/admin/PackageScanManagement.jsx` - QR scan management
+- `/app/frontend/src/components/admin/OrdersManagement.jsx` - Admin status control
+- `/app/frontend/src/components/driver/DriverPortal.jsx` - Driver interface
 - `/app/frontend/src/components/scanner/QRScanner.jsx` - Reusable QR scanner
 - `/app/frontend/src/components/pharmacy/` - Pharmacy portal components
 - `/app/frontend/src/components/tracking/` - Public tracking page
@@ -199,10 +224,15 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 
 Available at: `/api/docs` (Swagger UI)
 
-### Key API Endpoints for QR Scanning
+### Key API Endpoints
 
-- `POST /api/orders/scan` - Scan a package QR code
-- `GET /api/admin/scans` - List all scans (admin only)
-- `GET /api/admin/scans/stats` - Get scan statistics (admin only)
-- `GET /api/admin/packages` - List all packages (admin only)
-- `POST /api/admin/packages/verify/{qr_code}` - Verify package (admin only)
+**Admin Status Control:**
+- `PUT /api/admin/orders/{order_id}/status` - Change order status (admin only)
+
+**Driver Portal:**
+- `GET /api/driver-portal/profile` - Get driver profile and stats
+- `GET /api/driver-portal/deliveries` - Get assigned deliveries
+- `PUT /api/driver-portal/deliveries/{order_id}/status` - Update delivery status
+- `POST /api/driver-portal/deliveries/{order_id}/scan` - Scan package
+- `PUT /api/driver-portal/location` - Update driver location
+- `PUT /api/driver-portal/status` - Update driver availability status
