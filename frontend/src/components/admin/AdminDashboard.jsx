@@ -429,6 +429,75 @@ const OverviewSection = ({ stats, onRefresh }) => {
         ))}
       </div>
 
+      {/* Ready for Pickup Section - Prominent Display */}
+      {(statsData?.orders_by_status?.ready_for_pickup > 0 || readyForPickupOrders.length > 0) && (
+        <Card className="bg-gradient-to-r from-cyan-900/50 to-cyan-800/30 border-cyan-500/50 border-2">
+          <CardHeader className="pb-3 border-b border-cyan-500/30">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <Package className="w-5 h-5 text-cyan-400 animate-pulse" />
+                Ready for Pickup
+                <Badge className="bg-cyan-500 text-white ml-2">
+                  {statsData?.orders_by_status?.ready_for_pickup || readyForPickupOrders.length || 0}
+                </Badge>
+              </CardTitle>
+              <Button
+                size="sm"
+                className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                onClick={() => handleCardClick('orders')}
+              >
+                View All
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {readyForPickupOrders.slice(0, 6).map((order, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 bg-slate-800/80 rounded-lg border border-cyan-500/30 cursor-pointer hover:bg-slate-700 hover:border-cyan-400 transition-all"
+                  onClick={() => handleCardClick('orders')}
+                  data-testid={`ready-pickup-${order.order_number}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                      <span className="text-lg font-bold text-cyan-400">
+                        {order.qr_code?.charAt(0) || '?'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">{order.order_number}</p>
+                      <p className="text-xs text-slate-400">
+                        {order.delivery_address?.city || 'NYC'} • {order.delivery_type?.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-mono text-cyan-400">{order.qr_code}</p>
+                    <p className="text-xs text-slate-500">{order.time_window || 'ASAP'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {readyForPickupOrders.length === 0 && (
+              <div className="text-center py-4">
+                <p className="text-cyan-300 text-sm">
+                  {statsData?.orders_by_status?.ready_for_pickup || 0} orders ready for driver pickup
+                </p>
+                <Button
+                  variant="link"
+                  className="text-cyan-400 mt-1"
+                  onClick={() => handleCardClick('orders')}
+                >
+                  View in Orders →
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick Actions Bar */}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader className="pb-3 border-b border-slate-700">
