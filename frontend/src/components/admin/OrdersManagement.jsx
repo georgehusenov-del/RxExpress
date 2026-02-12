@@ -137,6 +137,120 @@ const getTimeWindowFromOrder = (order) => {
   return 'morning'; // Default
 };
 
+// Map internal time window names to API format
+const timeWindowToApiFormat = {
+  morning: '8am-1pm',
+  afternoon: '1pm-4pm',
+  evening: '4pm-10pm',
+};
+
+// Draggable Order Card Component
+const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, statusColors, statusLabels }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: order.id,
+    data: { order },
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: isDragging ? 1000 : 1,
+  } : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center justify-between px-4 py-3 bg-slate-800/50 rounded-lg border border-slate-700 mb-2 transition-all ${
+        isDragging ? 'opacity-50 shadow-2xl ring-2 ring-teal-500' : 'hover:bg-slate-700/50 hover:border-slate-600'
+      }`}
+      data-testid={`draggable-order-${order.id}`}
+    >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing p-1 mr-3 text-slate-500 hover:text-slate-300"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+      
+      <div className="flex items-center gap-4 flex-1">
+        <div className="w-8 h-8 rounded bg-slate-700 flex items-center justify-center">
+          <Package className="w-4 h-4 text-slate-400" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm text-white">{order.order_number}</span>
+            <Badge variant="outline" className={statusColors[order.status]}>
+              {statusLabels[order.status]}
+            </Badge>
+            {order.qr_code && (
+              <span className="text-xs font-mono text-slate-500">{order.qr_code}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
+            <span><User className="w-3 h-3 inline mr-1" />{order.recipient?.name}</span>
+            <span><MapPin className="w-3 h-3 inline mr-1" />{order.delivery_address?.street}</span>
+            {order.copay_amount > 0 && !order.copay_collected && (
+              <span className="text-amber-400"><DollarSign className="w-3 h-3 inline" />${order.copay_amount.toFixed(2)}</span>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-slate-400 hover:text-white"
+          onClick={() => onViewDetails(order)}
+        >
+          <Eye className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-teal-400 hover:text-teal-300"
+          onClick={() => onChangeStatus(order)}
+        >
+          <RefreshCw className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Droppable Time Window Zone Component
+const DroppableTimeWindow = ({ id, children, isOver, timeWindowConfig }) => {
+  const { setNodeRef, isOver: isOverCurrent } = useDroppable({
+    id,
+  });
+
+  const twParts = id.split('-');
+  const tw = twParts[twParts.length - 1];
+  const config = timeWindowConfig[tw];
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[100px] rounded-lg border-2 border-dashed transition-all p-2 ${
+        isOverCurrent 
+          ? 'border-teal-500 bg-teal-500/10' 
+          : 'border-slate-700 bg-slate-800/30'
+      }`}
+      data-testid={`droppable-${id}`}
+    >
+      {children}
+      {isOverCurrent && (
+        <div className="flex items-center justify-center py-4 text-teal-400 text-sm">
+          <ArrowRight className="w-4 h-4 mr-2" />
+          Drop here to move to {config?.label}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const OrdersManagement = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,6 +266,21 @@ export const OrdersManagement = () => {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'smart'
   const [expandedBoroughs, setExpandedBoroughs] = useState({});
   const [expandedTimeWindows, setExpandedTimeWindows] = useState({});
+  const [activeId, setActiveId] = useState(null);
+  const [activeOrder, setActiveOrder] = useState(null);
+  const [drivers, setDrivers] = useState([]);
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -172,6 +301,16 @@ export const OrdersManagement = () => {
       setLoading(false);
     }
   }, [pagination.skip, pagination.limit, statusFilter]);
+
+  // Fetch drivers for assignment
+  const fetchDrivers = useCallback(async () => {
+    try {
+      const response = await adminAPI.getDrivers({ status: 'available' });
+      setDrivers(response.data.drivers || []);
+    } catch (err) {
+      console.error('Failed to fetch drivers:', err);
+    }
+  }, []);
 
   useEffect(() => {
     fetchOrders();
