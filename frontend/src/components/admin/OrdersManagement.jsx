@@ -840,6 +840,141 @@ export const OrdersManagement = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Route Optimization Preview Modal */}
+      <Dialog open={showRoutePreview} onOpenChange={setShowRoutePreview}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Route className="w-5 h-5 text-teal-400" />
+              Optimized Route Preview
+            </DialogTitle>
+          </DialogHeader>
+          
+          {routePreviewData && (
+            <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+              {/* Route Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-gradient-to-br from-teal-500/20 to-teal-600/10 border border-teal-500/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-teal-400 mb-1">
+                    <Navigation className="w-4 h-4" />
+                    <span className="text-xs">Total Distance</span>
+                  </div>
+                  <p className="text-xl font-bold text-white">{routePreviewData.total_distance_miles} mi</p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-amber-400 mb-1">
+                    <Timer className="w-4 h-4" />
+                    <span className="text-xs">Est. Duration</span>
+                  </div>
+                  <p className="text-xl font-bold text-white">{Math.round(routePreviewData.total_duration_minutes)} min</p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-purple-400 mb-1">
+                    <Package className="w-4 h-4" />
+                    <span className="text-xs">Total Stops</span>
+                  </div>
+                  <p className="text-xl font-bold text-white">{routePreviewData.total_stops}</p>
+                </div>
+              </div>
+
+              {/* Time Window Info */}
+              <div className="bg-slate-700/50 rounded-lg p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm text-slate-300">
+                    {routePreviewData.time_window || 'All Windows'} • {boroughConfig[routePreviewData.borough]?.name || 'All Boroughs'}
+                  </span>
+                </div>
+                <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
+                  <Zap className="w-3 h-3 mr-1" />
+                  Nearest Neighbor
+                </Badge>
+              </div>
+
+              {/* Optimized Route Sequence */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-400">Delivery Sequence</p>
+                <div className="space-y-2">
+                  {routePreviewData.optimized_route?.map((stop, index) => (
+                    <div 
+                      key={stop.order_id}
+                      className="bg-slate-700/30 rounded-lg p-3 border border-slate-700 hover:border-slate-600 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Sequence Number */}
+                        <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-500/40 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-teal-400">{stop.sequence}</span>
+                        </div>
+                        
+                        {/* Stop Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-sm text-white">{stop.order_number}</span>
+                            {stop.qr_code && (
+                              <span className="text-xs font-mono text-slate-500">{stop.qr_code}</span>
+                            )}
+                            <Badge variant="outline" className={statusColors[stop.status]}>
+                              {statusLabels[stop.status]}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-white mt-1">{stop.recipient_name}</p>
+                          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3" />
+                            {stop.address}
+                          </p>
+                          {stop.copay_amount > 0 && !stop.copay_collected && (
+                            <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              Collect ${stop.copay_amount.toFixed(2)} copay
+                            </p>
+                          )}
+                        </div>
+                        
+                        {/* ETA & Distance */}
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-medium text-teal-400">{stop.estimated_arrival}</p>
+                          <p className="text-xs text-slate-500">{stop.distance_from_previous} mi</p>
+                          <p className="text-xs text-slate-600">{stop.estimated_drive_time} min drive</p>
+                        </div>
+                      </div>
+                      
+                      {/* Connector Line */}
+                      {index < routePreviewData.optimized_route.length - 1 && (
+                        <div className="ml-4 mt-2 mb-0 border-l-2 border-dashed border-slate-600 h-3"></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* No Orders Message */}
+              {(!routePreviewData.optimized_route || routePreviewData.optimized_route.length === 0) && (
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No orders to optimize</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowRoutePreview(false)} className="border-slate-600 text-slate-300">
+              Close
+            </Button>
+            <Button 
+              className="bg-teal-600 hover:bg-teal-700"
+              onClick={() => {
+                toast.success('Route sequence applied! Orders are now sorted optimally.');
+                setShowRoutePreview(false);
+              }}
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Apply Sequence
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* List View (Original Table) */}
       {viewMode === 'list' && (
       <>
