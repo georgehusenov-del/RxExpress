@@ -49,6 +49,7 @@ public class PrescriptionItem
     public bool RequiresIdVerification { get; set; } = false;
 }
 
+[BsonIgnoreExtraElements]
 public class Package
 {
     [BsonElement("id")]
