@@ -270,6 +270,14 @@ export const OrdersManagement = () => {
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-teal-400 hover:bg-slate-700"
+                            onClick={() => openStatusModal(order)}
+                            data-testid={`change-status-${order.id}`}
+                          >
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Change Status
+                          </DropdownMenuItem>
                           {order.tracking_url && (
                             <DropdownMenuItem
                               className="text-slate-300 hover:bg-slate-700"
