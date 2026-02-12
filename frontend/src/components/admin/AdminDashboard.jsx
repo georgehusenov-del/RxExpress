@@ -233,14 +233,14 @@ const OverviewSection = ({ stats, onRefresh }) => {
     },
     {
       label: 'In Transit',
-      value: stats?.in_transit_orders || 0,
+      value: statsData?.orders_by_status?.in_transit || 0,
       icon: Clock,
       color: 'purple',
       change: null
     },
     {
       label: 'Delivered Today',
-      value: stats?.delivered_today || 0,
+      value: statsData?.orders_by_status?.delivered || 0,
       icon: CheckCircle,
       color: 'emerald',
       change: '+15%'
