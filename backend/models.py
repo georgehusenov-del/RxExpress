@@ -582,3 +582,48 @@ class QRCodeResponse(BaseModel):
     delivery_address: str
     status: OrderStatus
     prescriptions: List[PrescriptionItem]
+
+
+
+# ============== Delivery Pricing Models ==============
+class DeliveryPricing(BaseModel):
+    """Admin-controlled delivery pricing configuration"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    delivery_type: DeliveryType
+    name: str  # Display name, e.g., "Next-Day Delivery"
+    description: Optional[str] = None
+    base_price: float = 0.0
+    is_active: bool = True
+    # For time windows (Next-Day)
+    time_window_start: Optional[str] = None  # e.g., "08:00"
+    time_window_end: Optional[str] = None  # e.g., "12:00"
+    # For Same-Day
+    cutoff_time: Optional[str] = None  # e.g., "14:00" (2pm)
+    # Add-on pricing
+    is_addon: bool = False  # For refrigerated fee, etc.
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class DeliveryPricingCreate(BaseModel):
+    delivery_type: DeliveryType
+    name: str
+    description: Optional[str] = None
+    base_price: float
+    is_active: bool = True
+    time_window_start: Optional[str] = None
+    time_window_end: Optional[str] = None
+    cutoff_time: Optional[str] = None
+    is_addon: bool = False
+
+
+class DeliveryPricingUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    base_price: Optional[float] = None
+    is_active: Optional[bool] = None
+    time_window_start: Optional[str] = None
+    time_window_end: Optional[str] = None
+    cutoff_time: Optional[str] = None
