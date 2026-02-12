@@ -20,12 +20,13 @@ export const LoginPage = () => {
     setLoading(true);
 
     try {
-      const user = await login(email, password);
+      const response = await login(email, password);
       toast.success('Login successful');
       // Redirect based on user role
-      if (user?.role === 'admin') {
+      const userRole = response?.user?.role;
+      if (userRole === 'admin') {
         navigate('/admin');
-      } else if (user?.role === 'pharmacy') {
+      } else if (userRole === 'pharmacy') {
         navigate('/pharmacy');
       } else {
         navigate('/dashboard');
