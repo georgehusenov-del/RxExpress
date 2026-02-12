@@ -421,6 +421,16 @@ class DeliveryProofCreate(BaseModel):
     longitude: float
 
 
+class DriverPodSubmit(BaseModel):
+    """POD submission from driver portal"""
+    signature_data: Optional[str] = None  # Base64 encoded signature image
+    photo_data: Optional[str] = None  # Base64 encoded photo
+    recipient_name: Optional[str] = None
+    notes: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
 # ============== Tracking Models ==============
 class TrackingEvent(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
