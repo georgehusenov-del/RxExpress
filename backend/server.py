@@ -1621,6 +1621,65 @@ async def admin_list_scans(
     return {"scans": scans, "total": total, "skip": skip, "limit": limit}
 
 
+@admin_router.get("/pod")
+async def admin_list_pods(
+    skip: int = 0,
+    limit: int = 50,
+    order_id: Optional[str] = None,
+    driver_id: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """List all Proof of Delivery records (admin only)"""
+    query = {}
+    if order_id:
+        query["order_id"] = order_id
+    if driver_id:
+        query["driver_id"] = driver_id
+    
+    pods = await db.proof_of_delivery.find(query, {"_id": 0}).sort("submitted_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.proof_of_delivery.count_documents(query)
+    
+    # Enrich with order and driver info
+    for pod in pods:
+        order = await db.orders.find_one({"id": pod.get("order_id")}, {"_id": 0, "order_number": 1, "recipient": 1})
+        if order:
+            pod["order_number"] = order.get("order_number")
+            pod["recipient"] = order.get("recipient")
+        
+        driver = await db.drivers.find_one({"id": pod.get("driver_id")}, {"_id": 0, "user_id": 1})
+        if driver:
+            user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "first_name": 1, "last_name": 1})
+            if user:
+                pod["driver_name"] = f"{user.get('first_name', '')} {user.get('last_name', '')}"
+    
+    return {"pods": pods, "total": total, "skip": skip, "limit": limit}
+
+
+@admin_router.get("/pod/{pod_id}")
+async def admin_get_pod(pod_id: str, current_user: dict = Depends(require_admin)):
+    """Get a specific POD (admin only)"""
+    pod = await db.proof_of_delivery.find_one({"id": pod_id}, {"_id": 0})
+    if not pod:
+        raise HTTPException(status_code=404, detail="POD not found")
+    
+    # Enrich with order info
+    order = await db.orders.find_one({"id": pod.get("order_id")}, {"_id": 0})
+    if order:
+        pod["order"] = order
+    
+    return pod
+
+
+@admin_router.get("/orders/{order_id}/pod")
+async def admin_get_order_pod(order_id: str, current_user: dict = Depends(require_admin)):
+    """Get POD for a specific order (admin only)"""
+    pod = await db.proof_of_delivery.find_one({"order_id": order_id}, {"_id": 0})
+    if not pod:
+        raise HTTPException(status_code=404, detail="POD not found for this order")
+    
+    return pod
+
+
 @admin_router.get("/scans/stats")
 async def admin_scan_stats(current_user: dict = Depends(require_admin)):
     """Get scan statistics (admin only)"""
