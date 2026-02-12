@@ -638,6 +638,16 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
     order_dict["recipient"] = order_data.recipient.model_dump()
     order_dict["packages"] = [p.model_dump() for p in order_data.packages]
     
+    # Generate QR codes for each package
+    for i, pkg in enumerate(order_dict["packages"]):
+        qr_code = f"RX-{order.order_number}-PKG{i+1}-{uuid.uuid4().hex[:8].upper()}"
+        order_dict["packages"][i]["qr_code"] = qr_code
+        order_dict["packages"][i]["package_number"] = i + 1
+    
+    # Generate main order QR code
+    order_qr_code = f"RX-{order.order_number}"
+    order_dict["qr_code"] = order_qr_code
+    
     if estimated_delivery_start:
         order_dict["estimated_delivery_start"] = estimated_delivery_start.isoformat()
     if estimated_delivery_end:
