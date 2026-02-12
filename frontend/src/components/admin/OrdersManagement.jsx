@@ -619,6 +619,33 @@ export const OrdersManagement = () => {
     return result;
   }, [filteredOrders]);
 
+  // Organize orders by status category
+  const organizedByStatus = useMemo(() => {
+    const categoryStatuses = ['ready_for_pickup', 'pending', 'assigned', 'confirmed'];
+    const organized = {};
+    
+    categoryStatuses.forEach(status => {
+      const ordersInStatus = filteredOrders.filter(order => order.status === status);
+      if (ordersInStatus.length > 0 || true) { // Always show all categories
+        organized[status] = {
+          orders: ordersInStatus,
+          count: ordersInStatus.length,
+          totalCopay: ordersInStatus.reduce((sum, o) => sum + (o.copay_collected ? 0 : (o.copay_amount || 0)), 0)
+        };
+      }
+    });
+    
+    return organized;
+  }, [filteredOrders]);
+
+  // Toggle category expansion
+  const toggleCategory = (category) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
   // Toggle borough expansion
   const toggleBorough = (borough) => {
     setExpandedBoroughs(prev => ({
