@@ -1325,12 +1325,12 @@ async def admin_create_driver(
     
     # Create user
     user_id = str(uuid.uuid4())
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    hashed_pwd = get_password_hash(password)
     
     user = {
         "id": user_id,
         "email": email,
-        "hashed_password": hashed_password,
+        "password_hash": hashed_pwd,
         "first_name": first_name,
         "last_name": last_name,
         "phone": phone,
