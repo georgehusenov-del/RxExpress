@@ -424,7 +424,7 @@ const OverviewSection = ({ stats, onRefresh }) => {
             key={index}
             className={`bg-gradient-to-br ${colorClasses[card.color]} border backdrop-blur cursor-pointer 
               transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-${card.color}-500/20
-              ${card.urgent ? 'ring-2 ring-amber-500 animate-pulse' : ''}`}
+              ${card.urgent ? 'ring-2 ring-amber-500/70' : ''}`}
             onClick={() => handleCardClick(card.navigateTo)}
             data-testid={`stat-card-${card.label.toLowerCase().replace(/\s+/g, '-')}`}
           >
