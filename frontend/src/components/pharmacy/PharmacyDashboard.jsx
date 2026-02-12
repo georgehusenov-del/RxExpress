@@ -220,6 +220,19 @@ export const PharmacyDashboard = () => {
           }}
         />
       )}
+
+      {/* QR Scanner Modal */}
+      {showScanner && (
+        <QRScanner
+          action="pickup"
+          onScanSuccess={() => {
+            setShowScanner(false);
+            fetchData();
+            toast.success('Package verified for pickup!');
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   );
 };
