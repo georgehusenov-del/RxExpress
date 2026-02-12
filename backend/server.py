@@ -767,15 +767,15 @@ async def assign_driver(order_id: str, driver_id: str, background_tasks: Backgro
         {"$set": {"status": DriverStatus.ON_ROUTE}}
     )
     
-    # Get patient and driver user info for notifications
-    patient = await db.users.find_one({"id": order["patient_id"]}, {"_id": 0})
+    # Get recipient info from order and driver user info for notifications
+    recipient = order.get("recipient", {})
     driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0})
     
-    if patient and driver_user:
+    if recipient and driver_user:
         background_tasks.add_task(
             notification_service.send_driver_assigned,
-            patient.get("email"),
-            patient.get("phone"),
+            recipient.get("email"),
+            recipient.get("phone"),
             {
                 "order_number": order.get("order_number"),
                 "eta": "30-45 minutes"
