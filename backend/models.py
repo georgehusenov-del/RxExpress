@@ -290,6 +290,7 @@ class OrderCreate(BaseModel):
     requires_signature: bool = True
     requires_photo_proof: bool = True
     requires_id_verification: bool = False
+    copay_amount: float = 0.0  # Copay to collect from patient
 
 
 class Order(BaseModel):
