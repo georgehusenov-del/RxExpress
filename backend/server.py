@@ -389,69 +389,160 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
     if not pharmacy:
         raise HTTPException(status_code=404, detail="Pharmacy not found")
     
-    # Calculate delivery fee (base + distance)
-    delivery_fee = 5.99  # Base fee
+    # Check service zone availability
+    delivery_zip = order_data.delivery_address.postal_code
+    service_zone = await db.service_zones.find_one(
+        {"zip_codes": delivery_zip, "is_active": True},
+        {"_id": 0}
+    )
     
-    # Create order
+    # Calculate delivery fee
+    base_fee = service_zone.get("delivery_fee", 5.99) if service_zone else 5.99
+    priority_surcharge = 0.0
+    
+    if order_data.delivery_type == DeliveryType.PRIORITY:
+        priority_surcharge = service_zone.get("priority_surcharge", 5.00) if service_zone else 5.00
+    
+    total_amount = base_fee + priority_surcharge
+    
+    # Get pharmacy location
+    pickup_address = None
+    pharmacy_location_id = order_data.pharmacy_location_id
+    if pharmacy_location_id and pharmacy.get("locations"):
+        for loc in pharmacy["locations"]:
+            if loc.get("id") == pharmacy_location_id:
+                pickup_address = loc.get("address")
+                break
+    if not pickup_address:
+        pickup_address = pharmacy.get("address") or pharmacy.get("locations", [{}])[0].get("address")
+    
+    # Calculate ETA based on delivery type
+    now = datetime.now(timezone.utc)
+    estimated_delivery_start = None
+    estimated_delivery_end = None
+    
+    if order_data.delivery_type == DeliveryType.SAME_DAY:
+        # Same day - 2-4 hours from now
+        estimated_delivery_start = now + timedelta(hours=2)
+        estimated_delivery_end = now + timedelta(hours=4)
+    elif order_data.delivery_type == DeliveryType.NEXT_DAY:
+        # Next day - morning window by default
+        tomorrow = now + timedelta(days=1)
+        estimated_delivery_start = tomorrow.replace(hour=9, minute=0, second=0, microsecond=0)
+        estimated_delivery_end = tomorrow.replace(hour=12, minute=0, second=0, microsecond=0)
+    elif order_data.delivery_type == DeliveryType.PRIORITY:
+        # Priority - first delivery of the day (8-10 AM)
+        tomorrow = now + timedelta(days=1)
+        estimated_delivery_start = tomorrow.replace(hour=8, minute=0, second=0, microsecond=0)
+        estimated_delivery_end = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
+    elif order_data.delivery_type == DeliveryType.TIME_WINDOW and order_data.time_window:
+        # Specific time window
+        tomorrow = now + timedelta(days=1)
+        if order_data.time_window == TimeWindow.MORNING:
+            estimated_delivery_start = tomorrow.replace(hour=8, minute=0, second=0, microsecond=0)
+            estimated_delivery_end = tomorrow.replace(hour=13, minute=0, second=0, microsecond=0)
+        elif order_data.time_window == TimeWindow.AFTERNOON:
+            estimated_delivery_start = tomorrow.replace(hour=13, minute=0, second=0, microsecond=0)
+            estimated_delivery_end = tomorrow.replace(hour=18, minute=0, second=0, microsecond=0)
+        elif order_data.time_window == TimeWindow.EVENING:
+            estimated_delivery_start = tomorrow.replace(hour=16, minute=0, second=0, microsecond=0)
+            estimated_delivery_end = tomorrow.replace(hour=21, minute=0, second=0, microsecond=0)
+    
+    # Create order with new model
     order = Order(
         pharmacy_id=order_data.pharmacy_id,
-        patient_id=order_data.patient_id,
+        pharmacy_location_id=order_data.pharmacy_location_id,
+        pharmacy_name=pharmacy.get("name"),
+        delivery_type=order_data.delivery_type,
+        time_window=order_data.time_window,
+        recipient=order_data.recipient,
         delivery_address=order_data.delivery_address,
-        pickup_address=Address(**pharmacy["address"]),
-        prescriptions=order_data.prescriptions,
+        pickup_address=Address(**pickup_address) if isinstance(pickup_address, dict) else pickup_address,
+        packages=order_data.packages,
+        total_packages=len(order_data.packages),
+        scheduled_date=order_data.scheduled_date,
+        estimated_delivery_start=estimated_delivery_start,
+        estimated_delivery_end=estimated_delivery_end,
         delivery_notes=order_data.delivery_notes,
-        scheduled_delivery_time=order_data.scheduled_delivery_time,
         requires_signature=order_data.requires_signature,
         requires_photo_proof=order_data.requires_photo_proof,
-        delivery_fee=delivery_fee,
-        total_amount=delivery_fee
+        requires_id_verification=order_data.requires_id_verification,
+        service_zone_id=service_zone.get("id") if service_zone else None,
+        delivery_fee=base_fee,
+        priority_surcharge=priority_surcharge,
+        total_amount=total_amount
     )
+    
+    # Add initial tracking event
+    order.tracking_updates = [{
+        "timestamp": now.isoformat(),
+        "status": "pending",
+        "message": "Order received and being processed"
+    }]
     
     order_dict = order.model_dump()
     order_dict["created_at"] = order_dict["created_at"].isoformat()
     order_dict["updated_at"] = order_dict["updated_at"].isoformat()
     order_dict["delivery_address"] = order_data.delivery_address.model_dump()
-    order_dict["pickup_address"] = pharmacy["address"]
-    order_dict["prescriptions"] = [p.model_dump() for p in order_data.prescriptions]
+    order_dict["pickup_address"] = pickup_address if isinstance(pickup_address, dict) else pickup_address.model_dump() if pickup_address else None
+    order_dict["recipient"] = order_data.recipient.model_dump()
+    order_dict["packages"] = [p.model_dump() for p in order_data.packages]
     
-    if order_dict.get("scheduled_delivery_time"):
-        order_dict["scheduled_delivery_time"] = order_dict["scheduled_delivery_time"].isoformat()
+    if estimated_delivery_start:
+        order_dict["estimated_delivery_start"] = estimated_delivery_start.isoformat()
+    if estimated_delivery_end:
+        order_dict["estimated_delivery_end"] = estimated_delivery_end.isoformat()
     
     await db.orders.insert_one(order_dict)
     
-    # Get patient info for notifications
-    patient = await db.users.find_one({"id": order_data.patient_id}, {"_id": 0})
+    # Generate tracking URL
+    tracking_url = f"/track/{order.tracking_number}"
+    await db.orders.update_one(
+        {"id": order.id},
+        {"$set": {"tracking_url": tracking_url}}
+    )
     
     # Send notifications in background
-    if patient:
-        background_tasks.add_task(
-            notification_service.send_order_confirmation,
-            patient.get("email"),
-            patient.get("phone"),
-            {
-                "order_number": order.order_number,
-                "status": order.status,
-                "estimated_delivery": "Within 2 hours"
-            }
-        )
-        
-        # Notify pharmacy
-        background_tasks.add_task(
-            notification_service.send_pharmacy_new_order,
-            pharmacy.get("email"),
-            {
-                "order_number": order.order_number,
-                "patient_name": f"{patient.get('first_name', '')} {patient.get('last_name', '')}",
-                "items_count": len(order_data.prescriptions),
-                "scheduled_pickup": "ASAP"
-            }
-        )
+    background_tasks.add_task(
+        notification_service.send_order_confirmation,
+        order_data.recipient.email,
+        order_data.recipient.phone,
+        {
+            "order_number": order.order_number,
+            "tracking_number": order.tracking_number,
+            "status": order.status,
+            "delivery_type": order.delivery_type,
+            "estimated_delivery": f"{estimated_delivery_start.strftime('%I:%M %p') if estimated_delivery_start else 'TBD'} - {estimated_delivery_end.strftime('%I:%M %p') if estimated_delivery_end else 'TBD'}",
+            "tracking_url": tracking_url
+        }
+    )
+    
+    # Notify pharmacy
+    background_tasks.add_task(
+        notification_service.send_pharmacy_new_order,
+        pharmacy.get("email"),
+        {
+            "order_number": order.order_number,
+            "patient_name": order_data.recipient.name,
+            "items_count": len(order_data.packages),
+            "delivery_type": order_data.delivery_type,
+            "scheduled_pickup": "ASAP" if order_data.delivery_type == DeliveryType.SAME_DAY else "Tomorrow"
+        }
+    )
     
     return {
         "message": "Order created successfully",
         "order_id": order.id,
         "order_number": order.order_number,
-        "delivery_fee": delivery_fee
+        "tracking_number": order.tracking_number,
+        "tracking_url": tracking_url,
+        "delivery_type": order.delivery_type,
+        "time_window": order.time_window,
+        "estimated_delivery_start": estimated_delivery_start.isoformat() if estimated_delivery_start else None,
+        "estimated_delivery_end": estimated_delivery_end.isoformat() if estimated_delivery_end else None,
+        "delivery_fee": base_fee,
+        "priority_surcharge": priority_surcharge,
+        "total_amount": total_amount
     }
 
 
