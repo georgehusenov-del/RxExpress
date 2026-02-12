@@ -26,8 +26,8 @@ class DeliveryType(str, Enum):
 
 class TimeWindow(str, Enum):
     MORNING = "8am-1pm"
-    AFTERNOON = "1pm-6pm"
-    EVENING = "4pm-9pm"
+    AFTERNOON = "1pm-4pm"
+    EVENING = "4pm-10pm"
 
 
 class OrderStatus(str, Enum):
