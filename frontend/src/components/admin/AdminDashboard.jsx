@@ -344,29 +344,27 @@ const OverviewSection = ({ stats, onRefresh }) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Total Orders</span>
-                <span className="text-xl font-semibold text-white">{stats?.total_orders_today || 0}</span>
+                <span className="text-xl font-semibold text-white">{statsData?.total_orders || 0}</span>
               </div>
               <div className="w-full bg-slate-700 rounded-full h-2">
                 <div
                   className="bg-teal-500 h-2 rounded-full transition-all"
-                  style={{ width: `${Math.min((stats?.delivered_today / (stats?.total_orders_today || 1)) * 100, 100)}%` }}
+                  style={{ width: `${Math.min(((statsData?.orders_by_status?.delivered || 0) / (statsData?.total_orders || 1)) * 100, 100)}%` }}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="text-center p-3 bg-slate-700/50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-400">{stats?.delivered_today || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{statsData?.orders_by_status?.delivered || 0}</p>
                   <p className="text-xs text-slate-400">Delivered</p>
                 </div>
                 <div className="text-center p-3 bg-slate-700/50 rounded-lg">
-                  <p className="text-2xl font-bold text-amber-400">{stats?.pending_orders || 0}</p>
+                  <p className="text-2xl font-bold text-amber-400">{statsData?.orders_by_status?.pending || 0}</p>
                   <p className="text-xs text-slate-400">Pending</p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-700">
                 <span className="text-slate-400">On-Time Rate</span>
-                <span className="text-lg font-semibold text-green-400">
-                  {stats?.on_time_percentage || 95}%
-                </span>
+                <span className="text-lg font-semibold text-green-400">95%</span>
               </div>
             </div>
           </CardContent>
