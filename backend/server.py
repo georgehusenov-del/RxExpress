@@ -1305,6 +1305,173 @@ async def admin_verify_driver(driver_id: str, current_user: dict = Depends(requi
     return {"message": "Driver verified"}
 
 
+@admin_router.post("/drivers")
+async def admin_create_driver(
+    email: str,
+    password: str,
+    first_name: str,
+    last_name: str,
+    phone: str,
+    vehicle_type: str,
+    vehicle_number: str,
+    license_number: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Create a new driver account (admin only)"""
+    # Check if user exists
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create user
+    user_id = str(uuid.uuid4())
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    user = {
+        "id": user_id,
+        "email": email,
+        "hashed_password": hashed_password,
+        "first_name": first_name,
+        "last_name": last_name,
+        "phone": phone,
+        "role": "driver",
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user)
+    
+    # Create driver profile
+    driver_id = str(uuid.uuid4())
+    driver = {
+        "id": driver_id,
+        "user_id": user_id,
+        "vehicle_type": vehicle_type,
+        "vehicle_number": vehicle_number,
+        "license_number": license_number,
+        "status": "offline",
+        "current_location": None,
+        "rating": 5.0,
+        "total_deliveries": 0,
+        "is_verified": True,  # Admin created drivers are auto-verified
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.drivers.insert_one(driver)
+    
+    return {
+        "message": "Driver created successfully",
+        "driver_id": driver_id,
+        "user_id": user_id
+    }
+
+
+@admin_router.put("/drivers/{driver_id}")
+async def admin_update_driver(
+    driver_id: str,
+    vehicle_type: Optional[str] = None,
+    vehicle_number: Optional[str] = None,
+    license_number: Optional[str] = None,
+    is_verified: Optional[bool] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Update driver details (admin only)"""
+    driver = await db.drivers.find_one({"id": driver_id}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if vehicle_type is not None:
+        update_data["vehicle_type"] = vehicle_type
+    if vehicle_number is not None:
+        update_data["vehicle_number"] = vehicle_number
+    if license_number is not None:
+        update_data["license_number"] = license_number
+    if is_verified is not None:
+        update_data["is_verified"] = is_verified
+    
+    await db.drivers.update_one({"id": driver_id}, {"$set": update_data})
+    return {"message": "Driver updated successfully"}
+
+
+@admin_router.put("/drivers/{driver_id}/status")
+async def admin_update_driver_status(
+    driver_id: str,
+    status: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Update driver status (admin only)"""
+    valid_statuses = [s.value for s in DriverStatus]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Valid: {valid_statuses}")
+    
+    result = await db.drivers.update_one(
+        {"id": driver_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    
+    return {"message": f"Driver status updated to {status}"}
+
+
+@admin_router.delete("/drivers/{driver_id}")
+async def admin_delete_driver(driver_id: str, current_user: dict = Depends(require_admin)):
+    """Delete a driver (admin only)"""
+    driver = await db.drivers.find_one({"id": driver_id}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    
+    # Check for active deliveries
+    active_orders = await db.orders.count_documents({
+        "driver_id": driver_id,
+        "status": {"$in": ["assigned", "picked_up", "in_transit", "out_for_delivery"]}
+    })
+    if active_orders > 0:
+        raise HTTPException(status_code=400, detail="Cannot delete driver with active deliveries")
+    
+    # Delete driver profile
+    await db.drivers.delete_one({"id": driver_id})
+    
+    # Deactivate user account (don't delete for audit trail)
+    await db.users.update_one(
+        {"id": driver["user_id"]},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Driver deleted successfully"}
+
+
+@admin_router.put("/drivers/{driver_id}/activate")
+async def admin_activate_driver(driver_id: str, current_user: dict = Depends(require_admin)):
+    """Activate a driver account (admin only)"""
+    driver = await db.drivers.find_one({"id": driver_id}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    
+    await db.users.update_one(
+        {"id": driver["user_id"]},
+        {"$set": {"is_active": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Driver activated"}
+
+
+@admin_router.put("/drivers/{driver_id}/deactivate")
+async def admin_deactivate_driver(driver_id: str, current_user: dict = Depends(require_admin)):
+    """Deactivate a driver account (admin only)"""
+    driver = await db.drivers.find_one({"id": driver_id}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    
+    # Set driver to offline
+    await db.drivers.update_one({"id": driver_id}, {"$set": {"status": "offline"}})
+    
+    await db.users.update_one(
+        {"id": driver["user_id"]},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Driver deactivated"}
+
+
 @admin_router.get("/orders")
 async def admin_list_all_orders(
     status: Optional[str] = None,
