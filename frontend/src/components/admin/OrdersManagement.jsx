@@ -723,6 +723,8 @@ export const OrdersManagement = () => {
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
+              <SelectItem value="assigned">Assigned</SelectItem>
               <SelectItem value="in_transit">In Transit</SelectItem>
               <SelectItem value="delivered">Delivered</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -730,6 +732,204 @@ export const OrdersManagement = () => {
           </Select>
         </div>
       </div>
+
+      {/* Categories View - Organized by Status */}
+      {viewMode === 'categories' && (
+        <div className="space-y-4" data-testid="categories-view">
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Object.entries(statusCategoryConfig).map(([status, config]) => {
+              const data = organizedByStatus[status];
+              const IconComponent = config.icon;
+              return (
+                <Card 
+                  key={status}
+                  className={`bg-gradient-to-br ${config.bgClass} border cursor-pointer transition-all hover:scale-[1.02]`}
+                  onClick={() => toggleCategory(status)}
+                  data-testid={`category-summary-${status}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-slate-400">{config.label}</p>
+                        <p className="text-2xl font-bold text-white">{data?.count || 0}</p>
+                        <p className="text-xs text-slate-500">orders</p>
+                      </div>
+                      <div className={`w-10 h-10 rounded-lg bg-${config.color}-500/30 flex items-center justify-center`}>
+                        <IconComponent className={`w-5 h-5 text-${config.color}-400`} />
+                      </div>
+                    </div>
+                    {data?.totalCopay > 0 && (
+                      <div className="mt-2 flex items-center gap-1 text-xs text-amber-400">
+                        <DollarSign className="w-3 h-3" />
+                        ${data.totalCopay.toFixed(2)} copay to collect
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Category Sections */}
+          <div className="space-y-4">
+            {Object.entries(statusCategoryConfig).map(([status, config]) => {
+              const data = organizedByStatus[status];
+              const isExpanded = expandedCategories[status] !== false;
+              const IconComponent = config.icon;
+              
+              return (
+                <Card key={status} className="bg-slate-800 border-slate-700 overflow-hidden">
+                  <Collapsible open={isExpanded} onOpenChange={() => toggleCategory(status)}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className={`cursor-pointer bg-gradient-to-r ${config.bgClass} border-b border-slate-700 py-3`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
+                            <div className={`w-8 h-8 rounded-lg bg-${config.color}-500/30 flex items-center justify-center`}>
+                              <IconComponent className={`w-4 h-4 text-${config.color}-400`} />
+                            </div>
+                            <div>
+                              <CardTitle className="text-base font-medium text-white">{config.label}</CardTitle>
+                              <p className="text-xs text-slate-400">{config.description}</p>
+                            </div>
+                          </div>
+                          <Badge className={`bg-${config.color}-500/20 text-${config.color}-400 border-${config.color}-500/30`}>
+                            {data?.count || 0} orders
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <CardContent className="p-4">
+                        {(!data?.orders || data.orders.length === 0) ? (
+                          <div className="text-center py-8">
+                            <Package className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                            <p className="text-slate-500 text-sm">No orders in this category</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {data.orders.map(order => (
+                              <div
+                                key={order.id}
+                                className="flex items-center justify-between px-4 py-3 bg-slate-700/30 rounded-lg border border-slate-700 hover:bg-slate-700/50 hover:border-slate-600 transition-all"
+                                data-testid={`category-order-${order.id}`}
+                              >
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                  <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center flex-shrink-0">
+                                    <Package className="w-5 h-5 text-slate-400" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-mono text-sm font-medium text-white">{order.order_number}</span>
+                                      {order.qr_code && (
+                                        <span className="font-mono text-xs text-slate-500">{order.qr_code}</span>
+                                      )}
+                                      <Badge variant="outline" className="bg-slate-700/50 text-slate-300 border-slate-600 text-xs">
+                                        {deliveryTypeLabels[order.delivery_type] || order.delivery_type}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-sm text-slate-400 mt-1">
+                                      <span className="flex items-center gap-1">
+                                        <User className="w-3 h-3" />
+                                        {order.recipient?.name || 'Unknown'}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <MapPin className="w-3 h-3" />
+                                        {order.delivery_address?.city || 'Unknown'}
+                                      </span>
+                                      {order.time_window && (
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="w-3 h-3" />
+                                          {order.time_window}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {order.copay_amount > 0 && !order.copay_collected && (
+                                      <div className="flex items-center gap-1 text-xs text-amber-400 mt-1">
+                                        <DollarSign className="w-3 h-3" />
+                                        ${order.copay_amount.toFixed(2)} copay to collect
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  {order.driver_id && (
+                                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                                      <Truck className="w-3 h-3 mr-1" />
+                                      Driver Assigned
+                                    </Badge>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-slate-400 hover:text-white"
+                                    onClick={() => {
+                                      setSelectedOrder(order);
+                                      setShowDetailsModal(true);
+                                    }}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-teal-400 hover:text-teal-300"
+                                    onClick={() => openStatusModal(order)}
+                                    data-testid={`change-status-category-${order.id}`}
+                                  >
+                                    <RefreshCw className="w-4 h-4" />
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-white">
+                                        <MoreVertical className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                                      <DropdownMenuItem
+                                        className="text-slate-300 hover:bg-slate-700"
+                                        onClick={() => openDriverAssignModal(order)}
+                                      >
+                                        <Truck className="w-4 h-4 mr-2" />
+                                        Assign Driver
+                                      </DropdownMenuItem>
+                                      {order.tracking_url && (
+                                        <DropdownMenuItem
+                                          className="text-slate-300 hover:bg-slate-700"
+                                          onClick={() => window.open(order.tracking_url, '_blank')}
+                                        >
+                                          <ExternalLink className="w-4 h-4 mr-2" />
+                                          Track Order
+                                        </DropdownMenuItem>
+                                      )}
+                                      {!['delivered', 'cancelled', 'failed'].includes(order.status) && (
+                                        <DropdownMenuItem
+                                          className="text-red-400 hover:bg-slate-700"
+                                          onClick={() => handleCancelOrder(order.id)}
+                                        >
+                                          <XCircle className="w-4 h-4 mr-2" />
+                                          Cancel Order
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Smart Organizer View with Drag & Drop */}
       {viewMode === 'smart' && (
