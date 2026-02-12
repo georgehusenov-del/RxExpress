@@ -518,6 +518,49 @@ const OverviewSection = ({ stats, onRefresh }) => {
         </Card>
       )}
 
+      {/* Copay Collection Section */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader className="pb-3 border-b border-slate-700">
+          <CardTitle className="text-white flex items-center gap-2 text-base">
+            <DollarSign className="w-4 h-4 text-green-400" />
+            Copay Collection
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {copayCards.map((card, index) => (
+              <div
+                key={index}
+                className={`p-4 rounded-xl border ${
+                  card.color === 'amber' 
+                    ? 'bg-amber-500/10 border-amber-500/30' 
+                    : 'bg-emerald-500/10 border-emerald-500/30'
+                } cursor-pointer hover:scale-[1.02] transition-all`}
+                onClick={() => handleCardClick('orders')}
+                data-testid={`copay-card-${card.label.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-400">{card.label}</p>
+                    <p className={`text-3xl font-bold ${card.color === 'amber' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                      {card.value}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {card.count} orders • {card.description}
+                    </p>
+                  </div>
+                  <div className={`w-12 h-12 rounded-xl ${
+                    card.color === 'amber' ? 'bg-amber-500/20' : 'bg-emerald-500/20'
+                  } flex items-center justify-center`}>
+                    <card.icon className={`w-6 h-6 ${card.color === 'amber' ? 'text-amber-400' : 'text-emerald-400'}`} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Quick Actions Bar */}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader className="pb-3 border-b border-slate-700">
