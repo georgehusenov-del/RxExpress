@@ -1355,6 +1355,163 @@ async def admin_cancel_order(order_id: str, reason: str = "Cancelled by admin", 
     return {"message": "Order cancelled"}
 
 
+@admin_router.get("/scans")
+async def admin_list_scans(
+    skip: int = 0,
+    limit: int = 50,
+    order_id: Optional[str] = None,
+    action: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """List all package scans (admin only)"""
+    query = {}
+    if order_id:
+        query["order_id"] = order_id
+    if action:
+        query["action"] = action
+    
+    scans = await db.scan_logs.find(query, {"_id": 0}).sort("scanned_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.scan_logs.count_documents(query)
+    
+    # Enrich with user info
+    for scan in scans:
+        user = await db.users.find_one({"id": scan.get("scanned_by")}, {"_id": 0, "first_name": 1, "last_name": 1, "role": 1})
+        if user:
+            scan["scanned_by_name"] = f"{user.get('first_name', '')} {user.get('last_name', '')}"
+            scan["scanned_by_role"] = user.get("role")
+    
+    return {"scans": scans, "total": total, "skip": skip, "limit": limit}
+
+
+@admin_router.get("/scans/stats")
+async def admin_scan_stats(current_user: dict = Depends(require_admin)):
+    """Get scan statistics (admin only)"""
+    # Total scans
+    total_scans = await db.scan_logs.count_documents({})
+    
+    # Scans by action
+    pipeline = [
+        {"$group": {"_id": "$action", "count": {"$sum": 1}}}
+    ]
+    action_stats = await db.scan_logs.aggregate(pipeline).to_list(10)
+    
+    # Recent scans (last 24 hours)
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    recent_count = await db.scan_logs.count_documents({"scanned_at": {"$gte": yesterday}})
+    
+    # Scans by user
+    user_pipeline = [
+        {"$group": {"_id": "$scanned_by", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    user_stats = await db.scan_logs.aggregate(user_pipeline).to_list(10)
+    
+    # Enrich with user names
+    for stat in user_stats:
+        user = await db.users.find_one({"id": stat["_id"]}, {"_id": 0, "first_name": 1, "last_name": 1})
+        if user:
+            stat["name"] = f"{user.get('first_name', '')} {user.get('last_name', '')}"
+    
+    return {
+        "total_scans": total_scans,
+        "recent_scans_24h": recent_count,
+        "scans_by_action": {s["_id"]: s["count"] for s in action_stats},
+        "top_scanners": user_stats
+    }
+
+
+@admin_router.get("/packages")
+async def admin_list_packages(
+    skip: int = 0,
+    limit: int = 50,
+    scanned: Optional[bool] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """List all packages across orders (admin only)"""
+    # Get orders with packages
+    orders = await db.orders.find(
+        {"packages": {"$exists": True, "$ne": []}},
+        {"_id": 0, "id": 1, "order_number": 1, "status": 1, "packages": 1, "recipient": 1, "pharmacy_name": 1}
+    ).skip(skip).limit(limit).to_list(limit)
+    
+    packages = []
+    for order in orders:
+        for pkg in order.get("packages", []):
+            pkg_data = {
+                **pkg,
+                "order_id": order["id"],
+                "order_number": order["order_number"],
+                "order_status": order["status"],
+                "recipient_name": order.get("recipient", {}).get("name"),
+                "pharmacy_name": order.get("pharmacy_name")
+            }
+            # Filter by scanned status if specified
+            if scanned is not None:
+                is_scanned = pkg.get("scanned_at") is not None
+                if is_scanned == scanned:
+                    packages.append(pkg_data)
+            else:
+                packages.append(pkg_data)
+    
+    return {"packages": packages, "count": len(packages)}
+
+
+@admin_router.post("/packages/verify/{qr_code}")
+async def admin_verify_package(qr_code: str, current_user: dict = Depends(require_admin)):
+    """Manually verify a package by QR code (admin only)"""
+    # Find the package
+    order = await db.orders.find_one(
+        {"packages.qr_code": qr_code},
+        {"_id": 0}
+    )
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    # Find the specific package
+    package = None
+    for pkg in order.get("packages", []):
+        if pkg.get("qr_code") == qr_code:
+            package = pkg
+            break
+    
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    # Mark as verified by admin
+    now = datetime.now(timezone.utc)
+    await db.orders.update_one(
+        {"id": order["id"], "packages.qr_code": qr_code},
+        {"$set": {
+            "packages.$.admin_verified": True,
+            "packages.$.admin_verified_at": now.isoformat(),
+            "packages.$.admin_verified_by": current_user["sub"]
+        }}
+    )
+    
+    # Log the verification
+    scan_log = {
+        "id": str(uuid.uuid4()),
+        "qr_code": qr_code,
+        "order_id": order["id"],
+        "scanned_by": current_user["sub"],
+        "scanned_at": now.isoformat(),
+        "action": "admin_verify",
+        "location": None
+    }
+    await db.scan_logs.insert_one(scan_log)
+    
+    return {
+        "message": "Package verified by admin",
+        "package_id": package.get("id"),
+        "qr_code": qr_code,
+        "order_id": order["id"],
+        "order_number": order.get("order_number"),
+        "verified_at": now.isoformat()
+    }
+
+
 @admin_router.get("/reports/daily")
 async def admin_daily_report(date: str = None, current_user: dict = Depends(require_admin)):
     """Get daily delivery report"""
