@@ -82,6 +82,7 @@ export const adminAPI = {
   verifyDriver: (driverId) => api.put(`/admin/drivers/${driverId}/verify`),
   getOrders: (params = {}) => api.get('/admin/orders', { params }),
   cancelOrder: (orderId, reason = 'Cancelled by admin') => api.put(`/admin/orders/${orderId}/cancel?reason=${encodeURIComponent(reason)}`),
+  updateOrderStatus: (orderId, status, notes = null) => api.put(`/admin/orders/${orderId}/status?status=${status}${notes ? `&notes=${encodeURIComponent(notes)}` : ''}`),
   getDailyReport: (date = null) => api.get('/admin/reports/daily', { params: date ? { date } : {} }),
   // Scan tracking APIs
   getScans: (params = {}) => api.get('/admin/scans', { params }),
@@ -99,6 +100,17 @@ export const scanAPI = {
     action: action,
     location: location
   }),
+};
+
+// Driver Portal APIs
+export const driverPortalAPI = {
+  getProfile: () => api.get('/driver-portal/profile'),
+  getDeliveries: (status = null) => api.get('/driver-portal/deliveries', { params: status ? { status } : {} }),
+  getDeliveryDetails: (orderId) => api.get(`/driver-portal/deliveries/${orderId}`),
+  updateDeliveryStatus: (orderId, status, notes = null) => api.put(`/driver-portal/deliveries/${orderId}/status?status=${status}${notes ? `&notes=${encodeURIComponent(notes)}` : ''}`),
+  scanPackage: (orderId, qrCode, action, latitude = null, longitude = null) => api.post(`/driver-portal/deliveries/${orderId}/scan?qr_code=${qrCode}&action=${action}${latitude ? `&latitude=${latitude}&longitude=${longitude}` : ''}`),
+  updateLocation: (latitude, longitude) => api.put(`/driver-portal/location?latitude=${latitude}&longitude=${longitude}`),
+  updateStatus: (status) => api.put(`/driver-portal/status?status=${status}`),
 };
 
 // Service Zones APIs
