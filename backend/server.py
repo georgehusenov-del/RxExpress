@@ -1918,10 +1918,10 @@ async def admin_reassign_order(
 
 @admin_router.post("/orders/optimize-route")
 async def admin_optimize_route_preview(
-    order_ids: List[str] = [],
-    borough: Optional[str] = None,
-    time_window: Optional[str] = None,
-    depot_address: str = "123 Main St, New York, NY 10001",
+    borough: Optional[str] = Query(None),
+    time_window: Optional[str] = Query(None),
+    depot_address: str = Query("123 Main St, New York, NY 10001"),
+    request_body: dict = Body(default={}),
     current_user: dict = Depends(require_admin)
 ):
     """
@@ -1929,6 +1929,8 @@ async def admin_optimize_route_preview(
     Can specify order_ids directly or filter by borough/time_window.
     Returns optimized sequence with ETAs and distances.
     """
+    order_ids = request_body.get("order_ids", [])
+    
     # Build query to fetch orders
     query = {"status": {"$nin": ["delivered", "cancelled", "failed"]}}
     
