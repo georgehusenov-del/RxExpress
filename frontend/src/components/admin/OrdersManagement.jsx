@@ -286,6 +286,29 @@ export const OrdersManagement = () => {
           <p className="text-sm text-slate-400">View and manage all delivery orders</p>
         </div>
         <div className="flex items-center gap-3">
+          {/* View Mode Toggle */}
+          <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`px-3 py-1.5 ${viewMode === 'list' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              onClick={() => setViewMode('list')}
+              data-testid="view-mode-list"
+            >
+              <List className="w-4 h-4 mr-1" />
+              List
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`px-3 py-1.5 ${viewMode === 'smart' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              onClick={() => setViewMode('smart')}
+              data-testid="view-mode-smart"
+            >
+              <LayoutGrid className="w-4 h-4 mr-1" />
+              Smart Organizer
+            </Button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
@@ -312,7 +335,181 @@ export const OrdersManagement = () => {
         </div>
       </div>
 
-      {/* Orders Table */}
+      {/* Smart Organizer View */}
+      {viewMode === 'smart' && (
+        <div className="space-y-4" data-testid="smart-organizer">
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {Object.entries(boroughConfig).map(([code, config]) => {
+              const data = organizedOrders[code];
+              return (
+                <Card 
+                  key={code}
+                  className={`bg-gradient-to-br ${config.bgClass} border cursor-pointer transition-all hover:scale-[1.02]`}
+                  onClick={() => data && toggleBorough(code)}
+                  data-testid={`borough-summary-${code}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-slate-400">{config.name}</p>
+                        <p className="text-2xl font-bold text-white">{data?.total || 0}</p>
+                        <p className="text-xs text-slate-500">orders</p>
+                      </div>
+                      <div className={`w-10 h-10 rounded-lg bg-${config.color}-500/30 flex items-center justify-center`}>
+                        <span className="text-lg font-bold text-white">{code}</span>
+                      </div>
+                    </div>
+                    {data?.totalCopay > 0 && (
+                      <div className="mt-2 flex items-center gap-1 text-xs text-amber-400">
+                        <DollarSign className="w-3 h-3" />
+                        ${data.totalCopay.toFixed(2)} copay to collect
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Borough Sections */}
+          <div className="space-y-4">
+            {Object.entries(organizedOrders).map(([borough, data]) => {
+              const config = boroughConfig[borough] || { name: 'Other Areas', color: 'slate', bgClass: 'from-slate-500/20 to-slate-600/10 border-slate-500/30' };
+              const isExpanded = expandedBoroughs[borough] !== false; // Default expanded
+              
+              return (
+                <Card key={borough} className="bg-slate-800 border-slate-700 overflow-hidden">
+                  <Collapsible open={isExpanded} onOpenChange={() => toggleBorough(borough)}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className={`cursor-pointer bg-gradient-to-r ${config.bgClass} border-b border-slate-700 py-3`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
+                            <div className={`w-8 h-8 rounded-lg bg-${config.color}-500/30 flex items-center justify-center`}>
+                              <span className="text-sm font-bold text-white">{borough}</span>
+                            </div>
+                            <div>
+                              <CardTitle className="text-base font-medium text-white">{config.name}</CardTitle>
+                              <p className="text-xs text-slate-400">{data.total} active deliveries</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs">
+                            <span className="text-amber-400"><Sun className="w-3 h-3 inline mr-1" />{data.morning.length}</span>
+                            <span className="text-orange-400"><Sunset className="w-3 h-3 inline mr-1" />{data.afternoon.length}</span>
+                            <span className="text-indigo-400"><Moon className="w-3 h-3 inline mr-1" />{data.evening.length}</span>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <CardContent className="p-0">
+                        {/* Time Window Sections */}
+                        {Object.entries(timeWindowConfig).map(([tw, twConfig]) => {
+                          const twOrders = data[tw];
+                          if (twOrders.length === 0) return null;
+                          
+                          const twKey = `${borough}-${tw}`;
+                          const isTwExpanded = expandedTimeWindows[twKey] !== false;
+                          const TimeIcon = twConfig.icon;
+                          
+                          return (
+                            <Collapsible key={tw} open={isTwExpanded} onOpenChange={() => toggleTimeWindow(borough, tw)}>
+                              <CollapsibleTrigger asChild>
+                                <div className={`flex items-center justify-between px-4 py-2 bg-slate-700/30 border-b border-slate-700 cursor-pointer hover:bg-slate-700/50`}>
+                                  <div className="flex items-center gap-2">
+                                    {isTwExpanded ? <ChevronDown className="w-4 h-4 text-slate-500" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
+                                    <TimeIcon className={`w-4 h-4 text-${twConfig.color}-400`} />
+                                    <span className="text-sm text-slate-300">{twConfig.label}</span>
+                                    <Badge className={`bg-${twConfig.color}-500/20 text-${twConfig.color}-400 border-${twConfig.color}-500/30`}>
+                                      {twOrders.length}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </CollapsibleTrigger>
+                              
+                              <CollapsibleContent>
+                                <div className="divide-y divide-slate-700/50">
+                                  {twOrders.map(order => (
+                                    <div 
+                                      key={order.id}
+                                      className="flex items-center justify-between px-4 py-3 hover:bg-slate-700/30 transition-colors"
+                                      data-testid={`smart-order-${order.id}`}
+                                    >
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-8 h-8 rounded bg-slate-700 flex items-center justify-center">
+                                          <Package className="w-4 h-4 text-slate-400" />
+                                        </div>
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-mono text-sm text-white">{order.order_number}</span>
+                                            <Badge variant="outline" className={statusColors[order.status]}>
+                                              {statusLabels[order.status]}
+                                            </Badge>
+                                            {order.qr_code && (
+                                              <span className="text-xs font-mono text-slate-500">{order.qr_code}</span>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                                            <span><User className="w-3 h-3 inline mr-1" />{order.recipient?.name}</span>
+                                            <span><MapPin className="w-3 h-3 inline mr-1" />{order.delivery_address?.street}</span>
+                                            {order.copay_amount > 0 && !order.copay_collected && (
+                                              <span className="text-amber-400"><DollarSign className="w-3 h-3 inline" />${order.copay_amount.toFixed(2)}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-slate-400 hover:text-white"
+                                          onClick={() => {
+                                            setSelectedOrder(order);
+                                            setShowDetailsModal(true);
+                                          }}
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-teal-400 hover:text-teal-300"
+                                          onClick={() => openStatusModal(order)}
+                                        >
+                                          <RefreshCw className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          );
+                        })}
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              );
+            })}
+            
+            {Object.keys(organizedOrders).length === 0 && (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-8 text-center">
+                  <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No active orders to organize</p>
+                  <p className="text-sm text-slate-500">All orders are either delivered, cancelled, or no orders exist</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* List View (Original Table) */}
+      {viewMode === 'list' && (
       <Card className="bg-slate-800 border-slate-700">
         <CardContent className="p-0">
           <Table>
