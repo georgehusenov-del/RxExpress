@@ -36,6 +36,7 @@ from auth import (
 )
 from notifications import notification_service
 from maps_service import maps_service
+from circuit_service import circuit_service
 
 # Configure logging
 logging.basicConfig(
