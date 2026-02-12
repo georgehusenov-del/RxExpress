@@ -78,8 +78,16 @@ export const adminAPI = {
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
   getPharmacies: (params = {}) => api.get('/admin/pharmacies', { params }),
   verifyPharmacy: (pharmacyId) => api.put(`/admin/pharmacies/${pharmacyId}/verify`),
+  // Driver management
   getDrivers: (params = {}) => api.get('/admin/drivers', { params }),
+  createDriver: (driverData) => api.post('/admin/drivers', null, { params: driverData }),
+  updateDriver: (driverId, driverData) => api.put(`/admin/drivers/${driverId}`, null, { params: driverData }),
   verifyDriver: (driverId) => api.put(`/admin/drivers/${driverId}/verify`),
+  updateDriverStatus: (driverId, status) => api.put(`/admin/drivers/${driverId}/status?status=${status}`),
+  activateDriver: (driverId) => api.put(`/admin/drivers/${driverId}/activate`),
+  deactivateDriver: (driverId) => api.put(`/admin/drivers/${driverId}/deactivate`),
+  deleteDriver: (driverId) => api.delete(`/admin/drivers/${driverId}`),
+  // Orders
   getOrders: (params = {}) => api.get('/admin/orders', { params }),
   cancelOrder: (orderId, reason = 'Cancelled by admin') => api.put(`/admin/orders/${orderId}/cancel?reason=${encodeURIComponent(reason)}`),
   updateOrderStatus: (orderId, status, notes = null) => api.put(`/admin/orders/${orderId}/status?status=${status}${notes ? `&notes=${encodeURIComponent(notes)}` : ''}`),
@@ -89,6 +97,10 @@ export const adminAPI = {
   getScanStats: () => api.get('/admin/scans/stats'),
   getPackages: (params = {}) => api.get('/admin/packages', { params }),
   verifyPackage: (qrCode) => api.post(`/admin/packages/verify/${qrCode}`),
+  // POD APIs
+  getPods: (params = {}) => api.get('/admin/pod', { params }),
+  getPod: (podId) => api.get(`/admin/pod/${podId}`),
+  getOrderPod: (orderId) => api.get(`/admin/orders/${orderId}/pod`),
 };
 
 // QR Scanning APIs
@@ -111,6 +123,9 @@ export const driverPortalAPI = {
   scanPackage: (orderId, qrCode, action, latitude = null, longitude = null) => api.post(`/driver-portal/deliveries/${orderId}/scan?qr_code=${qrCode}&action=${action}${latitude ? `&latitude=${latitude}&longitude=${longitude}` : ''}`),
   updateLocation: (latitude, longitude) => api.put(`/driver-portal/location?latitude=${latitude}&longitude=${longitude}`),
   updateStatus: (status) => api.put(`/driver-portal/status?status=${status}`),
+  // POD APIs
+  submitPod: (orderId, podData) => api.post(`/driver-portal/deliveries/${orderId}/pod`, null, { params: podData }),
+  getPod: (orderId) => api.get(`/driver-portal/deliveries/${orderId}/pod`),
 };
 
 // Service Zones APIs
