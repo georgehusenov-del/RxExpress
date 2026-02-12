@@ -2076,16 +2076,8 @@ async def admin_optimize_route_preview(
     total_distance = 0
     total_duration = 0
     current_lat, current_lng = depot_lat, depot_lng
-    
-    # Determine start hour
-    if start_hour is not None:
-        route_start_hour = start_hour
-    elif optimized_stops:
-        route_start_hour = optimized_stops[0].get("time_window_start", 8)
-    else:
-        route_start_hour = 8
-    
-    current_time_mins = route_start_hour * 60  # Convert to minutes from midnight
+    route_start_hour = start_hour or 8
+    current_time_mins = route_start_hour * 60
     
     for i, stop in enumerate(optimized_stops):
         stop_lat = stop.get("latitude") or depot_lat
@@ -2099,16 +2091,13 @@ async def admin_optimize_route_preview(
         total_duration += drive_time + stop_time
         current_time_mins += drive_time + stop_time
         
-        # Calculate actual clock time
+        # Calculate ETA
         eta_hour = int(current_time_mins // 60)
         eta_min = int(current_time_mins % 60)
         period = "AM" if eta_hour < 12 else "PM"
         display_hour = eta_hour if eta_hour <= 12 else eta_hour - 12
         if display_hour == 0:
             display_hour = 12
-        
-        # Check if within time window
-        is_on_time = eta_hour < stop.get("time_window_end", 24)
         
         stop["sequence"] = i + 1
         stop["distance_from_previous"] = round(distance, 2)
@@ -2117,23 +2106,8 @@ async def admin_optimize_route_preview(
         stop["cumulative_time"] = round(total_duration, 1)
         stop["cumulative_distance"] = round(total_distance, 2)
         stop["estimated_arrival"] = f"{int(display_hour)}:{eta_min:02d} {period}"
-        stop["eta_hour_24"] = eta_hour
-        stop["eta_minutes"] = eta_min
-        stop["is_on_time"] = is_on_time
-        stop["deadline"] = f"{stop.get('time_window_end', 12)}:00 {'PM' if stop.get('time_window_end', 12) >= 12 else 'AM'}"
         
         current_lat, current_lng = stop_lat, stop_lng
-    
-    # Calculate summary stats
-    on_time_count = sum(1 for s in optimized_stops if s.get("is_on_time", True))
-    late_count = len(optimized_stops) - on_time_count
-    
-    # Group by time window for summary
-    by_tw_summary = defaultdict(lambda: {"count": 0, "distance": 0})
-    for stop in optimized_stops:
-        tw = stop.get("time_window", "unknown")
-        by_tw_summary[tw]["count"] += 1
-        by_tw_summary[tw]["distance"] += stop.get("distance_from_previous", 0)
     
     # Group by borough for summary
     by_borough_summary = defaultdict(lambda: {"count": 0, "distance": 0})
@@ -2160,12 +2134,8 @@ async def admin_optimize_route_preview(
         "depot_address": depot_address,
         "time_window": time_window,
         "borough": borough,
-        "optimization_mode": optimize_mode,
         "route_start_time": f"{route_start_hour}:00 {'AM' if route_start_hour < 12 else 'PM'}",
         "route_end_time": f"{int(end_display_hour)}:{end_min:02d} {end_period}",
-        "on_time_deliveries": on_time_count,
-        "late_deliveries": late_count,
-        "by_time_window": dict(by_tw_summary),
         "by_borough": dict(by_borough_summary),
     }
 
