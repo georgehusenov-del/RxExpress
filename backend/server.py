@@ -1711,6 +1711,256 @@ async def check_service_availability(zip_code: str):
     return {"available": False, "message": "Service not available in this area"}
 
 
+# ============== Driver Portal Routes ==============
+driver_portal_router = APIRouter(prefix="/driver-portal", tags=["Driver Portal"])
+
+
+async def require_driver(current_user: dict = Depends(get_current_user)):
+    """Dependency to require driver role"""
+    if current_user.get("role") not in ["driver", "admin"]:
+        raise HTTPException(status_code=403, detail="Driver access required")
+    return current_user
+
+
+@driver_portal_router.get("/profile")
+async def get_driver_profile(current_user: dict = Depends(require_driver)):
+    """Get driver's profile and stats"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    user = await db.users.find_one({"id": current_user["sub"]}, {"_id": 0, "hashed_password": 0})
+    
+    # Get driver stats
+    total_deliveries = await db.orders.count_documents({"driver_id": driver["id"], "status": "delivered"})
+    active_deliveries = await db.orders.count_documents({
+        "driver_id": driver["id"],
+        "status": {"$in": ["assigned", "picked_up", "in_transit", "out_for_delivery"]}
+    })
+    
+    return {
+        "driver": driver,
+        "user": user,
+        "stats": {
+            "total_deliveries": total_deliveries,
+            "active_deliveries": active_deliveries,
+            "rating": driver.get("rating", 5.0)
+        }
+    }
+
+
+@driver_portal_router.get("/deliveries")
+async def get_driver_deliveries(
+    status: Optional[str] = None,
+    current_user: dict = Depends(require_driver)
+):
+    """Get deliveries assigned to the driver"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    query = {"driver_id": driver["id"]}
+    if status:
+        query["status"] = status
+    else:
+        # By default, get active deliveries
+        query["status"] = {"$in": ["assigned", "picked_up", "in_transit", "out_for_delivery"]}
+    
+    orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
+    
+    # Enrich with pharmacy info
+    for order in orders:
+        pharmacy = await db.pharmacies.find_one({"id": order.get("pharmacy_id")}, {"_id": 0, "name": 1, "phone": 1, "address": 1})
+        if pharmacy:
+            order["pharmacy"] = pharmacy
+    
+    return {"deliveries": orders, "count": len(orders)}
+
+
+@driver_portal_router.get("/deliveries/{order_id}")
+async def get_driver_delivery_details(order_id: str, current_user: dict = Depends(require_driver)):
+    """Get delivery details for a specific order"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    order = await db.orders.find_one({"id": order_id, "driver_id": driver["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Delivery not found or not assigned to you")
+    
+    # Get pharmacy info
+    pharmacy = await db.pharmacies.find_one({"id": order.get("pharmacy_id")}, {"_id": 0})
+    
+    return {
+        "order": order,
+        "pharmacy": pharmacy
+    }
+
+
+@driver_portal_router.put("/deliveries/{order_id}/status")
+async def update_delivery_status(
+    order_id: str,
+    status: str,
+    notes: Optional[str] = None,
+    current_user: dict = Depends(require_driver)
+):
+    """Update delivery status (driver)"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    # Verify order is assigned to this driver
+    order = await db.orders.find_one({"id": order_id, "driver_id": driver["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Delivery not found or not assigned to you")
+    
+    # Validate status transitions for driver
+    allowed_statuses = ["picked_up", "in_transit", "out_for_delivery", "delivered", "failed"]
+    if status not in allowed_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Allowed: {allowed_statuses}")
+    
+    old_status = order.get("status")
+    
+    # Update order status
+    update_data = {
+        "status": status,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if status == "picked_up":
+        update_data["picked_up_at"] = datetime.now(timezone.utc).isoformat()
+    elif status == "delivered":
+        update_data["delivered_at"] = datetime.now(timezone.utc).isoformat()
+    elif status == "failed":
+        update_data["failure_reason"] = notes or "Delivery failed"
+    
+    await db.orders.update_one({"id": order_id}, {"$set": update_data})
+    
+    # Log status change
+    status_log = {
+        "id": str(uuid.uuid4()),
+        "order_id": order_id,
+        "old_status": old_status,
+        "new_status": status,
+        "changed_by": current_user.get("sub"),
+        "changed_at": datetime.now(timezone.utc).isoformat(),
+        "notes": notes,
+        "changed_by_role": "driver"
+    }
+    await db.status_logs.insert_one(status_log)
+    
+    # Update driver status
+    if status in ["delivered", "failed"]:
+        await db.drivers.update_one(
+            {"id": driver["id"]},
+            {"$set": {"status": DriverStatus.AVAILABLE}}
+        )
+    
+    return {"message": f"Delivery status updated to {status}", "old_status": old_status, "new_status": status}
+
+
+@driver_portal_router.post("/deliveries/{order_id}/scan")
+async def driver_scan_package(
+    order_id: str,
+    qr_code: str,
+    action: str,  # pickup or delivery
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    current_user: dict = Depends(require_driver)
+):
+    """Scan package during pickup or delivery"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    # Verify order is assigned to this driver
+    order = await db.orders.find_one({"id": order_id, "driver_id": driver["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Delivery not found or not assigned to you")
+    
+    # Verify QR code belongs to this order
+    package_found = False
+    for pkg in order.get("packages", []):
+        if pkg.get("qr_code") == qr_code:
+            package_found = True
+            break
+    
+    if not package_found:
+        raise HTTPException(status_code=400, detail="QR code does not match this delivery")
+    
+    # Update package scan
+    now = datetime.now(timezone.utc)
+    scan_field = "pickup_scanned_at" if action == "pickup" else "delivery_scanned_at"
+    
+    await db.orders.update_one(
+        {"id": order_id, "packages.qr_code": qr_code},
+        {"$set": {
+            f"packages.$.{scan_field}": now.isoformat(),
+            f"packages.$.{scan_field}_by": current_user["sub"]
+        }}
+    )
+    
+    # Log the scan
+    scan_log = {
+        "id": str(uuid.uuid4()),
+        "qr_code": qr_code,
+        "order_id": order_id,
+        "scanned_by": current_user["sub"],
+        "scanned_at": now.isoformat(),
+        "action": action,
+        "location": {"latitude": latitude, "longitude": longitude} if latitude and longitude else None
+    }
+    await db.scan_logs.insert_one(scan_log)
+    
+    return {
+        "message": f"Package scanned for {action}",
+        "qr_code": qr_code,
+        "order_id": order_id,
+        "scanned_at": now.isoformat()
+    }
+
+
+@driver_portal_router.put("/location")
+async def update_driver_location(
+    latitude: float,
+    longitude: float,
+    current_user: dict = Depends(require_driver)
+):
+    """Update driver's current location"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    await db.drivers.update_one(
+        {"id": driver["id"]},
+        {"$set": {
+            "current_location": {"latitude": latitude, "longitude": longitude},
+            "location_updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Location updated"}
+
+
+@driver_portal_router.put("/status")
+async def update_driver_status(status: str, current_user: dict = Depends(require_driver)):
+    """Update driver's availability status"""
+    driver = await db.drivers.find_one({"user_id": current_user["sub"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    valid_statuses = [s.value for s in DriverStatus]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Valid: {valid_statuses}")
+    
+    await db.drivers.update_one(
+        {"id": driver["id"]},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": f"Status updated to {status}"}
+
+
 # ============== Public Tracking Routes (No Auth Required) ==============
 @public_router.get("/{tracking_number}")
 async def public_track_order(tracking_number: str):
