@@ -18,17 +18,18 @@ load_dotenv(ROOT_DIR / '.env')
 
 # Import models
 from models import (
-    UserRole, OrderStatus, DriverStatus, PaymentStatus,
+    UserRole, OrderStatus, DriverStatus, PaymentStatus, DeliveryType, TimeWindow,
     User, UserCreate, UserLogin, UserResponse, TokenResponse,
-    Pharmacy, PharmacyCreate,
+    Pharmacy, PharmacyCreate, PharmacyLocation, PharmacyLocationCreate,
     DriverProfile, DriverCreate, DriverLocationUpdate, DriverStatusUpdate,
     Order, OrderCreate, OrderUpdate, OrderStatusUpdate,
-    DeliveryProof, DeliveryProofCreate,
+    DeliveryProof, DeliveryProofCreate, DeliveryRecipient,
     PaymentTransaction, CreateCheckoutRequest,
-    LocationHistory, LocationPoint,
+    LocationPoint, Package, TrackingEvent, PublicTrackingInfo,
     RouteOptimizationRequest, RouteOptimizationResponse,
     NotificationRequest, DistanceMatrixRequest, GeocodeRequest, GeocodeResponse,
-    PrescriptionItem, Address
+    PrescriptionItem, Address,
+    ServiceZone, ServiceZoneCreate, QRCodeScan, QRCodeResponse
 )
 from auth import (
     get_password_hash, verify_password, create_access_token,
