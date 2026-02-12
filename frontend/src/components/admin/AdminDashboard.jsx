@@ -33,7 +33,14 @@ export const AdminDashboard = () => {
   const fetchDashboardStats = useCallback(async () => {
     try {
       const response = await adminAPI.getDashboard();
-      setDashboardStats(response.data);
+      // Only update state if data has changed to prevent flickering
+      setDashboardStats(prevStats => {
+        const newData = response.data;
+        if (JSON.stringify(prevStats) === JSON.stringify(newData)) {
+          return prevStats; // No change, don't trigger re-render
+        }
+        return newData;
+      });
     } catch (err) {
       console.error('Failed to fetch dashboard:', err);
       toast.error('Failed to load dashboard stats');
