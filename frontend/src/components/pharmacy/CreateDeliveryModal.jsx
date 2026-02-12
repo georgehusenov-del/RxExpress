@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
@@ -8,20 +8,25 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import {
-  Truck, Package, MapPin, User, Clock, Plus, X, Loader2
+  Truck, Package, MapPin, User, Clock, Plus, X, Loader2,
+  DollarSign, Snowflake, Zap, Calendar, Sun, Moon
 } from 'lucide-react';
-import { ordersAPI } from '@/lib/api';
+import { ordersAPI, publicAPI } from '@/lib/api';
 import { toast } from 'sonner';
 
 export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [pricing, setPricing] = useState(null);
+  const [loadingPricing, setLoadingPricing] = useState(true);
   
   const [formData, setFormData] = useState({
     // Delivery Type
     delivery_type: 'next_day',
-    time_window: null,
+    time_window: '8am-1pm',
+    selected_pricing_id: null,
     
     // Recipient
     recipient_name: '',
@@ -50,11 +55,49 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     requires_signature: true,
     requires_photo_proof: true,
     requires_id_verification: false,
-    delivery_notes: ''
+    delivery_notes: '',
+    add_refrigerated: false
   });
+
+  // Fetch pricing on mount
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const response = await publicAPI.getActivePricing();
+        setPricing(response.data);
+        
+        // Set default selection to first next_day option
+        const nextDayOptions = response.data.grouped?.next_day || [];
+        if (nextDayOptions.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            selected_pricing_id: nextDayOptions[0].id,
+            time_window: nextDayOptions[0].time_window_start ? 
+              `${nextDayOptions[0].time_window_start}-${nextDayOptions[0].time_window_end}` : null
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch pricing:', err);
+        toast.error('Failed to load pricing options');
+      } finally {
+        setLoadingPricing(false);
+      }
+    };
+    fetchPricing();
+  }, []);
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const selectPricing = (pricingOption) => {
+    setFormData(prev => ({
+      ...prev,
+      delivery_type: pricingOption.delivery_type,
+      selected_pricing_id: pricingOption.id,
+      time_window: pricingOption.time_window_start ? 
+        `${pricingOption.time_window_start}-${pricingOption.time_window_end}` : null
+    }));
   };
 
   const addPackage = () => {
@@ -89,16 +132,39 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     }
   };
 
+  // Calculate total price
+  const calculateTotal = () => {
+    let total = 0;
+    
+    // Get selected pricing
+    const selectedOption = pricing?.pricing?.find(p => p.id === formData.selected_pricing_id);
+    if (selectedOption) {
+      total += selectedOption.base_price;
+    }
+    
+    // Add refrigerated fee if needed
+    if (formData.add_refrigerated || formData.packages.some(p => p.requires_refrigeration)) {
+      const refrigeratedFee = pricing?.grouped?.addons?.find(p => 
+        p.name.toLowerCase().includes('refrigerat')
+      );
+      if (refrigeratedFee) {
+        total += refrigeratedFee.base_price;
+      }
+    }
+    
+    return total;
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      // Get pharmacy ID from user context (simplified - should come from auth)
       const pharmacyId = localStorage.getItem('pharmacy_id') || 'e4172010-3a02-4635-9a24-f9f566e995a0';
       
       const orderData = {
         pharmacy_id: pharmacyId,
         delivery_type: formData.delivery_type,
-        time_window: formData.delivery_type === 'time_window' ? formData.time_window : null,
+        time_window: formData.time_window,
+        pricing_id: formData.selected_pricing_id,
         recipient: {
           name: formData.recipient_name,
           phone: formData.recipient_phone,
@@ -126,7 +192,8 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
         requires_signature: formData.requires_signature,
         requires_photo_proof: formData.requires_photo_proof,
         requires_id_verification: formData.requires_id_verification,
-        delivery_notes: formData.delivery_notes || null
+        delivery_notes: formData.delivery_notes || null,
+        estimated_cost: calculateTotal()
       };
 
       const response = await ordersAPI.create(orderData);
@@ -140,6 +207,25 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     }
   };
 
+  const getTimeIcon = (timeWindow) => {
+    if (!timeWindow) return Clock;
+    if (timeWindow.includes('08:00') || timeWindow.includes('8am')) return Sun;
+    if (timeWindow.includes('16:00') || timeWindow.includes('4pm')) return Moon;
+    return Clock;
+  };
+
+  const formatTimeWindow = (start, end) => {
+    if (!start || !end) return '';
+    const formatTime = (t) => {
+      const [h, m] = t.split(':');
+      const hour = parseInt(h);
+      const ampm = hour >= 12 ? 'pm' : 'am';
+      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+      return `${displayHour}${ampm}`;
+    };
+    return `${formatTime(start)} - ${formatTime(end)}`;
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -149,89 +235,167 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
             Create New Delivery
           </DialogTitle>
           <DialogDescription>
-            Step {step} of 3: {step === 1 ? 'Delivery Type' : step === 2 ? 'Recipient & Address' : 'Packages'}
+            Step {step} of 3: {step === 1 ? 'Delivery Type & Pricing' : step === 2 ? 'Recipient & Address' : 'Packages'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4">
-          {/* Step 1: Delivery Type */}
+          {/* Step 1: Delivery Type with Pricing */}
           {step === 1 && (
-            <div className="space-y-4">
-              <Label className="text-base font-medium">Select Delivery Type</Label>
-              <RadioGroup
-                value={formData.delivery_type}
-                onValueChange={(value) => updateField('delivery_type', value)}
-                className="grid grid-cols-2 gap-4"
-              >
-                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.delivery_type === 'same_day' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'
-                }`}>
-                  <RadioGroupItem value="same_day" />
-                  <div>
-                    <p className="font-medium text-slate-900">Same Day</p>
-                    <p className="text-sm text-slate-500">Cutoff 2PM. Deliver today.</p>
-                  </div>
-                </label>
-
-                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.delivery_type === 'next_day' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'
-                }`}>
-                  <RadioGroupItem value="next_day" />
-                  <div>
-                    <p className="font-medium text-slate-900">Next Day</p>
-                    <p className="text-sm text-slate-500">Pickup today, deliver tomorrow.</p>
-                  </div>
-                </label>
-
-                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.delivery_type === 'priority' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'
-                }`}>
-                  <RadioGroupItem value="priority" />
-                  <div>
-                    <p className="font-medium text-slate-900">Priority</p>
-                    <p className="text-sm text-slate-500">First deliveries of the day. +$5</p>
-                  </div>
-                </label>
-
-                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.delivery_type === 'time_window' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'
-                }`}>
-                  <RadioGroupItem value="time_window" />
-                  <div>
-                    <p className="font-medium text-slate-900">Time Window</p>
-                    <p className="text-sm text-slate-500">Choose a specific window.</p>
-                  </div>
-                </label>
-              </RadioGroup>
-
-              {formData.delivery_type === 'time_window' && (
-                <div className="mt-4">
-                  <Label>Select Time Window</Label>
-                  <RadioGroup
-                    value={formData.time_window}
-                    onValueChange={(value) => updateField('time_window', value)}
-                    className="flex gap-4 mt-2"
-                  >
-                    <label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer ${
-                      formData.time_window === '8am-1pm' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'
-                    }`}>
-                      <RadioGroupItem value="8am-1pm" />
-                      <span className="text-sm">8AM - 1PM</span>
-                    </label>
-                    <label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer ${
-                      formData.time_window === '1pm-6pm' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'
-                    }`}>
-                      <RadioGroupItem value="1pm-6pm" />
-                      <span className="text-sm">1PM - 6PM</span>
-                    </label>
-                    <label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer ${
-                      formData.time_window === '4pm-9pm' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'
-                    }`}>
-                      <RadioGroupItem value="4pm-9pm" />
-                      <span className="text-sm">4PM - 9PM</span>
-                    </label>
-                  </RadioGroup>
+            <div className="space-y-6">
+              {loadingPricing ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+                  <span className="ml-2 text-slate-500">Loading pricing...</span>
                 </div>
+              ) : (
+                <>
+                  {/* Next Day Options */}
+                  <div>
+                    <Label className="text-base font-medium flex items-center gap-2 mb-3">
+                      <Calendar className="w-4 h-4 text-blue-500" />
+                      Next-Day Delivery
+                    </Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {pricing?.grouped?.next_day?.filter(p => !p.is_addon).map((option) => {
+                        const TimeIcon = getTimeIcon(option.time_window_start);
+                        const isSelected = formData.selected_pricing_id === option.id;
+                        return (
+                          <div
+                            key={option.id}
+                            onClick={() => selectPricing(option)}
+                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                              isSelected 
+                                ? 'border-teal-500 bg-teal-50 shadow-md' 
+                                : 'border-slate-200 hover:border-teal-300 hover:bg-slate-50'
+                            }`}
+                            data-testid={`pricing-option-${option.id}`}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <TimeIcon className={`w-5 h-5 ${isSelected ? 'text-teal-600' : 'text-slate-400'}`} />
+                              <span className="font-semibold text-slate-900">
+                                {formatTimeWindow(option.time_window_start, option.time_window_end)}
+                              </span>
+                            </div>
+                            <p className="text-2xl font-bold text-teal-600">${option.base_price}</p>
+                            <p className="text-xs text-slate-500 mt-1">{option.description}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Same Day */}
+                  <div>
+                    <Label className="text-base font-medium flex items-center gap-2 mb-3">
+                      <Zap className="w-4 h-4 text-amber-500" />
+                      Same-Day Delivery
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {pricing?.grouped?.same_day?.map((option) => {
+                        const isSelected = formData.selected_pricing_id === option.id;
+                        return (
+                          <div
+                            key={option.id}
+                            onClick={() => selectPricing(option)}
+                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                              isSelected 
+                                ? 'border-amber-500 bg-amber-50 shadow-md' 
+                                : 'border-slate-200 hover:border-amber-300 hover:bg-slate-50'
+                            }`}
+                            data-testid={`pricing-option-${option.id}`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-slate-900">{option.name}</span>
+                              <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
+                                Cutoff {option.cutoff_time?.replace(':00', '') || '2pm'}
+                              </Badge>
+                            </div>
+                            <p className="text-2xl font-bold text-amber-600">${option.base_price}</p>
+                            <p className="text-xs text-slate-500 mt-1">{option.description}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Priority */}
+                  <div>
+                    <Label className="text-base font-medium flex items-center gap-2 mb-3">
+                      <Zap className="w-4 h-4 text-purple-500" />
+                      Priority Delivery
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {pricing?.grouped?.priority?.map((option) => {
+                        const isSelected = formData.selected_pricing_id === option.id;
+                        return (
+                          <div
+                            key={option.id}
+                            onClick={() => selectPricing(option)}
+                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                              isSelected 
+                                ? 'border-purple-500 bg-purple-50 shadow-md' 
+                                : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50'
+                            }`}
+                            data-testid={`pricing-option-${option.id}`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-slate-900">{option.name}</span>
+                              <Badge variant="outline" className="border-purple-500 text-purple-600 text-xs">
+                                {formatTimeWindow(option.time_window_start, option.time_window_end)}
+                              </Badge>
+                            </div>
+                            <p className="text-2xl font-bold text-purple-600">${option.base_price}</p>
+                            <p className="text-xs text-slate-500 mt-1">{option.description}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Add-ons */}
+                  {pricing?.grouped?.addons?.length > 0 && (
+                    <div className="border-t pt-4">
+                      <Label className="text-base font-medium flex items-center gap-2 mb-3">
+                        <Snowflake className="w-4 h-4 text-cyan-500" />
+                        Add-ons
+                      </Label>
+                      <div className="space-y-2">
+                        {pricing.grouped.addons.map((addon) => (
+                          <label
+                            key={addon.id}
+                            className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                              formData.add_refrigerated 
+                                ? 'border-cyan-500 bg-cyan-50' 
+                                : 'border-slate-200 hover:border-cyan-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={formData.add_refrigerated}
+                                onCheckedChange={(checked) => updateField('add_refrigerated', checked)}
+                              />
+                              <div>
+                                <span className="font-medium text-slate-900">{addon.name}</span>
+                                <p className="text-xs text-slate-500">{addon.description}</p>
+                              </div>
+                            </div>
+                            <span className="font-bold text-cyan-600">+${addon.base_price}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Total */}
+                  <div className="bg-slate-100 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500">Estimated Delivery Cost</p>
+                      <p className="text-3xl font-bold text-slate-900">${calculateTotal().toFixed(2)}</p>
+                    </div>
+                    <DollarSign className="w-10 h-10 text-teal-500 opacity-50" />
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -416,7 +580,8 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                         checked={pkg.requires_refrigeration}
                         onCheckedChange={(checked) => updatePackage(index, 'requires_refrigeration', checked)}
                       />
-                      Requires Refrigeration
+                      <Snowflake className="w-3 h-3 text-cyan-500" />
+                      Requires Refrigeration (+$3)
                     </label>
                   </div>
                 </div>
@@ -459,6 +624,37 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                   rows={2}
                 />
               </div>
+
+              {/* Order Summary */}
+              <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                <h4 className="font-semibold text-teal-900 mb-2">Order Summary</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Delivery Type:</span>
+                    <span className="font-medium">{formData.delivery_type.replace('_', ' ')}</span>
+                  </div>
+                  {formData.time_window && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Time Window:</span>
+                      <span className="font-medium">{formData.time_window}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Packages:</span>
+                    <span className="font-medium">{formData.packages.length}</span>
+                  </div>
+                  {(formData.add_refrigerated || formData.packages.some(p => p.requires_refrigeration)) && (
+                    <div className="flex justify-between text-cyan-600">
+                      <span>Refrigerated:</span>
+                      <span>+$3.00</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-2 border-t border-teal-200 text-lg font-bold text-teal-900">
+                    <span>Total:</span>
+                    <span>${calculateTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -476,7 +672,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                 className="bg-teal-600 hover:bg-teal-700"
                 onClick={() => setStep(step + 1)}
                 disabled={
-                  (step === 1 && formData.delivery_type === 'time_window' && !formData.time_window) ||
+                  (step === 1 && !formData.selected_pricing_id) ||
                   (step === 2 && (!formData.recipient_name || !formData.recipient_phone || !formData.street || !formData.city || !formData.state || !formData.postal_code))
                 }
               >
@@ -491,7 +687,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                 {loading ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
                 ) : (
-                  'Create Delivery'
+                  <>Create Delivery - ${calculateTotal().toFixed(2)}</>
                 )}
               </Button>
             )}
