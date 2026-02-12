@@ -924,55 +924,37 @@ export const OrdersManagement = () => {
           
           {routePreviewData && (
             <div className="space-y-4 overflow-y-auto flex-1 pr-2">
-              {/* Route Summary - Enhanced */}
-              <div className="grid grid-cols-4 gap-2">
-                <div className="bg-gradient-to-br from-teal-500/20 to-teal-600/10 border border-teal-500/30 rounded-lg p-2.5">
-                  <div className="flex items-center gap-1.5 text-teal-400 mb-1">
-                    <Navigation className="w-3.5 h-3.5" />
-                    <span className="text-xs">Distance</span>
+              {/* Route Summary - Simplified */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-gradient-to-br from-teal-500/20 to-teal-600/10 border border-teal-500/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-teal-400 mb-1">
+                    <Navigation className="w-4 h-4" />
+                    <span className="text-xs">Total Distance</span>
                   </div>
-                  <p className="text-lg font-bold text-white">{routePreviewData.total_distance_miles} mi</p>
+                  <p className="text-xl font-bold text-white">{routePreviewData.total_distance_miles} mi</p>
                 </div>
-                <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-lg p-2.5">
-                  <div className="flex items-center gap-1.5 text-amber-400 mb-1">
-                    <Timer className="w-3.5 h-3.5" />
-                    <span className="text-xs">Duration</span>
+                <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-amber-400 mb-1">
+                    <Timer className="w-4 h-4" />
+                    <span className="text-xs">Est. Duration</span>
                   </div>
-                  <p className="text-lg font-bold text-white">
-                    {routePreviewData.total_duration_hours ? `${routePreviewData.total_duration_hours}h` : `${Math.round(routePreviewData.total_duration_minutes)}m`}
+                  <p className="text-xl font-bold text-white">
+                    {routePreviewData.total_duration_hours >= 1 
+                      ? `${routePreviewData.total_duration_hours}h` 
+                      : `${Math.round(routePreviewData.total_duration_minutes)}m`}
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 rounded-lg p-2.5">
-                  <div className="flex items-center gap-1.5 text-purple-400 mb-1">
-                    <Package className="w-3.5 h-3.5" />
-                    <span className="text-xs">Stops</span>
+                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-purple-400 mb-1">
+                    <Package className="w-4 h-4" />
+                    <span className="text-xs">Total Stops</span>
                   </div>
-                  <p className="text-lg font-bold text-white">{routePreviewData.total_stops}</p>
-                </div>
-                <div className={`bg-gradient-to-br ${routePreviewData.late_deliveries > 0 ? 'from-red-500/20 to-red-600/10 border-red-500/30' : 'from-green-500/20 to-green-600/10 border-green-500/30'} border rounded-lg p-2.5`}>
-                  <div className={`flex items-center gap-1.5 ${routePreviewData.late_deliveries > 0 ? 'text-red-400' : 'text-green-400'} mb-1`}>
-                    <Clock className="w-3.5 h-3.5" />
-                    <span className="text-xs">On Time</span>
-                  </div>
-                  <p className="text-lg font-bold text-white">
-                    {routePreviewData.on_time_deliveries || routePreviewData.total_stops}/{routePreviewData.total_stops}
-                  </p>
+                  <p className="text-xl font-bold text-white">{routePreviewData.total_stops}</p>
                 </div>
               </div>
 
-              {/* Route Time Info */}
-              <div className="bg-slate-700/50 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-300">Route Schedule</span>
-                  </div>
-                  <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
-                    <Zap className="w-3 h-3 mr-1" />
-                    {routePreviewData.optimization_mode === 'location_time' ? 'Location + Time' : 
-                     routePreviewData.optimization_mode === 'location_only' ? 'Location Only' : 'Time Priority'}
-                  </Badge>
-                </div>
+              {/* Route Schedule */}
+              <div className="bg-slate-700/50 rounded-lg p-3 flex items-center justify-between">
                 <div className="flex items-center gap-4 text-sm">
                   <div>
                     <span className="text-slate-500">Start:</span>
@@ -984,20 +966,28 @@ export const OrdersManagement = () => {
                     <span className="text-white ml-1 font-medium">{routePreviewData.route_end_time || 'N/A'}</span>
                   </div>
                 </div>
+                <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
+                  <Zap className="w-3 h-3 mr-1" />
+                  Nearest Neighbor
+                </Badge>
               </div>
 
-              {/* By Time Window Breakdown */}
-              {routePreviewData.by_time_window && Object.keys(routePreviewData.by_time_window).length > 0 && (
+              {/* By Borough Breakdown */}
+              {routePreviewData.by_borough && Object.keys(routePreviewData.by_borough).length > 0 && (
                 <div className="bg-slate-700/30 rounded-lg p-3">
-                  <p className="text-xs text-slate-400 mb-2">By Time Window</p>
+                  <p className="text-xs text-slate-400 mb-2">By Borough</p>
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(routePreviewData.by_time_window).map(([tw, data]) => (
-                      <div key={tw} className="flex items-center gap-2 bg-slate-800/50 rounded px-2 py-1">
-                        {tw === '8am-1pm' && <Sun className="w-3 h-3 text-amber-400" />}
-                        {tw === '1pm-4pm' && <Sunset className="w-3 h-3 text-orange-400" />}
-                        {tw === '4pm-10pm' && <Moon className="w-3 h-3 text-indigo-400" />}
-                        <span className="text-xs text-slate-300">{tw}</span>
+                    {Object.entries(routePreviewData.by_borough).map(([borough, data]) => (
+                      <div key={borough} className="flex items-center gap-2 bg-slate-800/50 rounded px-2 py-1">
+                        <MapPin className="w-3 h-3 text-teal-400" />
+                        <span className="text-xs text-slate-300">{borough}</span>
                         <Badge className="text-xs bg-slate-700 text-slate-300">{data.count}</Badge>
+                        <span className="text-xs text-slate-500">{data.distance?.toFixed(1)}mi</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
                       </div>
                     ))}
                   </div>
