@@ -806,6 +806,8 @@ export const OrdersManagement = () => {
                                           setShowDetailsModal(true);
                                         }}
                                         onChangeStatus={openStatusModal}
+                                        onAssignDriver={handleQuickAssignDriver}
+                                        drivers={drivers}
                                         statusColors={statusColors}
                                         statusLabels={statusLabels}
                                       />
