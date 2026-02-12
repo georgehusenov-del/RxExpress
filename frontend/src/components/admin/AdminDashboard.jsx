@@ -286,6 +286,26 @@ const OverviewSection = ({ stats, onRefresh }) => {
     },
   ];
 
+  // Copay stat cards
+  const copayCards = [
+    {
+      label: 'Copay to Collect',
+      value: `$${(statsData?.copay_to_collect || 0).toFixed(2)}`,
+      count: statsData?.orders_copay_pending || 0,
+      icon: DollarSign,
+      color: 'amber',
+      description: 'Pending collection'
+    },
+    {
+      label: 'Copay Collected',
+      value: `$${(statsData?.copay_collected || 0).toFixed(2)}`,
+      count: statsData?.orders_copay_collected || 0,
+      icon: CheckCircle,
+      color: 'emerald',
+      description: 'Successfully collected'
+    },
+  ];
+
   // Quick action buttons
   const quickActions = [
     {
