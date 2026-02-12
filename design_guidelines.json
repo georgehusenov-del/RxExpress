@@ -1,0 +1,118 @@
+{
+  "identity": {
+    "name": "RX Express Dispatch",
+    "tone": "Clinical Precision",
+    "archetype": "The Performance Pro (Medical Variant)",
+    "keywords": ["Reliable", "Efficient", "Sterile", "Urgent"]
+  },
+  "typography": {
+    "headings": {
+      "family": "Manrope, sans-serif",
+      "weights": ["600", "700", "800"],
+      "usage": "Use for all section titles, modal headers, and metric values."
+    },
+    "body": {
+      "family": "Inter, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Use for all standard text, labels, and data tables."
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "usage": "Use for Order IDs, Timestamps, and Coordinates."
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "#0F766E",
+        "foreground": "#FFFFFF",
+        "hover": "#115E59"
+      },
+      "secondary": {
+        "DEFAULT": "#F1F5F9",
+        "foreground": "#0F172A"
+      },
+      "background": "#F8FAFC",
+      "surface": "#FFFFFF",
+      "border": "#E2E8F0",
+      "muted": "#64748B"
+    },
+    "status": {
+      "active": "#22C55E",
+      "transit": "#3B82F6",
+      "pending": "#F59E0B",
+      "issue": "#EF4444",
+      "idle": "#94A3B8"
+    }
+  },
+  "layout": {
+    "structure": "Sidebar + Resizable Panels",
+    "spacing": {
+      "container_padding": "p-6",
+      "card_padding": "p-4",
+      "gap": "gap-4"
+    },
+    "grid_strategy": "Bento Mode B (High Density)",
+    "z_index": {
+      "map": 0,
+      "overlays": 10,
+      "modals": 50,
+      "toasts": 100
+    }
+  },
+  "components": {
+    "MapComponent": {
+      "description": "A visual mock of a live map using a background image and absolute positioned markers.",
+      "background_image": "https://images.unsplash.com/photo-1542382257-80dedb725088?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwxfHxjaXR5JTIwbWFwJTIwdG9wJTIwdmlldyUyMHBsYW58ZW58MHx8fHwxNzcwODc1MTE3fDA&ixlib=rb-4.1.0&q=85",
+      "features": ["Zoom controls (visual)", "Driver Markers", "Pharmacy Hub Marker"]
+    },
+    "OrderCard": {
+      "description": "Compact card showing Order ID, Status, ETA, and Patient Name.",
+      "style": "Flat, white background, left border color-coded by status."
+    },
+    "DriverList": {
+      "description": "Sidebar list of active drivers with status indicators.",
+      "style": "Dense list items with avatars."
+    }
+  },
+  "assets": {
+    "images": {
+      "map_bg": "https://images.unsplash.com/photo-1542382257-80dedb725088?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwxfHxjaXR5JTIwbWFwJTIwdG9wJTIwdmlldyUyMHBsYW58ZW58MHx8fHwxNzcwODc1MTE3fDA&ixlib=rb-4.1.0&q=85",
+      "driver_avatar_1": "https://images.unsplash.com/photo-1764328165995-0624c280a6d2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwxfHxkZWxpdmVyeSUyMGRyaXZlciUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc3MDg3NTA5Nnww&ixlib=rb-4.1.0&q=85"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "preferred": ["Activity", "MapPin", "Navigation", "Package", "Clock", "AlertCircle", "CheckCircle", "Truck", "User"]
+    }
+  },
+  "instructions_to_main_agent": [
+    "Use 'react-resizable-panels' for the main layout (Orders List | Map).",
+    "Implement a 'MockMap' component that uses the provided city image as a background. Overlay 'DriverMarker' components using absolute positioning and random coordinates for the MVP.",
+    "Use 'sonner' for all notifications (New Order, Driver Assigned).",
+    "Ensure the 'Assign Driver' modal is accessible via the Order Details panel.",
+    "Use 'Manrope' for all headings. Import it via Google Fonts in index.css.",
+    "Strictly follow the color palette. Do not use default Tailwind blue/red.",
+    "For the 'Active Deliveries' list, use a virtualized list if possible, or just a standard map for MVP.",
+    "Add 'data-testid' to all interactive elements (buttons, inputs, list items)."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Create new components that match the style and conventions of existing components when needed",
+    "Examine existing components to understand the project's component patterns before creating new ones",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use 'sonner' for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
