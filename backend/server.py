@@ -2971,6 +2971,18 @@ async def batch_import_orders_to_plan(
         delivery_address = order.get("delivery_address", {})
         recipient = order.get("recipient", {})
         
+        # Handle backward compatibility for orders without recipient
+        if not recipient or not recipient.get("name"):
+            patient_id = order.get("patient_id")
+            if patient_id:
+                patient = await db.users.find_one({"id": patient_id}, {"_id": 0})
+                if patient:
+                    recipient = {
+                        "name": f"{patient.get('first_name', '')} {patient.get('last_name', '')}".strip(),
+                        "email": patient.get("email"),
+                        "phone": patient.get("phone")
+                    }
+        
         stop_data = {
             "address": {
                 "addressLineOne": delivery_address.get("street", ""),
@@ -2980,7 +2992,7 @@ async def batch_import_orders_to_plan(
                 "country": delivery_address.get("country", "US"),
             },
             "recipient": {
-                "name": recipient.get("name", ""),
+                "name": recipient.get("name", "Customer"),
                 "email": recipient.get("email"),
                 "phone": recipient.get("phone"),
                 "externalId": order.get("id")
