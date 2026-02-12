@@ -145,23 +145,26 @@ const timeWindowToApiFormat = {
   evening: '4pm-10pm',
 };
 
-// Draggable Order Card Component
-const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, statusColors, statusLabels }) => {
+// Draggable Order Card Component with Quick Driver Assign
+const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onAssignDriver, drivers, statusColors, statusLabels }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: order.id,
     data: { order },
   });
+  const [showDriverDropdown, setShowDriverDropdown] = useState(false);
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     zIndex: isDragging ? 1000 : 1,
   } : undefined;
 
+  const assignedDriver = drivers?.find(d => d.id === order.driver_id);
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center justify-between px-4 py-3 bg-slate-800/50 rounded-lg border border-slate-700 mb-2 transition-all ${
+      className={`flex items-center justify-between px-3 py-2.5 bg-slate-800/50 rounded-lg border border-slate-700 mb-2 transition-all ${
         isDragging ? 'opacity-50 shadow-2xl ring-2 ring-teal-500' : 'hover:bg-slate-700/50 hover:border-slate-600'
       }`}
       data-testid={`draggable-order-${order.id}`}
@@ -170,51 +173,100 @@ const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, statusColors
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 mr-3 text-slate-500 hover:text-slate-300"
+        className="cursor-grab active:cursor-grabbing p-1 mr-2 text-slate-500 hover:text-slate-300"
       >
         <GripVertical className="w-4 h-4" />
       </div>
       
-      <div className="flex items-center gap-4 flex-1">
-        <div className="w-8 h-8 rounded bg-slate-700 flex items-center justify-center">
-          <Package className="w-4 h-4 text-slate-400" />
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-7 h-7 rounded bg-slate-700 flex items-center justify-center flex-shrink-0">
+          <Package className="w-3.5 h-3.5 text-slate-400" />
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-sm text-white">{order.order_number}</span>
-            <Badge variant="outline" className={statusColors[order.status]}>
+            <Badge variant="outline" className={`text-xs px-1.5 py-0 ${statusColors[order.status]}`}>
               {statusLabels[order.status]}
             </Badge>
-            {order.qr_code && (
-              <span className="text-xs font-mono text-slate-500">{order.qr_code}</span>
-            )}
           </div>
-          <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
-            <span><User className="w-3 h-3 inline mr-1" />{order.recipient?.name}</span>
-            <span><MapPin className="w-3 h-3 inline mr-1" />{order.delivery_address?.street}</span>
+          <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5 truncate">
+            <span className="truncate"><User className="w-3 h-3 inline mr-0.5" />{order.recipient?.name}</span>
             {order.copay_amount > 0 && !order.copay_collected && (
-              <span className="text-amber-400"><DollarSign className="w-3 h-3 inline" />${order.copay_amount.toFixed(2)}</span>
+              <span className="text-amber-400 flex-shrink-0"><DollarSign className="w-3 h-3 inline" />${order.copay_amount.toFixed(2)}</span>
             )}
           </div>
         </div>
       </div>
       
-      <div className="flex items-center gap-2">
+      {/* Quick Driver Assign */}
+      <div className="relative flex-shrink-0 mr-2">
         <Button
           variant="ghost"
           size="sm"
-          className="text-slate-400 hover:text-white"
+          className={`h-7 px-2 ${order.driver_id ? 'text-green-400 hover:text-green-300' : 'text-slate-400 hover:text-white'}`}
+          onClick={() => setShowDriverDropdown(!showDriverDropdown)}
+          data-testid={`assign-driver-btn-${order.id}`}
+        >
+          <Truck className="w-3.5 h-3.5" />
+          {order.driver_id && <span className="ml-1 text-xs">✓</span>}
+        </Button>
+        
+        {showDriverDropdown && (
+          <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1 max-h-48 overflow-y-auto">
+            <div className="px-2 py-1 text-xs text-slate-500 border-b border-slate-700">Assign Driver</div>
+            {drivers?.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-slate-500">No available drivers</div>
+            ) : (
+              <>
+                {order.driver_id && (
+                  <button
+                    className="w-full px-3 py-2 text-left text-xs text-red-400 hover:bg-slate-700 flex items-center gap-2"
+                    onClick={() => {
+                      onAssignDriver(order.id, 'unassign');
+                      setShowDriverDropdown(false);
+                    }}
+                  >
+                    <XCircle className="w-3 h-3" />
+                    Unassign Driver
+                  </button>
+                )}
+                {drivers?.map(driver => (
+                  <button
+                    key={driver.id}
+                    className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700 flex items-center justify-between ${
+                      driver.id === order.driver_id ? 'bg-teal-500/20 text-teal-400' : 'text-slate-300'
+                    }`}
+                    onClick={() => {
+                      onAssignDriver(order.id, driver.id);
+                      setShowDriverDropdown(false);
+                    }}
+                  >
+                    <span className="truncate">{driver.first_name || driver.email} {driver.last_name || ''}</span>
+                    {driver.id === order.driver_id && <span className="text-teal-400">✓</span>}
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 text-slate-400 hover:text-white"
           onClick={() => onViewDetails(order)}
         >
-          <Eye className="w-4 h-4" />
+          <Eye className="w-3.5 h-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          className="text-teal-400 hover:text-teal-300"
+          className="h-7 w-7 p-0 text-teal-400 hover:text-teal-300"
           onClick={() => onChangeStatus(order)}
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className="w-3.5 h-3.5" />
         </Button>
       </div>
     </div>
