@@ -539,12 +539,12 @@ export const RouteManagement = () => {
                 className="w-40 bg-slate-700 border-slate-600 text-white text-sm"
                 placeholder="Filter by date"
               />
-              <Select value={filterDeliveryType} onValueChange={setFilterDeliveryType}>
+              <Select value={filterDeliveryType || "all"} onValueChange={(v) => setFilterDeliveryType(v === "all" ? "" : v)}>
                 <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white text-sm">
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="" className="text-white">All types</SelectItem>
+                  <SelectItem value="all" className="text-white">All types</SelectItem>
                   <SelectItem value="same_day" className="text-white">Same Day</SelectItem>
                   <SelectItem value="next_day" className="text-white">Next Day</SelectItem>
                   <SelectItem value="priority" className="text-white">Priority</SelectItem>
