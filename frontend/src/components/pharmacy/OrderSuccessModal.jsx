@@ -107,7 +107,28 @@ export const OrderSuccessModal = ({ order, onClose }) => {
               <span className="text-slate-600">Total Cost:</span>
               <span className="font-bold text-lg text-teal-600">${order.total_amount?.toFixed(2)}</span>
             </div>
+            {order.copay_amount > 0 && (
+              <div className="flex justify-between items-center pt-2 mt-2 border-t border-slate-200">
+                <span className="text-green-600 font-medium">Copay to Collect:</span>
+                <span className="font-bold text-lg text-green-600">${order.copay_amount?.toFixed(2)}</span>
+              </div>
+            )}
           </div>
+
+          {/* Copay Alert */}
+          {order.copay_amount > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-green-600 font-bold">$</span>
+              </div>
+              <div>
+                <p className="font-medium text-green-800">Copay Collection Required</p>
+                <p className="text-sm text-green-600">
+                  Driver will collect <strong>${order.copay_amount?.toFixed(2)}</strong> from patient upon delivery
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Main QR Code */}
           <div className="border-2 border-dashed border-teal-200 rounded-xl p-6 text-center bg-white">
