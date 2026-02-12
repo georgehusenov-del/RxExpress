@@ -30,7 +30,8 @@ import {
 import {
   Package, Search, Eye, MoreVertical, MapPin, Truck,
   Clock, XCircle, ExternalLink, Calendar, User, Edit, RefreshCw,
-  LayoutGrid, List, ChevronDown, ChevronRight, Sun, Sunset, Moon, DollarSign
+  LayoutGrid, List, ChevronDown, ChevronRight, Sun, Sunset, Moon, DollarSign,
+  GripVertical, UserPlus, ArrowRight
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -43,6 +44,17 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+} from '@dnd-kit/core';
 import { adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
 
