@@ -32,32 +32,8 @@ public class MongoDbService
     
     private void CreateIndexes()
     {
-        // Users indexes
-        var userEmailIndex = Builders<User>.IndexKeys.Ascending(u => u.Email);
-        Users.Indexes.CreateOne(new CreateIndexModel<User>(userEmailIndex, new CreateIndexOptions { Unique = true }));
-        
-        var userIdIndex = Builders<User>.IndexKeys.Ascending(u => u.Id);
-        Users.Indexes.CreateOne(new CreateIndexModel<User>(userIdIndex));
-        
-        // Orders indexes
-        var orderIdIndex = Builders<Order>.IndexKeys.Ascending(o => o.Id);
-        Orders.Indexes.CreateOne(new CreateIndexModel<Order>(orderIdIndex));
-        
-        var orderPharmacyIndex = Builders<Order>.IndexKeys.Ascending(o => o.PharmacyId);
-        Orders.Indexes.CreateOne(new CreateIndexModel<Order>(orderPharmacyIndex));
-        
-        var orderStatusIndex = Builders<Order>.IndexKeys.Ascending(o => o.Status);
-        Orders.Indexes.CreateOne(new CreateIndexModel<Order>(orderStatusIndex));
-        
-        // Pharmacies indexes
-        var pharmacyIdIndex = Builders<Pharmacy>.IndexKeys.Ascending(p => p.Id);
-        Pharmacies.Indexes.CreateOne(new CreateIndexModel<Pharmacy>(pharmacyIdIndex));
-        
-        // Drivers indexes
-        var driverIdIndex = Builders<DriverProfile>.IndexKeys.Ascending(d => d.Id);
-        Drivers.Indexes.CreateOne(new CreateIndexModel<DriverProfile>(driverIdIndex));
-        
-        var driverUserIdIndex = Builders<DriverProfile>.IndexKeys.Ascending(d => d.UserId);
-        Drivers.Indexes.CreateOne(new CreateIndexModel<DriverProfile>(driverUserIdIndex));
+        // Indexes are already created by the Python backend
+        // Skip index creation to avoid conflicts
+        // The existing indexes work fine with this .NET backend
     }
 }
