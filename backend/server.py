@@ -1921,19 +1921,13 @@ async def admin_optimize_route_preview(
     borough: Optional[str] = Query(None),
     time_window: Optional[str] = Query(None),
     depot_address: str = Query("123 Main St, New York, NY 10001"),
-    start_hour: Optional[int] = Query(None, description="Start hour in 24h format (e.g., 8 for 8am)"),
-    optimize_mode: str = Query("location_time", description="Optimization mode: location_only, time_only, location_time"),
+    start_hour: Optional[int] = Query(8, description="Start hour in 24h format (e.g., 8 for 8am)"),
     request_body: dict = Body(default={}),
     current_user: dict = Depends(require_admin)
 ):
     """
     Preview optimized route for a set of orders.
-    Optimizes by both geographic location and time constraints.
-    
-    optimize_mode:
-    - location_only: Pure nearest neighbor by distance
-    - time_only: Group by time windows, then by distance within each
-    - location_time: Smart optimization considering both distance and delivery deadlines
+    Optimizes purely by geographic location using nearest neighbor algorithm.
     """
     import math
     from collections import defaultdict
