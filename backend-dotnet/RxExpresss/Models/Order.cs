@@ -83,6 +83,7 @@ public class Package
     public string? ScannedAt { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class Order
 {
     [BsonId]
