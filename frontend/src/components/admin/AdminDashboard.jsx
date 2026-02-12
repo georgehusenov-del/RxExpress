@@ -213,6 +213,9 @@ const OverviewSection = ({ stats, onRefresh }) => {
   const statsData = stats?.stats || stats || {};
   const recentOrders = stats?.recent_orders || [];
   
+  // Filter orders ready for pickup
+  const readyForPickupOrders = recentOrders.filter(o => o.status === 'ready_for_pickup');
+  
   // Clickable stat cards that navigate to respective sections
   const statCards = [
     {
@@ -243,9 +246,20 @@ const OverviewSection = ({ stats, onRefresh }) => {
       description: 'Manage driver fleet'
     },
     {
+      label: 'Ready for Pickup',
+      value: statsData?.orders_by_status?.ready_for_pickup || readyForPickupOrders.length || 0,
+      icon: Package,
+      color: 'cyan',
+      change: null,
+      navigateTo: 'orders',
+      description: 'Awaiting driver pickup',
+      urgent: (statsData?.orders_by_status?.ready_for_pickup || 0) > 0,
+      highlight: true
+    },
+    {
       label: 'Pending Orders',
       value: statsData?.orders_by_status?.pending || 0,
-      icon: Package,
+      icon: Clock,
       color: 'amber',
       change: null,
       navigateTo: 'orders',
@@ -255,7 +269,7 @@ const OverviewSection = ({ stats, onRefresh }) => {
     {
       label: 'In Transit',
       value: statsData?.orders_by_status?.in_transit || 0,
-      icon: Clock,
+      icon: Truck,
       color: 'purple',
       change: null,
       navigateTo: 'orders',
