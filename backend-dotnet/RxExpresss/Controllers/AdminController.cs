@@ -459,9 +459,9 @@ public class AdminController : ControllerBase
             remaining.Remove(nearest);
         }
         
-        var routeStartTime = $"{startHour % 12}:00 {(startHour >= 12 ? "PM" : "AM")}";
-        var endHour = (startHour * 60 + (int)totalDuration) / 60;
-        var endMin = (startHour * 60 + (int)totalDuration) % 60;
+        var routeStartTime = $"{startHourValue % 12}:00 {(startHourValue >= 12 ? "PM" : "AM")}";
+        var endHour = (startHourValue * 60 + (int)totalDuration) / 60;
+        var endMin = (startHourValue * 60 + (int)totalDuration) % 60;
         var routeEndTime = $"{endHour % 12}:{endMin:D2} {(endHour >= 12 ? "PM" : "AM")}";
         
         return Ok(new
@@ -473,7 +473,7 @@ public class AdminController : ControllerBase
             total_duration_hours = Math.Round(totalDuration / 60, 1),
             route_start_time = routeStartTime,
             route_end_time = routeEndTime,
-            borough = dto.Borough
+            borough = borough ?? dto.Borough
         });
     }
     
