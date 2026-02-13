@@ -1507,9 +1507,12 @@ export const OrdersManagement = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={statusColors[order.status] || statusColors.pending}>
-                        {statusLabels[order.status] || order.status}
-                      </Badge>
+                      <InlineStatusSelect
+                        order={order}
+                        onStatusChange={handleQuickStatusChange}
+                        statusColors={statusColors}
+                        statusLabels={statusLabels}
+                      />
                     </TableCell>
                     <TableCell className="text-slate-400 text-sm">
                       {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
