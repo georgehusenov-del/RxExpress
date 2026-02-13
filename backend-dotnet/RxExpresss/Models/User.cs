@@ -44,6 +44,7 @@ public class User
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 }
 
+[BsonIgnoreExtraElements]
 public class Address
 {
     [BsonElement("street")]
