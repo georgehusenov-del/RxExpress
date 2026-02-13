@@ -126,35 +126,42 @@ const timeWindowConfig = {
   evening: { label: '4pm - 10pm', icon: Moon, color: 'indigo', start: 16, end: 22 },
 };
 
-// Status Category configuration for Categories View
+// Status Category configuration for Categories View (Simplified)
 const statusCategoryConfig = {
   ready_for_pickup: { 
-    label: 'Ready for Pickup', 
+    label: 'Ready', 
     icon: Package, 
     color: 'cyan',
     bgClass: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30',
-    description: 'Packages ready to be picked up by drivers'
+    description: 'Ready for driver pickup'
   },
   pending: { 
-    label: 'Pending', 
+    label: 'New', 
     icon: Clock, 
     color: 'amber',
     bgClass: 'from-amber-500/20 to-amber-600/10 border-amber-500/30',
-    description: 'Orders awaiting confirmation'
+    description: 'New orders awaiting processing'
   },
   assigned: { 
     label: 'Assigned', 
     icon: UserCheck, 
     color: 'indigo',
     bgClass: 'from-indigo-500/20 to-indigo-600/10 border-indigo-500/30',
-    description: 'Orders assigned to drivers'
+    description: 'Assigned to drivers'
   },
   confirmed: { 
-    label: 'Confirmed', 
+    label: 'Processing', 
     icon: CheckCircle2, 
     color: 'blue',
     bgClass: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
-    description: 'Confirmed orders ready to be processed'
+    description: 'Being prepared by pharmacy'
+  },
+  in_transit: { 
+    label: 'In Transit', 
+    icon: Truck, 
+    color: 'purple',
+    bgClass: 'from-purple-500/20 to-purple-600/10 border-purple-500/30',
+    description: 'Out for delivery'
   },
 };
 
