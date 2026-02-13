@@ -60,45 +60,51 @@ import { adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { RouteMapPreview } from './RouteMapPreview';
 
-// Simplified Status System
-// Flow: Ready → Assigned → In Transit → Delivered
+// Status System
+// Flow: New → Picked Up → In Transit → Out for Delivery → Delivered
 const statusColors = {
   // Primary statuses
-  ready_for_pickup: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  assigned: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+  new: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  picked_up: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   in_transit: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  out_for_delivery: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
   delivered: 'bg-green-500/20 text-green-400 border-green-500/30',
-  cancelled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
   failed: 'bg-red-500/20 text-red-400 border-red-500/30',
-  // Legacy statuses (map to current)
-  pending: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  confirmed: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  picked_up: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  out_for_delivery: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  canceled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+  // Legacy status mappings
+  pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  confirmed: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  ready_for_pickup: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  assigned: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
+  cancelled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
 };
 
 const statusLabels = {
   // Primary Labels
-  ready_for_pickup: 'Ready',
-  assigned: 'Assigned',
+  new: 'New',
+  picked_up: 'Picked Up',
   in_transit: 'In Transit',
+  out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',
-  cancelled: 'Cancelled',
   failed: 'Failed',
+  canceled: 'Canceled',
   // Legacy mappings
-  pending: 'Ready',
-  confirmed: 'Ready',
-  picked_up: 'In Transit',
-  out_for_delivery: 'In Transit',
+  pending: 'New',
+  confirmed: 'New',
+  ready_for_pickup: 'New',
+  assigned: 'Out for Delivery',
+  cancelled: 'Canceled',
 };
 
-// Status flow for dropdowns (simplified options)
+// Status flow for dropdowns
 const availableStatuses = [
-  { value: 'ready_for_pickup', label: 'Ready', description: 'Ready for driver pickup' },
-  { value: 'assigned', label: 'Assigned', description: 'Driver assigned' },
-  { value: 'in_transit', label: 'In Transit', description: 'Out for delivery' },
-  { value: 'delivered', label: 'Delivered', description: 'Successfully delivered' },
-  { value: 'cancelled', label: 'Cancelled', description: 'Order cancelled' },
+  { value: 'new', label: 'New', description: 'Order just received pick up' },
+  { value: 'picked_up', label: 'Picked Up', description: 'Package picked up from pharmacy' },
+  { value: 'in_transit', label: 'In Transit', description: 'Arrived in the warehouse' },
+  { value: 'out_for_delivery', label: 'Out for Delivery', description: 'Assigned to a delivery person' },
+  { value: 'delivered', label: 'Delivered', description: 'Successful delivery' },
+  { value: 'failed', label: 'Failed', description: 'Patient not home or other reasons' },
+  { value: 'canceled', label: 'Canceled', description: 'Pharmacy or patient canceled it' },
 ];
 
 const deliveryTypeLabels = {
