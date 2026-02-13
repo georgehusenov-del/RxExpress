@@ -411,8 +411,8 @@ public class AdminController : ControllerBase
         var sequence = 1;
         var totalDistance = 0.0;
         var totalDuration = 0.0;
-        var startHour = dto.StartHour ?? 8;
-        var currentTimeMins = startHour * 60;
+        var startHourValue = start_hour ?? dto.StartHour ?? 8;
+        var currentTimeMins = startHourValue * 60;
         
         while (remaining.Count > 0)
         {
