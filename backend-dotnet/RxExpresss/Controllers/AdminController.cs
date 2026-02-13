@@ -921,6 +921,8 @@ public class AdminController : ControllerBase
                 delivery_type = order.DeliveryType,
                 time_window = order.TimeWindow,
                 recipient = order.Recipient,
+                recipient_name = order.Recipient?.Name ?? "Unknown",
+                recipient_phone = order.Recipient?.Phone,
                 delivery_address = order.DeliveryAddress,
                 pickup_address = order.PickupAddress,
                 driver_id = order.DriverId,
