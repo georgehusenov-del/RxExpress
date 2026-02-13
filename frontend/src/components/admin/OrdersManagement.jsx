@@ -950,10 +950,16 @@ export const OrdersManagement = () => {
                                 </div>
                                 
                                 <div className="flex items-center gap-2 flex-shrink-0">
+                                  <InlineStatusSelect
+                                    order={order}
+                                    onStatusChange={handleQuickStatusChange}
+                                    statusColors={statusColors}
+                                    statusLabels={statusLabels}
+                                  />
                                   {order.driver_id && (
                                     <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
                                       <Truck className="w-3 h-3 mr-1" />
-                                      Driver Assigned
+                                      Assigned
                                     </Badge>
                                   )}
                                   <Button
@@ -966,15 +972,6 @@ export const OrdersManagement = () => {
                                     }}
                                   >
                                     <Eye className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 text-teal-400 hover:text-teal-300"
-                                    onClick={() => openStatusModal(order)}
-                                    data-testid={`change-status-category-${order.id}`}
-                                  >
-                                    <RefreshCw className="w-4 h-4" />
                                   </Button>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
