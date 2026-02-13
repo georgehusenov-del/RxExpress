@@ -24,46 +24,97 @@ public class AdminController : ControllerBase
     
     [HttpGet("stats")]
     [HttpGet("dashboard")]
-    public async Task<ActionResult<AdminStatsDto>> GetDashboardStats()
+    public async Task<ActionResult> GetDashboardStats()
     {
         var today = DateTime.UtcNow.Date;
         var todayStart = today.ToString("o");
         
         var totalUsers = await _db.Users.CountDocumentsAsync(FilterDefinition<User>.Empty);
-        var activePharmacies = await _db.Pharmacies.CountDocumentsAsync(p => p.IsActive);
-        var activeDrivers = await _db.Drivers.CountDocumentsAsync(d => d.Status == "available" || d.Status == "on_route");
-        var pendingOrders = await _db.Orders.CountDocumentsAsync(o => o.Status == "pending");
-        var readyForPickup = await _db.Orders.CountDocumentsAsync(o => o.Status == "ready_for_pickup");
-        var inTransit = await _db.Orders.CountDocumentsAsync(o => o.Status == "in_transit" || o.Status == "out_for_delivery");
+        var totalPharmacies = await _db.Pharmacies.CountDocumentsAsync(FilterDefinition<Pharmacy>.Empty);
+        var totalDrivers = await _db.Drivers.CountDocumentsAsync(FilterDefinition<DriverProfile>.Empty);
+        var activeDrivers = await _db.Drivers.CountDocumentsAsync(d => d.Status != "offline");
+        var totalOrders = await _db.Orders.CountDocumentsAsync(FilterDefinition<Order>.Empty);
         
-        // Count delivered today
-        var deliveredToday = await _db.Orders.CountDocumentsAsync(o => 
-            o.Status == "delivered" && 
-            o.ActualDeliveryTime != null &&
-            o.ActualDeliveryTime.CompareTo(todayStart) >= 0);
+        // Orders by status
+        var ordersByStatus = new Dictionary<string, long>
+        {
+            ["pending"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "pending"),
+            ["confirmed"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "confirmed"),
+            ["ready_for_pickup"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "ready_for_pickup"),
+            ["assigned"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "assigned"),
+            ["picked_up"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "picked_up"),
+            ["in_transit"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "in_transit"),
+            ["delivered"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "delivered"),
+            ["cancelled"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "cancelled")
+        };
         
         // Copay statistics
         var copayToCollect = await _db.Orders
             .Find(o => o.CopayAmount > 0 && !o.CopayCollected && o.Status != "cancelled" && o.Status != "failed")
             .ToListAsync();
         var copayToCollectSum = copayToCollect.Sum(o => o.CopayAmount);
+        var ordersCopayPending = copayToCollect.Count;
         
         var copayCollected = await _db.Orders
             .Find(o => o.CopayCollected)
             .ToListAsync();
         var copayCollectedSum = copayCollected.Sum(o => o.CopayAmount);
+        var ordersCopayCollected = copayCollected.Count;
         
-        return Ok(new AdminStatsDto
+        // Borough statistics from QR codes
+        var boroughStats = new Dictionary<string, int>();
+        var activeOrders = await _db.Orders
+            .Find(o => o.Status != "delivered" && o.Status != "cancelled" && o.QrCode != null)
+            .ToListAsync();
+        foreach (var order in activeOrders)
         {
-            TotalUsers = (int)totalUsers,
-            ActivePharmacies = (int)activePharmacies,
-            ActiveDrivers = (int)activeDrivers,
-            PendingOrders = (int)pendingOrders,
-            ReadyForPickup = (int)readyForPickup,
-            InTransit = (int)inTransit,
-            DeliveredToday = (int)deliveredToday,
-            CopayToCollect = copayToCollectSum,
-            CopayCollected = copayCollectedSum
+            if (!string.IsNullOrEmpty(order.QrCode) && order.QrCode.Length > 0)
+            {
+                var borough = order.QrCode[0].ToString();
+                boroughStats[borough] = boroughStats.GetValueOrDefault(borough, 0) + 1;
+            }
+        }
+        
+        // Recent orders
+        var recentOrders = await _db.Orders
+            .Find(FilterDefinition<Order>.Empty)
+            .SortByDescending(o => o.CreatedAt)
+            .Limit(10)
+            .ToListAsync();
+        
+        var recentOrdersResult = recentOrders.Select(o => new
+        {
+            o.Id,
+            o.OrderNumber,
+            o.QrCode,
+            o.PharmacyName,
+            o.Status,
+            o.DeliveryType,
+            o.TimeWindow,
+            o.Recipient,
+            o.DeliveryAddress,
+            o.CopayAmount,
+            o.CopayCollected,
+            o.CreatedAt
+        });
+        
+        return Ok(new
+        {
+            stats = new
+            {
+                total_users = totalUsers,
+                total_pharmacies = totalPharmacies,
+                total_drivers = totalDrivers,
+                active_drivers = activeDrivers,
+                total_orders = totalOrders,
+                orders_by_status = ordersByStatus,
+                copay_to_collect = copayToCollectSum,
+                copay_collected = copayCollectedSum,
+                orders_copay_pending = ordersCopayPending,
+                orders_copay_collected = ordersCopayCollected,
+                borough_stats = boroughStats
+            },
+            recent_orders = recentOrdersResult
         });
     }
     
