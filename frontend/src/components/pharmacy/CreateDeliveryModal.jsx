@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Truck, Package, MapPin, User, Clock, Plus, X, Loader2,
-  DollarSign, Snowflake, Zap, Calendar, Sun, Moon
+  Truck, Package, MapPin, Clock, Plus, X, Loader2,
+  DollarSign, Snowflake, Zap, Calendar, Sun, Sunset, Moon
 } from 'lucide-react';
 import { ordersAPI, publicAPI } from '@/lib/api';
 import { toast } from 'sonner';
@@ -23,27 +23,21 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
   const [pricing, setPricing] = useState(null);
   const [loadingPricing, setLoadingPricing] = useState(true);
   const [createdOrder, setCreatedOrder] = useState(null);
+  const [activeDeliveryTab, setActiveDeliveryTab] = useState('next_day');
   
   const [formData, setFormData] = useState({
-    // Delivery Type
     delivery_type: 'next_day',
     time_window: '8am-1pm',
     selected_pricing_id: null,
-    
-    // Recipient
     recipient_name: '',
     recipient_phone: '',
     recipient_email: '',
-    
-    // Address
     street: '',
     apt_unit: '',
     city: '',
     state: '',
     postal_code: '',
     delivery_instructions: '',
-    
-    // Packages
     packages: [{
       medication_name: '',
       rx_number: '',
@@ -52,33 +46,27 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
       requires_refrigeration: false,
       requires_signature: true
     }],
-    
-    // Options
     requires_signature: true,
     requires_photo_proof: true,
     requires_id_verification: false,
     delivery_notes: '',
     add_refrigerated: false,
-    
-    // Copay
     copay_amount: 0
   });
 
-  // Fetch pricing on mount
   useEffect(() => {
     const fetchPricing = async () => {
       try {
         const response = await publicAPI.getActivePricing();
         setPricing(response.data);
         
-        // Set default selection to first next_day option
         const nextDayOptions = response.data.grouped?.next_day || [];
         if (nextDayOptions.length > 0) {
           setFormData(prev => ({
             ...prev,
             selected_pricing_id: nextDayOptions[0].id,
             time_window: nextDayOptions[0].time_window_start ? 
-              `${nextDayOptions[0].time_window_start}-${nextDayOptions[0].time_window_end}` : null
+              formatTimeWindowForApi(nextDayOptions[0].time_window_start, nextDayOptions[0].time_window_end) : null
           }));
         }
       } catch (err) {
@@ -95,7 +83,6 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Convert time format from "08:00-13:00" to "8am-1pm"
   const formatTimeWindowForApi = (start, end) => {
     if (!start || !end) return null;
     const formatTime = (t) => {
@@ -106,6 +93,18 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
       return `${displayHour}${ampm}`;
     };
     return `${formatTime(start)}-${formatTime(end)}`;
+  };
+
+  const formatTimeWindow = (start, end) => {
+    if (!start || !end) return '';
+    const formatTime = (t) => {
+      const [h] = t.split(':');
+      const hour = parseInt(h);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+      return `${displayHour}${ampm}`;
+    };
+    return `${formatTime(start)} - ${formatTime(end)}`;
   };
 
   const selectPricing = (pricingOption) => {
@@ -119,6 +118,24 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
       selected_pricing_id: pricingOption.id,
       time_window: timeWindow
     }));
+  };
+
+  const handleTabChange = (tabValue) => {
+    setActiveDeliveryTab(tabValue);
+    
+    // Auto-select first option in the tab
+    let options = [];
+    if (tabValue === 'next_day') {
+      options = pricing?.grouped?.next_day || [];
+    } else if (tabValue === 'same_day') {
+      options = pricing?.grouped?.same_day || [];
+    } else if (tabValue === 'priority') {
+      options = pricing?.grouped?.priority || [];
+    }
+    
+    if (options.length > 0) {
+      selectPricing(options[0]);
+    }
   };
 
   const addPackage = () => {
@@ -153,17 +170,12 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     }
   };
 
-  // Calculate total price
   const calculateTotal = () => {
     let total = 0;
-    
-    // Get selected pricing
     const selectedOption = pricing?.pricing?.find(p => p.id === formData.selected_pricing_id);
     if (selectedOption) {
       total += selectedOption.base_price;
     }
-    
-    // Add refrigerated fee if needed
     if (formData.add_refrigerated || formData.packages.some(p => p.requires_refrigeration)) {
       const refrigeratedFee = pricing?.grouped?.addons?.find(p => 
         p.name.toLowerCase().includes('refrigerat')
@@ -172,7 +184,6 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
         total += refrigeratedFee.base_price;
       }
     }
-    
     return total;
   };
 
@@ -219,7 +230,6 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
       };
 
       const response = await ordersAPI.create(orderData);
-      // Show success modal with QR code
       setCreatedOrder({
         ...response.data,
         time_window: formData.time_window,
@@ -233,7 +243,6 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     }
   };
 
-  // If order was created, show success modal
   if (createdOrder) {
     return (
       <OrderSuccessModal 
@@ -246,23 +255,20 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     );
   }
 
-  const getTimeIcon = (timeWindow) => {
-    if (!timeWindow) return Clock;
-    if (timeWindow.includes('08:00') || timeWindow.includes('8am')) return Sun;
-    if (timeWindow.includes('16:00') || timeWindow.includes('4pm')) return Moon;
-    return Clock;
+  const getTimeIcon = (timeWindowStart) => {
+    if (!timeWindowStart) return Clock;
+    const hour = parseInt(timeWindowStart.split(':')[0]);
+    if (hour < 12) return Sun;
+    if (hour < 17) return Sunset;
+    return Moon;
   };
 
-  const formatTimeWindow = (start, end) => {
-    if (!start || !end) return '';
-    const formatTime = (t) => {
-      const [h, m] = t.split(':');
-      const hour = parseInt(h);
-      const ampm = hour >= 12 ? 'pm' : 'am';
-      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-      return `${displayHour}${ampm}`;
-    };
-    return `${formatTime(start)} - ${formatTime(end)}`;
+  const getTimeSlotLabel = (start, end) => {
+    if (!start) return '';
+    const hour = parseInt(start.split(':')[0]);
+    if (hour < 12) return 'Morning';
+    if (hour < 17) return 'Afternoon';
+    return 'Evening';
   };
 
   return (
@@ -279,7 +285,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
         </DialogHeader>
 
         <div className="mt-4">
-          {/* Step 1: Delivery Type with Pricing */}
+          {/* Step 1: Delivery Type with Tabs */}
           {step === 1 && (
             <div className="space-y-6">
               {loadingPricing ? (
@@ -289,110 +295,217 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                 </div>
               ) : (
                 <>
-                  {/* Next Day Options */}
-                  <div>
-                    <Label className="text-base font-medium flex items-center gap-2 mb-3">
-                      <Calendar className="w-4 h-4 text-blue-500" />
-                      Next-Day Delivery
-                    </Label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {pricing?.grouped?.next_day?.filter(p => !p.is_addon).map((option) => {
-                        const TimeIcon = getTimeIcon(option.time_window_start);
-                        const isSelected = formData.selected_pricing_id === option.id;
-                        return (
-                          <div
-                            key={option.id}
-                            onClick={() => selectPricing(option)}
-                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                              isSelected 
-                                ? 'border-teal-500 bg-teal-50 shadow-md' 
-                                : 'border-slate-200 hover:border-teal-300 hover:bg-slate-50'
-                            }`}
-                            data-testid={`pricing-option-${option.id}`}
-                          >
-                            <div className="flex items-center gap-2 mb-2">
-                              <TimeIcon className={`w-5 h-5 ${isSelected ? 'text-teal-600' : 'text-slate-400'}`} />
-                              <span className="font-semibold text-slate-900">
-                                {formatTimeWindow(option.time_window_start, option.time_window_end)}
-                              </span>
-                            </div>
-                            <p className="text-2xl font-bold text-teal-600">${option.base_price}</p>
-                            <p className="text-xs text-slate-500 mt-1">{option.description}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  {/* Delivery Type Tabs */}
+                  <Tabs value={activeDeliveryTab} onValueChange={handleTabChange} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 bg-slate-100 p-1 rounded-xl">
+                      <TabsTrigger 
+                        value="next_day" 
+                        className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-lg font-medium"
+                        data-testid="tab-next-day"
+                      >
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Next Day
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="same_day"
+                        className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-lg font-medium"
+                        data-testid="tab-same-day"
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        Same Day
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="priority"
+                        className="data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-lg font-medium"
+                        data-testid="tab-priority"
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        Priority
+                      </TabsTrigger>
+                    </TabsList>
 
-                  {/* Same Day */}
-                  <div>
-                    <Label className="text-base font-medium flex items-center gap-2 mb-3">
-                      <Zap className="w-4 h-4 text-amber-500" />
-                      Same-Day Delivery
-                    </Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {pricing?.grouped?.same_day?.map((option) => {
-                        const isSelected = formData.selected_pricing_id === option.id;
-                        return (
-                          <div
-                            key={option.id}
-                            onClick={() => selectPricing(option)}
-                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                              isSelected 
-                                ? 'border-amber-500 bg-amber-50 shadow-md' 
-                                : 'border-slate-200 hover:border-amber-300 hover:bg-slate-50'
-                            }`}
-                            data-testid={`pricing-option-${option.id}`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-semibold text-slate-900">{option.name}</span>
-                              <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
-                                Cutoff {option.cutoff_time?.replace(':00', '') || '2pm'}
-                              </Badge>
+                    {/* Next Day Tab Content */}
+                    <TabsContent value="next_day" className="mt-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                        <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Select Delivery Time Window
+                        </h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                          Choose when you want the package delivered tomorrow
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        {pricing?.grouped?.next_day?.filter(p => !p.is_addon).map((option) => {
+                          const TimeIcon = getTimeIcon(option.time_window_start);
+                          const isSelected = formData.selected_pricing_id === option.id;
+                          const timeLabel = getTimeSlotLabel(option.time_window_start, option.time_window_end);
+                          
+                          return (
+                            <div
+                              key={option.id}
+                              onClick={() => selectPricing(option)}
+                              className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                                isSelected 
+                                  ? 'border-blue-500 bg-blue-50 shadow-md' 
+                                  : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
+                              }`}
+                              data-testid={`pricing-option-${option.id}`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                  isSelected ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                  <TimeIcon className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-lg text-slate-900">
+                                      {formatTimeWindow(option.time_window_start, option.time_window_end)}
+                                    </span>
+                                    <Badge variant="outline" className={`${
+                                      isSelected ? 'border-blue-500 text-blue-600' : 'border-slate-300 text-slate-500'
+                                    }`}>
+                                      {timeLabel}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-slate-500 mt-1">{option.description}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-2xl font-bold ${isSelected ? 'text-blue-600' : 'text-slate-700'}`}>
+                                  ${option.base_price}
+                                </p>
+                                {isSelected && (
+                                  <Badge className="bg-blue-500 text-white mt-1">Selected</Badge>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-2xl font-bold text-amber-600">${option.base_price}</p>
-                            <p className="text-xs text-slate-500 mt-1">{option.description}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                          );
+                        })}
+                      </div>
+                    </TabsContent>
 
-                  {/* Priority */}
-                  <div>
-                    <Label className="text-base font-medium flex items-center gap-2 mb-3">
-                      <Zap className="w-4 h-4 text-purple-500" />
-                      Priority Delivery
-                    </Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {pricing?.grouped?.priority?.map((option) => {
-                        const isSelected = formData.selected_pricing_id === option.id;
-                        return (
-                          <div
-                            key={option.id}
-                            onClick={() => selectPricing(option)}
-                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                              isSelected 
-                                ? 'border-purple-500 bg-purple-50 shadow-md' 
-                                : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50'
-                            }`}
-                            data-testid={`pricing-option-${option.id}`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-semibold text-slate-900">{option.name}</span>
-                              <Badge variant="outline" className="border-purple-500 text-purple-600 text-xs">
-                                {formatTimeWindow(option.time_window_start, option.time_window_end)}
-                              </Badge>
+                    {/* Same Day Tab Content */}
+                    <TabsContent value="same_day" className="mt-4">
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                        <h4 className="font-semibold text-amber-900 flex items-center gap-2">
+                          <Zap className="w-4 h-4" />
+                          Same-Day Express Delivery
+                        </h4>
+                        <p className="text-sm text-amber-700 mt-1">
+                          Get your package delivered today
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        {pricing?.grouped?.same_day?.map((option) => {
+                          const isSelected = formData.selected_pricing_id === option.id;
+                          
+                          return (
+                            <div
+                              key={option.id}
+                              onClick={() => selectPricing(option)}
+                              className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                                isSelected 
+                                  ? 'border-amber-500 bg-amber-50 shadow-md' 
+                                  : 'border-slate-200 hover:border-amber-300 hover:bg-slate-50'
+                              }`}
+                              data-testid={`pricing-option-${option.id}`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                  isSelected ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                  <Zap className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <span className="font-bold text-lg text-slate-900">{option.name}</span>
+                                  <p className="text-sm text-slate-500 mt-1">{option.description}</p>
+                                  {option.cutoff_time && (
+                                    <Badge variant="outline" className="border-amber-500 text-amber-600 mt-2">
+                                      <Clock className="w-3 h-3 mr-1" />
+                                      Order before {option.cutoff_time.replace(':00', '')}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-2xl font-bold ${isSelected ? 'text-amber-600' : 'text-slate-700'}`}>
+                                  ${option.base_price}
+                                </p>
+                                {isSelected && (
+                                  <Badge className="bg-amber-500 text-white mt-1">Selected</Badge>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-2xl font-bold text-purple-600">${option.base_price}</p>
-                            <p className="text-xs text-slate-500 mt-1">{option.description}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                          );
+                        })}
+                      </div>
+                    </TabsContent>
 
-                  {/* Add-ons */}
+                    {/* Priority Tab Content */}
+                    <TabsContent value="priority" className="mt-4">
+                      <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4">
+                        <h4 className="font-semibold text-purple-900 flex items-center gap-2">
+                          <Zap className="w-4 h-4" />
+                          Priority Delivery
+                        </h4>
+                        <p className="text-sm text-purple-700 mt-1">
+                          First delivery of the day - guaranteed early delivery
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        {pricing?.grouped?.priority?.map((option) => {
+                          const isSelected = formData.selected_pricing_id === option.id;
+                          
+                          return (
+                            <div
+                              key={option.id}
+                              onClick={() => selectPricing(option)}
+                              className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                                isSelected 
+                                  ? 'border-purple-500 bg-purple-50 shadow-md' 
+                                  : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50'
+                              }`}
+                              data-testid={`pricing-option-${option.id}`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                  isSelected ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                  <Zap className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-lg text-slate-900">{option.name}</span>
+                                    {option.time_window_start && option.time_window_end && (
+                                      <Badge variant="outline" className="border-purple-500 text-purple-600">
+                                        {formatTimeWindow(option.time_window_start, option.time_window_end)}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-slate-500 mt-1">{option.description}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-2xl font-bold ${isSelected ? 'text-purple-600' : 'text-slate-700'}`}>
+                                  ${option.base_price}
+                                </p>
+                                {isSelected && (
+                                  <Badge className="bg-purple-500 text-white mt-1">Selected</Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  {/* Add-ons Section */}
                   {pricing?.grouped?.addons?.length > 0 && (
                     <div className="border-t pt-4">
                       <Label className="text-base font-medium flex items-center gap-2 mb-3">
@@ -452,7 +565,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                     </p>
                   </div>
 
-                  {/* Total */}
+                  {/* Total Summary */}
                   <div className="bg-slate-100 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm text-slate-500">Delivery Cost</p>
@@ -598,11 +711,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                   <div className="flex items-center justify-between mb-3">
                     <span className="font-medium text-sm">Package #{index + 1}</span>
                     {formData.packages.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removePackage(index)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => removePackage(index)}>
                         <X className="w-4 h-4" />
                       </Button>
                     )}
@@ -701,7 +810,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-600">Delivery Type:</span>
-                    <span className="font-medium">{formData.delivery_type.replace('_', ' ')}</span>
+                    <span className="font-medium capitalize">{formData.delivery_type.replace('_', ' ')}</span>
                   </div>
                   {formData.time_window && (
                     <div className="flex justify-between">
