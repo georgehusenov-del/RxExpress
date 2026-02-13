@@ -645,7 +645,7 @@ export const OrdersManagement = () => {
 
   // Organize orders by status category
   const organizedByStatus = useMemo(() => {
-    const categoryStatuses = ['ready_for_pickup', 'pending', 'assigned', 'confirmed'];
+    const categoryStatuses = ['pending', 'confirmed', 'ready_for_pickup', 'assigned', 'in_transit'];
     const organized = {};
     
     categoryStatuses.forEach(status => {
