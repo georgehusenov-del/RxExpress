@@ -11,8 +11,8 @@ import {
 import { OrderDetailsModal } from './OrderDetailsModal';
 
 const statusConfig = {
-  pending: { label: 'New', color: 'bg-amber-500', icon: Clock },
-  confirmed: { label: 'Processing', color: 'bg-blue-500', icon: CheckCircle },
+  pending: { label: 'Ready', color: 'bg-cyan-500', icon: Clock },
+  confirmed: { label: 'Ready', color: 'bg-cyan-500', icon: CheckCircle },
   ready_for_pickup: { label: 'Ready', color: 'bg-cyan-500', icon: Package },
   assigned: { label: 'Assigned', color: 'bg-indigo-500', icon: Truck },
   picked_up: { label: 'In Transit', color: 'bg-purple-500', icon: Truck },
