@@ -356,7 +356,12 @@ public class AdminController : ControllerBase
     }
     
     [HttpPost("orders/optimize-route-preview")]
-    public async Task<ActionResult> OptimizeRoutePreview([FromBody] RouteOptimizationRequestDto dto)
+    [HttpPost("orders/optimize-route")]
+    public async Task<ActionResult> OptimizeRoutePreview(
+        [FromBody] RouteOptimizationRequestDto dto,
+        [FromQuery] string? borough = null,
+        [FromQuery] string? time_window = null,
+        [FromQuery] int? start_hour = null)
     {
         var orderIds = dto.OrderIds;
         
