@@ -13,6 +13,7 @@ public class MongoDbService
     public IMongoCollection<Order> Orders => _database.GetCollection<Order>("orders");
     public IMongoCollection<DeliveryPricing> Pricing => _database.GetCollection<DeliveryPricing>("delivery_pricing");
     public IMongoCollection<ServiceZone> ServiceZones => _database.GetCollection<ServiceZone>("service_zones");
+    public IMongoCollection<ScanLog> ScanLogs => _database.GetCollection<ScanLog>("scan_logs");
     
     public MongoDbService(IConfiguration configuration)
     {
