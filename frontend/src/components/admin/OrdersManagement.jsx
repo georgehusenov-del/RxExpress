@@ -247,7 +247,7 @@ const timeWindowToApiFormat = {
 };
 
 // Draggable Order Card Component with Quick Driver Assign
-const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onAssignDriver, drivers, statusColors, statusLabels }) => {
+const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onQuickStatusChange, onAssignDriver, drivers, statusColors, statusLabels }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: order.id,
     data: { order },
