@@ -62,30 +62,34 @@ const actionLabels = {
 
 // Simplified status labels
 const statusLabels = {
-  ready_for_pickup: 'Ready',
-  assigned: 'Assigned',
+  new: 'New',
+  picked_up: 'Picked Up',
   in_transit: 'In Transit',
+  out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',
-  cancelled: 'Cancelled',
   failed: 'Failed',
+  canceled: 'Canceled',
   // Legacy mappings
-  pending: 'Ready',
-  confirmed: 'Ready',
-  picked_up: 'In Transit',
-  out_for_delivery: 'In Transit',
+  pending: 'New',
+  confirmed: 'New',
+  ready_for_pickup: 'New',
+  assigned: 'Out for Delivery',
+  cancelled: 'Canceled',
 };
 
 const statusColors = {
-  ready_for_pickup: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  assigned: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+  new: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  picked_up: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   in_transit: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  out_for_delivery: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
   delivered: 'bg-green-500/20 text-green-400 border-green-500/30',
-  cancelled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
   failed: 'bg-red-500/20 text-red-400 border-red-500/30',
-  pending: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  confirmed: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  picked_up: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  out_for_delivery: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  canceled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+  pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  confirmed: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  ready_for_pickup: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  assigned: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
+  cancelled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
 };
 
 export const PackageScanManagement = () => {
