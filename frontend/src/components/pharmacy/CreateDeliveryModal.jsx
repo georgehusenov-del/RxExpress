@@ -51,7 +51,8 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     requires_id_verification: false,
     delivery_notes: '',
     add_refrigerated: false,
-    copay_amount: 0
+    copay_amount: 0,
+    pharmacy_notes: ''
   });
 
   useEffect(() => {
