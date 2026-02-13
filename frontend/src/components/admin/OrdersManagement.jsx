@@ -286,9 +286,12 @@ const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onQuickStatu
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-sm text-white">{order.order_number}</span>
-            <Badge variant="outline" className={`text-xs px-1.5 py-0 ${statusColors[order.status]}`}>
-              {statusLabels[order.status]}
-            </Badge>
+            <InlineStatusSelect
+              order={order}
+              onStatusChange={onQuickStatusChange}
+              statusColors={statusColors}
+              statusLabels={statusLabels}
+            />
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5 truncate">
             <span className="truncate"><User className="w-3 h-3 inline mr-0.5" />{order.recipient?.name}</span>
