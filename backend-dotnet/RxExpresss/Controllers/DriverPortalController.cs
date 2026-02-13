@@ -22,6 +22,50 @@ public class DriverPortalController : ControllerBase
         _logger = logger;
     }
     
+    [HttpGet("profile")]
+    public async Task<ActionResult> GetMyProfile()
+    {
+        var userId = User.GetUserId();
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { detail = "Invalid token - no user ID found" });
+        }
+        
+        var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
+        if (driver == null)
+        {
+            return NotFound(new { detail = "Driver profile not found" });
+        }
+        
+        var user = await _db.Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+        
+        // Count assigned deliveries
+        var assignedCount = await _db.Orders.CountDocumentsAsync(o => 
+            o.DriverId == driver.Id && 
+            (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "in_transit"));
+        
+        return Ok(new
+        {
+            id = driver.Id,
+            user_id = driver.UserId,
+            first_name = user?.FirstName,
+            last_name = user?.LastName,
+            email = user?.Email,
+            phone = user?.Phone,
+            vehicle_type = driver.VehicleType,
+            vehicle_number = driver.VehicleNumber,
+            license_number = driver.LicenseNumber,
+            status = driver.Status,
+            current_location = driver.CurrentLocation,
+            rating = driver.Rating,
+            total_deliveries = driver.TotalDeliveries,
+            is_verified = driver.IsVerified,
+            assigned_deliveries = assignedCount,
+            created_at = driver.CreatedAt
+        });
+    }
+    
     [HttpGet("deliveries")]
     public async Task<ActionResult> GetMyDeliveries()
     {
