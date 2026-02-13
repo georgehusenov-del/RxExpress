@@ -34,6 +34,16 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 
 ### What's Been Implemented
 
+#### Phase 16: Pricing Tab UI Redesign ✅ (2026-02-13)
+- **Pharmacy Portal:** Redesigned the "Create New Delivery" modal with a tab-based interface
+- **Tabs Structure:**
+  - **Next Day** tab (Blue): Shows 3 time window options (8AM-1PM Morning, 1PM-4PM Afternoon, 4PM-10PM Evening) - all at $9.50
+  - **Same Day** tab (Amber): Shows Same-Day Express option at $18 with cutoff time badge
+  - **Priority** tab (Purple): Shows Priority First option at $25 with 8AM-10AM time window
+- **User Experience:** Pharmacies can now easily select delivery type by clicking tabs, then choose specific time windows
+- **Auto-selection:** When switching tabs, the first option is automatically selected
+- **Add-ons & Copay:** Sections remain accessible below the tabs for refrigeration fees and copay collection
+
 #### Phase 15: Admin Routing Page Fix ✅ (2026-02-13)
 - **Issue:** Admin "Routes" page was showing "Connection failed" error after backend rewrite
 - **Root Cause:** The .NET backend (`/app/backend-dotnet/RxExpresss`) was not running
