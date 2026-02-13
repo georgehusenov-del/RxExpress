@@ -184,6 +184,7 @@ public class Pharmacy
     public Dictionary<string, string>? OperatingHours { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class DriverProfile
 {
     [BsonId]
