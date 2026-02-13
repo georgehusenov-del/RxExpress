@@ -1441,7 +1441,7 @@ export const OrdersManagement = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusColors[order.status] || statusColors.pending}>
-                        {order.status}
+                        {statusLabels[order.status] || order.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-slate-400 text-sm">
