@@ -566,6 +566,25 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                     </p>
                   </div>
 
+                  {/* Pharmacy Notes */}
+                  <div className="border-t pt-4">
+                    <Label className="text-base font-medium flex items-center gap-2 mb-3">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                      Notes
+                    </Label>
+                    <Textarea
+                      value={formData.pharmacy_notes}
+                      onChange={(e) => updateField('pharmacy_notes', e.target.value)}
+                      placeholder="Add any special instructions or notes for this delivery..."
+                      className="resize-none"
+                      rows={3}
+                      data-testid="pharmacy-notes-input"
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                      These notes will be visible to the driver and admin
+                    </p>
+                  </div>
+
                   {/* Total Summary */}
                   <div className="bg-slate-100 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
