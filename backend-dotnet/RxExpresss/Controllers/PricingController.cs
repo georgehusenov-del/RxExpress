@@ -48,6 +48,39 @@ public class PricingController : ControllerBase
         return Ok(new { pricing = result, count = result.Count() });
     }
     
+    [HttpGet("active")]
+    public async Task<ActionResult> GetActivePricing()
+    {
+        var activePricing = await _db.Pricing
+            .Find(p => p.IsActive)
+            .ToListAsync();
+        
+        var pricingList = activePricing.Select(p => new
+        {
+            id = p.Id,
+            delivery_type = p.DeliveryType,
+            name = p.Name,
+            description = p.Description,
+            base_price = p.BasePrice,
+            is_active = p.IsActive,
+            time_window_start = p.TimeWindowStart,
+            time_window_end = p.TimeWindowEnd,
+            cutoff_time = p.CutoffTime,
+            is_addon = p.IsAddon
+        }).ToList();
+        
+        // Group by delivery type
+        var grouped = new
+        {
+            next_day = pricingList.Where(p => p.delivery_type == "next_day").ToList(),
+            same_day = pricingList.Where(p => p.delivery_type == "same_day").ToList(),
+            priority = pricingList.Where(p => p.delivery_type == "priority").ToList(),
+            addons = pricingList.Where(p => p.is_addon).ToList()
+        };
+        
+        return Ok(new { pricing = pricingList, grouped = grouped, count = pricingList.Count });
+    }
+    
     [HttpGet("{pricingId}")]
     public async Task<ActionResult> GetPricing(string pricingId)
     {
