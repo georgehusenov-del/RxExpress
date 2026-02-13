@@ -91,6 +91,7 @@ public class LocationPoint
     public string Timestamp { get; set; } = DateTime.UtcNow.ToString("o");
 }
 
+[BsonIgnoreExtraElements]
 public class PharmacyLocation
 {
     [BsonElement("id")]
