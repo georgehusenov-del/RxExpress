@@ -1485,6 +1485,47 @@ async def admin_deactivate_user(user_id: str, current_user: dict = Depends(requi
     return {"message": "User deactivated"}
 
 
+class UpdateUserRequest(PydanticBaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@admin_router.put("/users/{user_id}")
+async def admin_update_user(user_id: str, update_data: UpdateUserRequest, current_user: dict = Depends(require_admin)):
+    """Update a user's information (admin only)"""
+    # Check if user exists
+    existing_user = await db.users.find_one({"id": user_id})
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Build update dict
+    update_dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if update_data.first_name is not None:
+        update_dict["first_name"] = update_data.first_name
+    if update_data.last_name is not None:
+        update_dict["last_name"] = update_data.last_name
+    if update_data.email is not None:
+        update_dict["email"] = update_data.email
+    if update_data.phone is not None:
+        update_dict["phone"] = update_data.phone
+    if update_data.role is not None:
+        update_dict["role"] = update_data.role
+    if update_data.notes is not None:
+        update_dict["notes"] = update_data.notes
+    
+    result = await db.users.update_one({"id": user_id}, {"$set": update_dict})
+    
+    if result.modified_count == 0 and len(update_dict) <= 1:
+        raise HTTPException(status_code=400, detail="No changes made")
+    
+    return {"message": "User updated successfully"}
+
+
 @admin_router.delete("/users/{user_id}")
 async def admin_delete_user(user_id: str, current_user: dict = Depends(require_admin)):
     """Delete a user (admin only)"""
