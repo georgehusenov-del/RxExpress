@@ -34,11 +34,22 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 
 ### What's Been Implemented
 
+#### Phase 15: Admin Routing Page Fix ✅ (2026-02-13)
+- **Issue:** Admin "Routes" page was showing "Connection failed" error after backend rewrite
+- **Root Cause:** The .NET backend (`/app/backend-dotnet/RxExpresss`) was not running
+- **Fix:** Started the .NET backend with `dotnet run --urls "http://0.0.0.0:8001"`
+- **Verified Working:**
+  - Circuit API status: "Connected" 
+  - Route plans listing (3 active plans)
+  - Pending orders for routing (3 orders)
+  - Circuit drivers list (4 drivers)
+  - Create/View/Optimize/Distribute/Delete plan operations
+
 #### Phase 14: Backend Rewrite to ASP.NET Core ✅ (2026-02-12)
 - Complete backend rewrite from Python/FastAPI to ASP.NET Core 8.0 C#
 - **New Project Structure:**
   - `/app/backend-dotnet/RxExpresss/` - Main project directory
-  - `Controllers/` - AuthController, AdminController, OrdersController, DriversController, PharmaciesController, PricingController
+  - `Controllers/` - AuthController, AdminController, OrdersController, DriversController, PharmaciesController, PricingController, **CircuitController**
   - `Models/` - User.cs, Order.cs, Enums.cs (MongoDB models with BsonIgnoreExtraElements)
   - `DTOs/` - DTOs.cs (request/response DTOs)
   - `Services/` - MongoDbService.cs, AuthService.cs
@@ -49,6 +60,7 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
   - Route optimization with Haversine distance calculation
   - Admin dashboard stats, orders, drivers management
   - Order status updates, reassignment, cancellation
+  - **Full Circuit/Spoke API integration in CircuitController.cs**
 
 #### Phase 1-8: Core Features ✅
 - Multi-role authentication (Admin, Pharmacy, Driver, Patient)
