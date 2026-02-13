@@ -11,13 +11,13 @@ import {
 import { OrderDetailsModal } from './OrderDetailsModal';
 
 const statusConfig = {
-  pending: { label: 'Pending', color: 'bg-amber-500', icon: Clock },
-  confirmed: { label: 'Confirmed', color: 'bg-blue-500', icon: CheckCircle },
-  ready_for_pickup: { label: 'Ready', color: 'bg-blue-500', icon: Package },
-  assigned: { label: 'Assigned', color: 'bg-blue-500', icon: Truck },
-  picked_up: { label: 'Picked Up', color: 'bg-blue-500', icon: Truck },
-  in_transit: { label: 'In Transit', color: 'bg-blue-600', icon: Truck },
-  out_for_delivery: { label: 'Out for Delivery', color: 'bg-indigo-500', icon: Truck },
+  pending: { label: 'New', color: 'bg-amber-500', icon: Clock },
+  confirmed: { label: 'Processing', color: 'bg-blue-500', icon: CheckCircle },
+  ready_for_pickup: { label: 'Ready', color: 'bg-cyan-500', icon: Package },
+  assigned: { label: 'Assigned', color: 'bg-indigo-500', icon: Truck },
+  picked_up: { label: 'In Transit', color: 'bg-purple-500', icon: Truck },
+  in_transit: { label: 'In Transit', color: 'bg-purple-500', icon: Truck },
+  out_for_delivery: { label: 'In Transit', color: 'bg-purple-500', icon: Truck },
   delivered: { label: 'Delivered', color: 'bg-green-500', icon: CheckCircle },
   failed: { label: 'Failed', color: 'bg-red-500', icon: AlertCircle },
   cancelled: { label: 'Cancelled', color: 'bg-slate-500', icon: AlertCircle }
