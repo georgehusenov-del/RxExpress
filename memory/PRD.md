@@ -34,6 +34,22 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 
 ### What's Been Implemented
 
+#### Phase 17: Simplified Order Status System ✅ (2026-02-13)
+- **Status Flow Simplified:** New → Processing → Ready → Assigned → In Transit → Delivered
+- **Status Labels:**
+  - `pending` → **"New"** (Order just received)
+  - `confirmed` → **"Processing"** (Pharmacy preparing order)
+  - `ready_for_pickup` → **"Ready"** (Ready for driver pickup)
+  - `assigned` → **"Assigned"** (Driver assigned)
+  - `in_transit` → **"In Transit"** (Out for delivery)
+  - `delivered` → **"Delivered"** (Successfully delivered)
+  - `cancelled` → **"Cancelled"** (Order cancelled)
+- **Updated Components:**
+  - Admin OrdersManagement.jsx - Categories view, List view, Status dropdown
+  - Pharmacy OrdersList.jsx and OrderDetailsModal.jsx
+  - Driver DriverPortal.jsx - Status badges and update dropdown
+- **UI Improvements:** Status dropdown now shows descriptions for each status
+
 #### Phase 16: Pricing Tab UI Redesign ✅ (2026-02-13)
 - **Pharmacy Portal:** Redesigned the "Create New Delivery" modal with a tab-based interface
 - **Tabs Structure:**
