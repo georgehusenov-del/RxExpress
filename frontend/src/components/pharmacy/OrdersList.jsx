@@ -11,16 +11,19 @@ import {
 import { OrderDetailsModal } from './OrderDetailsModal';
 
 const statusConfig = {
-  pending: { label: 'Ready', color: 'bg-cyan-500', icon: Clock },
-  confirmed: { label: 'Ready', color: 'bg-cyan-500', icon: CheckCircle },
-  ready_for_pickup: { label: 'Ready', color: 'bg-cyan-500', icon: Package },
-  assigned: { label: 'Assigned', color: 'bg-indigo-500', icon: Truck },
-  picked_up: { label: 'In Transit', color: 'bg-purple-500', icon: Truck },
+  new: { label: 'New', color: 'bg-amber-500', icon: Clock },
+  picked_up: { label: 'Picked Up', color: 'bg-blue-500', icon: Package },
   in_transit: { label: 'In Transit', color: 'bg-purple-500', icon: Truck },
-  out_for_delivery: { label: 'In Transit', color: 'bg-purple-500', icon: Truck },
+  out_for_delivery: { label: 'Out for Delivery', color: 'bg-teal-500', icon: Truck },
   delivered: { label: 'Delivered', color: 'bg-green-500', icon: CheckCircle },
   failed: { label: 'Failed', color: 'bg-red-500', icon: AlertCircle },
-  cancelled: { label: 'Cancelled', color: 'bg-slate-500', icon: AlertCircle }
+  canceled: { label: 'Canceled', color: 'bg-slate-500', icon: AlertCircle },
+  // Legacy mappings
+  pending: { label: 'New', color: 'bg-amber-500', icon: Clock },
+  confirmed: { label: 'New', color: 'bg-amber-500', icon: Clock },
+  ready_for_pickup: { label: 'New', color: 'bg-amber-500', icon: Package },
+  assigned: { label: 'Out for Delivery', color: 'bg-teal-500', icon: Truck },
+  cancelled: { label: 'Canceled', color: 'bg-slate-500', icon: AlertCircle }
 };
 
 const deliveryTypeLabels = {
