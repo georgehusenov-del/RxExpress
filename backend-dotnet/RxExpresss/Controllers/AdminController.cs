@@ -23,6 +23,7 @@ public class AdminController : ControllerBase
     }
     
     [HttpGet("stats")]
+    [HttpGet("dashboard")]
     public async Task<ActionResult<AdminStatsDto>> GetDashboardStats()
     {
         var today = DateTime.UtcNow.Date;
