@@ -60,31 +60,48 @@ import { adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { RouteMapPreview } from './RouteMapPreview';
 
+// Simplified Status System
+// Flow: New → Processing → Ready → In Transit → Delivered
 const statusColors = {
+  // Primary statuses (simplified)
   pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   confirmed: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   ready_for_pickup: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   assigned: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
-  picked_up: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  in_transit: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  out_for_delivery: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
+  in_transit: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   delivered: 'bg-green-500/20 text-green-400 border-green-500/30',
-  failed: 'bg-red-500/20 text-red-400 border-red-500/30',
   cancelled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+  // Legacy statuses (map to simplified)
+  picked_up: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  out_for_delivery: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  failed: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
 
 const statusLabels = {
-  pending: 'Pending',
-  confirmed: 'Confirmed',
-  ready_for_pickup: 'Ready for Pickup',
+  // Simplified & Meaningful Labels
+  pending: 'New',
+  confirmed: 'Processing',
+  ready_for_pickup: 'Ready',
   assigned: 'Assigned',
-  picked_up: 'Picked Up',
   in_transit: 'In Transit',
-  out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',
-  failed: 'Failed',
   cancelled: 'Cancelled',
+  // Legacy mappings
+  picked_up: 'In Transit',
+  out_for_delivery: 'In Transit',
+  failed: 'Failed',
 };
+
+// Status flow for dropdowns (simplified options)
+const availableStatuses = [
+  { value: 'pending', label: 'New', description: 'Order just received' },
+  { value: 'confirmed', label: 'Processing', description: 'Pharmacy preparing order' },
+  { value: 'ready_for_pickup', label: 'Ready', description: 'Ready for driver pickup' },
+  { value: 'assigned', label: 'Assigned', description: 'Driver assigned' },
+  { value: 'in_transit', label: 'In Transit', description: 'Out for delivery' },
+  { value: 'delivered', label: 'Delivered', description: 'Successfully delivered' },
+  { value: 'cancelled', label: 'Cancelled', description: 'Order cancelled' },
+];
 
 const deliveryTypeLabels = {
   same_day: 'Same Day',
