@@ -221,9 +221,12 @@ public class AdminController : ControllerBase
     }
     
     [HttpPut("orders/{orderId}/cancel")]
-    public async Task<ActionResult> CancelOrder(string orderId, [FromBody] Dictionary<string, string>? body = null)
+    public async Task<ActionResult> CancelOrder(
+        string orderId, 
+        [FromQuery] string? reason = null,
+        [FromBody] Dictionary<string, string>? body = null)
     {
-        var reason = body?.GetValueOrDefault("reason") ?? "Cancelled by admin";
+        var reasonValue = reason ?? body?.GetValueOrDefault("reason") ?? "Cancelled by admin";
         
         var order = await _db.Orders.Find(o => o.Id == orderId).FirstOrDefaultAsync();
         if (order == null)
