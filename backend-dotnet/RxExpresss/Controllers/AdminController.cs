@@ -248,6 +248,55 @@ public class AdminController : ControllerBase
         return Ok(new { message = "Order cancelled successfully" });
     }
     
+    [HttpPut("orders/{orderId}/reassign")]
+    public async Task<ActionResult> ReassignOrderByPath(
+        string orderId,
+        [FromQuery] string? time_window = null,
+        [FromQuery] string? driver_id = null)
+    {
+        var order = await _db.Orders.Find(o => o.Id == orderId).FirstOrDefaultAsync();
+        if (order == null)
+        {
+            return NotFound(new { detail = "Order not found" });
+        }
+        
+        var updateBuilder = Builders<Order>.Update.Set(o => o.UpdatedAt, DateTime.UtcNow.ToString("o"));
+        
+        if (!string.IsNullOrEmpty(time_window))
+        {
+            updateBuilder = updateBuilder.Set(o => o.TimeWindow, time_window);
+        }
+        
+        if (!string.IsNullOrEmpty(driver_id))
+        {
+            if (driver_id == "unassign")
+            {
+                updateBuilder = updateBuilder
+                    .Set(o => o.DriverId, (string?)null)
+                    .Set(o => o.DriverName, (string?)null)
+                    .Set(o => o.Status, "ready_for_pickup");
+            }
+            else
+            {
+                var driver = await _db.Drivers.Find(d => d.Id == driver_id).FirstOrDefaultAsync();
+                if (driver != null)
+                {
+                    var user = await _db.Users.Find(u => u.Id == driver.UserId).FirstOrDefaultAsync();
+                    var driverName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
+                    
+                    updateBuilder = updateBuilder
+                        .Set(o => o.DriverId, driver_id)
+                        .Set(o => o.DriverName, driverName)
+                        .Set(o => o.Status, "assigned");
+                }
+            }
+        }
+        
+        await _db.Orders.UpdateOneAsync(o => o.Id == orderId, updateBuilder);
+        
+        return Ok(new { message = "Order reassigned successfully" });
+    }
+    
     [HttpPut("orders/reassign-order")]
     public async Task<ActionResult> ReassignOrder([FromBody] Dictionary<string, string> body)
     {
