@@ -124,6 +124,7 @@ export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: (params = {}) => api.get('/admin/users', { params }),
   getUser: (userId) => api.get(`/admin/users/${userId}`),
+  updateUser: (userId, userData) => api.put(`/admin/users/${userId}`, userData),
   activateUser: (userId) => api.put(`/admin/users/${userId}/activate`),
   deactivateUser: (userId) => api.put(`/admin/users/${userId}/deactivate`),
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
