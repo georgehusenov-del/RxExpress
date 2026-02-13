@@ -357,4 +357,82 @@ public class OrdersController : ControllerBase
         
         return Ok(new { message = "Order cancelled successfully" });
     }
+    
+    [HttpPost("scan")]
+    [Authorize]
+    public async Task<ActionResult> ScanPackage([FromBody] ScanPackageDto dto)
+    {
+        var userId = User.FindFirst("sub")?.Value;
+        var userRole = User.FindFirst("role")?.Value;
+        
+        // Find order by QR code
+        var order = await _db.Orders.Find(o => o.QrCode == dto.QrCode).FirstOrDefaultAsync();
+        if (order == null)
+        {
+            return NotFound(new { detail = "Package not found with this QR code" });
+        }
+        
+        // Get scanner info
+        var user = await _db.Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+        var scannerName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
+        
+        // Create scan log
+        var scanLog = new ScanLog
+        {
+            QrCode = dto.QrCode,
+            OrderId = order.Id,
+            OrderNumber = order.OrderNumber,
+            Action = dto.Action ?? "verify",
+            ScannedBy = userId ?? "",
+            ScannedByName = scannerName,
+            ScannedByRole = userRole,
+            ScannedAt = DateTime.UtcNow.ToString("o"),
+            Location = dto.Location != null ? new LocationPoint
+            {
+                Latitude = dto.Location.Latitude,
+                Longitude = dto.Location.Longitude,
+                Timestamp = DateTime.UtcNow.ToString("o")
+            } : null
+        };
+        
+        await _db.ScanLogs.InsertOneAsync(scanLog);
+        
+        // Update order status based on action
+        if (dto.Action == "pickup" && order.Status == "ready_for_pickup")
+        {
+            var update = Builders<Order>.Update
+                .Set(o => o.Status, "picked_up")
+                .Set(o => o.ActualPickupTime, DateTime.UtcNow.ToString("o"))
+                .Set(o => o.UpdatedAt, DateTime.UtcNow.ToString("o"));
+            await _db.Orders.UpdateOneAsync(o => o.Id == order.Id, update);
+        }
+        
+        return Ok(new
+        {
+            success = true,
+            message = "Package scanned successfully",
+            scan = new
+            {
+                scanLog.Id,
+                scanLog.QrCode,
+                scanLog.Action,
+                scanLog.ScannedAt,
+                scanLog.ScannedByName
+            },
+            order = new
+            {
+                order.Id,
+                order.OrderNumber,
+                order.QrCode,
+                order.PharmacyName,
+                order.Status,
+                order.DeliveryType,
+                order.TimeWindow,
+                order.Recipient,
+                order.DeliveryAddress,
+                order.CopayAmount,
+                order.CopayCollected
+            }
+        });
+    }
 }
