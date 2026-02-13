@@ -75,6 +75,7 @@ public class Address
     public string? DeliveryInstructions { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class LocationPoint
 {
     [BsonElement("latitude")]
