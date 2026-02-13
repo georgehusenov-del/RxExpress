@@ -294,3 +294,19 @@ public class AdminStatsDto
     public double CopayToCollect { get; set; }
     public double CopayCollected { get; set; }
 }
+
+// ============== Scan DTOs ==============
+public class ScanLocationDto
+{
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+}
+
+public class ScanPackageDto
+{
+    [Required]
+    public string QrCode { get; set; } = string.Empty;
+    public string? ScannedBy { get; set; }
+    public string? Action { get; set; } = "verify";
+    public ScanLocationDto? Location { get; set; }
+}
