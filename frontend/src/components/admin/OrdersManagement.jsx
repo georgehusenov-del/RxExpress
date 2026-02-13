@@ -603,6 +603,17 @@ export const OrdersManagement = () => {
     }
   };
 
+  // Quick inline status change (no modal)
+  const handleQuickStatusChange = async (orderId, newStatus) => {
+    try {
+      await adminAPI.updateOrderStatus(orderId, newStatus, null);
+      toast.success(`Status updated to ${statusLabels[newStatus]}`);
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update status');
+    }
+  };
+
   const handleUpdateStatus = async () => {
     if (!selectedOrder || !newStatus) return;
     
