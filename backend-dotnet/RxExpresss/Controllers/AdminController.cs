@@ -147,6 +147,47 @@ public class AdminController : ControllerBase
         return Ok(new { users = result, total = total });
     }
     
+    [HttpPut("users/{userId}")]
+    public async Task<ActionResult> UpdateUser(string userId, [FromBody] UpdateUserRequest request)
+    {
+        var existingUser = await _db.Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+        if (existingUser == null)
+        {
+            return NotFound(new { detail = "User not found" });
+        }
+        
+        var updateDefinition = new List<UpdateDefinition<User>>();
+        
+        if (!string.IsNullOrEmpty(request.FirstName))
+            updateDefinition.Add(Builders<User>.Update.Set(u => u.FirstName, request.FirstName));
+        
+        if (!string.IsNullOrEmpty(request.LastName))
+            updateDefinition.Add(Builders<User>.Update.Set(u => u.LastName, request.LastName));
+        
+        if (!string.IsNullOrEmpty(request.Email))
+            updateDefinition.Add(Builders<User>.Update.Set(u => u.Email, request.Email));
+        
+        if (!string.IsNullOrEmpty(request.Phone))
+            updateDefinition.Add(Builders<User>.Update.Set(u => u.Phone, request.Phone));
+        
+        if (!string.IsNullOrEmpty(request.Role))
+            updateDefinition.Add(Builders<User>.Update.Set(u => u.Role, request.Role));
+        
+        // Notes can be empty string to clear it
+        if (request.Notes != null)
+            updateDefinition.Add(Builders<User>.Update.Set(u => u.Notes, request.Notes));
+        
+        updateDefinition.Add(Builders<User>.Update.Set(u => u.UpdatedAt, DateTime.UtcNow.ToString("o")));
+        
+        if (updateDefinition.Count > 0)
+        {
+            var combinedUpdate = Builders<User>.Update.Combine(updateDefinition);
+            await _db.Users.UpdateOneAsync(u => u.Id == userId, combinedUpdate);
+        }
+        
+        return Ok(new { message = "User updated successfully" });
+    }
+    
     [HttpGet("pharmacies")]
     public async Task<ActionResult> GetAdminPharmacies([FromQuery] int skip = 0, [FromQuery] int limit = 50)
     {
