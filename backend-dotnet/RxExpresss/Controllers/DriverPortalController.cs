@@ -25,15 +25,7 @@ public class DriverPortalController : ControllerBase
     [HttpGet("deliveries")]
     public async Task<ActionResult> GetMyDeliveries()
     {
-        // Debug: Log all claims
-        foreach (var claim in User.Claims)
-        {
-            _logger.LogInformation($"Claim: {claim.Type} = {claim.Value}");
-        }
-        
-        var userId = User.GetUserId() 
-            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        _logger.LogInformation($"GetMyDeliveries called for userId: {userId}");
+        var userId = User.GetUserId();
         
         if (string.IsNullOrEmpty(userId))
         {
@@ -43,11 +35,8 @@ public class DriverPortalController : ControllerBase
         var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
         if (driver == null)
         {
-            _logger.LogWarning($"Driver profile not found for userId: {userId}");
             return NotFound(new { detail = "Driver profile not found" });
         }
-        
-        _logger.LogInformation($"Found driver: {driver.Id}");
         
         var orders = await _db.Orders
             .Find(o => o.DriverId == driver.Id && 
