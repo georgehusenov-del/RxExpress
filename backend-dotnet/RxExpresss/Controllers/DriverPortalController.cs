@@ -24,15 +24,19 @@ public class DriverPortalController : ControllerBase
     [HttpGet("deliveries")]
     public async Task<ActionResult> GetMyDeliveries()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        // Debug: Log all claims
+        foreach (var claim in User.Claims)
+        {
+            _logger.LogInformation($"Claim: {claim.Type} = {claim.Value}");
+        }
+        
+        var userId = User.FindFirst("sub")?.Value 
+            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         _logger.LogInformation($"GetMyDeliveries called for userId: {userId}");
         
-        // Try to find the driver by user_id
-        var allDrivers = await _db.Drivers.Find(_ => true).ToListAsync();
-        _logger.LogInformation($"Total drivers in DB: {allDrivers.Count}");
-        foreach (var d in allDrivers)
+        if (string.IsNullOrEmpty(userId))
         {
-            _logger.LogInformation($"Driver: Id={d.Id}, UserId={d.UserId}");
+            return Unauthorized(new { detail = "Invalid token - no user ID found" });
         }
         
         var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
