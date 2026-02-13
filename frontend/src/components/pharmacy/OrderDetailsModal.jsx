@@ -13,13 +13,13 @@ import { ordersAPI } from '@/lib/api';
 import { toast } from 'sonner';
 
 const statusConfig = {
-  pending: { label: 'Pending', color: 'bg-amber-500', nextStatus: 'confirmed', nextLabel: 'Confirm Order' },
-  confirmed: { label: 'Confirmed', color: 'bg-blue-500', nextStatus: 'ready_for_pickup', nextLabel: 'Ready for Pickup' },
-  ready_for_pickup: { label: 'Ready', color: 'bg-blue-500', nextStatus: null, nextLabel: null },
-  assigned: { label: 'Assigned', color: 'bg-blue-500', nextStatus: null, nextLabel: null },
-  picked_up: { label: 'Picked Up', color: 'bg-blue-500', nextStatus: null, nextLabel: null },
-  in_transit: { label: 'In Transit', color: 'bg-blue-600', nextStatus: null, nextLabel: null },
-  out_for_delivery: { label: 'Out for Delivery', color: 'bg-indigo-500', nextStatus: null, nextLabel: null },
+  pending: { label: 'New', color: 'bg-amber-500', nextStatus: 'confirmed', nextLabel: 'Start Processing' },
+  confirmed: { label: 'Processing', color: 'bg-blue-500', nextStatus: 'ready_for_pickup', nextLabel: 'Mark Ready' },
+  ready_for_pickup: { label: 'Ready', color: 'bg-cyan-500', nextStatus: null, nextLabel: null },
+  assigned: { label: 'Assigned', color: 'bg-indigo-500', nextStatus: null, nextLabel: null },
+  picked_up: { label: 'In Transit', color: 'bg-purple-500', nextStatus: null, nextLabel: null },
+  in_transit: { label: 'In Transit', color: 'bg-purple-500', nextStatus: null, nextLabel: null },
+  out_for_delivery: { label: 'In Transit', color: 'bg-purple-500', nextStatus: null, nextLabel: null },
   delivered: { label: 'Delivered', color: 'bg-green-500', nextStatus: null, nextLabel: null },
   failed: { label: 'Failed', color: 'bg-red-500', nextStatus: null, nextLabel: null },
   cancelled: { label: 'Cancelled', color: 'bg-slate-500', nextStatus: null, nextLabel: null }
