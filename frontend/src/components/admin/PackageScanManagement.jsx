@@ -316,12 +316,8 @@ export const PackageScanManagement = () => {
                           {pkg.recipient_name || 'Unknown'}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={
-                            pkg.order_status === 'delivered' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                            pkg.order_status === 'in_transit' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                            'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                          }>
-                            {pkg.order_status}
+                          <Badge variant="outline" className={statusColors[pkg.order_status] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'}>
+                            {statusLabels[pkg.order_status] || pkg.order_status}
                           </Badge>
                         </TableCell>
                         <TableCell>
