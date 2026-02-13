@@ -642,15 +642,20 @@ export const OrdersManagement = () => {
 
   // Organize orders by status category
   const organizedByStatus = useMemo(() => {
-    const categoryStatuses = ['ready_for_pickup', 'assigned', 'in_transit'];
+    const categoryStatuses = ['new', 'picked_up', 'in_transit', 'out_for_delivery'];
     const organized = {};
     
     categoryStatuses.forEach(status => {
-      // Include legacy statuses in the Ready category
       let ordersInStatus;
-      if (status === 'ready_for_pickup') {
+      if (status === 'new') {
+        // Include legacy statuses in the New category
         ordersInStatus = filteredOrders.filter(order => 
-          ['ready_for_pickup', 'pending', 'confirmed'].includes(order.status)
+          ['new', 'pending', 'confirmed', 'ready_for_pickup'].includes(order.status)
+        );
+      } else if (status === 'out_for_delivery') {
+        // Include assigned in Out for Delivery
+        ordersInStatus = filteredOrders.filter(order => 
+          ['out_for_delivery', 'assigned'].includes(order.status)
         );
       } else {
         ordersInStatus = filteredOrders.filter(order => order.status === status);
