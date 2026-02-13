@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Truck, Package, MapPin, Clock, Plus, X, Loader2,
-  DollarSign, Snowflake, Zap, Calendar, Sun, Sunset, Moon
+  DollarSign, Snowflake, Zap, Calendar, Sun, Sunset, Moon, FileText
 } from 'lucide-react';
 import { ordersAPI, publicAPI } from '@/lib/api';
 import { toast } from 'sonner';
