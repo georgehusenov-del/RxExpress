@@ -238,7 +238,7 @@ public class AdminController : ControllerBase
         {
             { "timestamp", DateTime.UtcNow.ToString("o") },
             { "status", "cancelled" },
-            { "notes", reason }
+            { "notes", reasonValue }
         };
         
         var update = Builders<Order>.Update
