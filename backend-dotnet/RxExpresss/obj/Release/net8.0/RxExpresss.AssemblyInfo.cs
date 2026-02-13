@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RxExpresss")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f5cf8a7892e923a7ad7e6ebd3e425b291c28c041")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d4204e1ee4dc970fb0cc35204dd32943c6e07e4f")]
 [assembly: System.Reflection.AssemblyProductAttribute("RxExpresss")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RxExpresss")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
