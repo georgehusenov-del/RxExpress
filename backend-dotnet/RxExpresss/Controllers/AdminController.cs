@@ -875,6 +875,124 @@ public class AdminController : ControllerBase
         });
     }
     
+    // =========== ADMIN PACKAGE ENDPOINTS ===========
+    
+    [HttpGet("packages")]
+    public async Task<ActionResult> GetPackages(
+        [FromQuery] string? status = null,
+        [FromQuery] string? pharmacy_id = null,
+        [FromQuery] int skip = 0,
+        [FromQuery] int limit = 50)
+    {
+        var filterBuilder = Builders<Order>.Filter;
+        var filter = filterBuilder.Empty;
+        
+        if (!string.IsNullOrEmpty(status))
+        {
+            filter &= filterBuilder.Eq(o => o.Status, status);
+        }
+        if (!string.IsNullOrEmpty(pharmacy_id))
+        {
+            filter &= filterBuilder.Eq(o => o.PharmacyId, pharmacy_id);
+        }
+        
+        var total = await _db.Orders.CountDocumentsAsync(filter);
+        var orders = await _db.Orders
+            .Find(filter)
+            .SortByDescending(o => o.CreatedAt)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync();
+        
+        // Build package list from orders
+        var packages = new List<object>();
+        foreach (var order in orders)
+        {
+            packages.Add(new
+            {
+                id = order.Id,
+                qr_code = order.QrCode,
+                order_id = order.Id,
+                order_number = order.OrderNumber,
+                pharmacy_id = order.PharmacyId,
+                pharmacy_name = order.PharmacyName,
+                status = order.Status,
+                delivery_type = order.DeliveryType,
+                time_window = order.TimeWindow,
+                recipient = order.Recipient,
+                delivery_address = order.DeliveryAddress,
+                pickup_address = order.PickupAddress,
+                driver_id = order.DriverId,
+                driver_name = order.DriverName,
+                copay_amount = order.CopayAmount,
+                copay_collected = order.CopayCollected,
+                created_at = order.CreatedAt
+            });
+        }
+        
+        return Ok(new { packages = packages, total = total, skip = skip, limit = limit });
+    }
+    
+    [HttpPost("packages/verify/{qrCode}")]
+    public async Task<ActionResult> VerifyPackage(string qrCode)
+    {
+        var userId = User.FindFirst("sub")?.Value;
+        var userRole = User.FindFirst("role")?.Value;
+        
+        var order = await _db.Orders.Find(o => o.QrCode == qrCode).FirstOrDefaultAsync();
+        if (order == null)
+        {
+            return NotFound(new { detail = "Package not found with this QR code", verified = false });
+        }
+        
+        // Get user info for scan log
+        var user = await _db.Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+        var scannerName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
+        
+        // Create scan log
+        var scanLog = new ScanLog
+        {
+            QrCode = qrCode,
+            OrderId = order.Id,
+            OrderNumber = order.OrderNumber,
+            Action = "verify",
+            ScannedBy = userId ?? "",
+            ScannedByName = scannerName,
+            ScannedByRole = userRole,
+            ScannedAt = DateTime.UtcNow.ToString("o")
+        };
+        
+        await _db.ScanLogs.InsertOneAsync(scanLog);
+        
+        return Ok(new
+        {
+            verified = true,
+            message = "Package verified successfully",
+            package = new
+            {
+                id = order.Id,
+                qr_code = order.QrCode,
+                order_id = order.Id,
+                order_number = order.OrderNumber,
+                pharmacy_name = order.PharmacyName,
+                status = order.Status,
+                delivery_type = order.DeliveryType,
+                time_window = order.TimeWindow,
+                recipient = order.Recipient,
+                delivery_address = order.DeliveryAddress,
+                copay_amount = order.CopayAmount,
+                copay_collected = order.CopayCollected
+            },
+            scan = new
+            {
+                scanLog.Id,
+                scanLog.Action,
+                scanLog.ScannedAt,
+                scanLog.ScannedByName
+            }
+        });
+    }
+    
     // Haversine formula for distance calculation
     private static double HaversineDistance(double lat1, double lon1, double lat2, double lon2)
     {
