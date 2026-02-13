@@ -133,15 +133,16 @@ public class AdminController : ControllerBase
         
         var result = users.Select(u => new
         {
-            u.Id,
-            u.Email,
-            u.Phone,
-            u.FirstName,
-            u.LastName,
-            u.Role,
-            u.IsActive,
-            u.IsVerified,
-            u.CreatedAt
+            id = u.Id,
+            email = u.Email,
+            phone = u.Phone,
+            first_name = u.FirstName,
+            last_name = u.LastName,
+            role = u.Role,
+            is_active = u.IsActive,
+            is_verified = u.IsVerified,
+            notes = u.Notes,
+            created_at = u.CreatedAt
         });
         
         return Ok(new { users = result, total = total });
