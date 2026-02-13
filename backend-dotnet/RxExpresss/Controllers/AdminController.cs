@@ -797,6 +797,84 @@ public class AdminController : ControllerBase
         return Ok(new { message = $"Pricing {(pricing.IsActive ? "disabled" : "enabled")} successfully" });
     }
     
+    // =========== ADMIN SCAN ENDPOINTS ===========
+    
+    [HttpGet("scans")]
+    public async Task<ActionResult> GetScans(
+        [FromQuery] string? action = null,
+        [FromQuery] string? order_id = null,
+        [FromQuery] int skip = 0,
+        [FromQuery] int limit = 50)
+    {
+        var filterBuilder = Builders<ScanLog>.Filter;
+        var filter = filterBuilder.Empty;
+        
+        if (!string.IsNullOrEmpty(action))
+        {
+            filter &= filterBuilder.Eq(s => s.Action, action);
+        }
+        if (!string.IsNullOrEmpty(order_id))
+        {
+            filter &= filterBuilder.Eq(s => s.OrderId, order_id);
+        }
+        
+        var total = await _db.ScanLogs.CountDocumentsAsync(filter);
+        var scans = await _db.ScanLogs
+            .Find(filter)
+            .SortByDescending(s => s.ScannedAt)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync();
+        
+        var result = scans.Select(s => new
+        {
+            s.Id,
+            s.QrCode,
+            s.OrderId,
+            s.OrderNumber,
+            s.Action,
+            s.ScannedBy,
+            s.ScannedByName,
+            s.ScannedByRole,
+            s.ScannedAt,
+            s.Location
+        });
+        
+        return Ok(new { scans = result, total = total, skip = skip, limit = limit });
+    }
+    
+    [HttpGet("scans/stats")]
+    public async Task<ActionResult> GetScanStats()
+    {
+        var totalScans = await _db.ScanLogs.CountDocumentsAsync(FilterDefinition<ScanLog>.Empty);
+        
+        // Recent scans (last 24 hours)
+        var yesterday = DateTime.UtcNow.AddDays(-1).ToString("o");
+        var recentScans = await _db.ScanLogs.CountDocumentsAsync(s => s.ScannedAt.CompareTo(yesterday) >= 0);
+        
+        // Scans by action
+        var allScans = await _db.ScanLogs.Find(FilterDefinition<ScanLog>.Empty).ToListAsync();
+        var scansByAction = allScans
+            .GroupBy(s => s.Action)
+            .ToDictionary(g => g.Key, g => g.Count());
+        
+        // Top scanners
+        var topScanners = allScans
+            .GroupBy(s => s.ScannedBy)
+            .Select(g => new { user_id = g.Key, count = g.Count(), name = g.First().ScannedByName })
+            .OrderByDescending(x => x.count)
+            .Take(10)
+            .ToList();
+        
+        return Ok(new
+        {
+            total_scans = totalScans,
+            recent_scans_24h = recentScans,
+            scans_by_action = scansByAction,
+            top_scanners = topScanners
+        });
+    }
+    
     // Haversine formula for distance calculation
     private static double HaversineDistance(double lat1, double lon1, double lat2, double lon2)
     {
