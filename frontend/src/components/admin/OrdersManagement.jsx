@@ -162,6 +162,53 @@ const statusCategoryConfig = {
   },
 };
 
+// Inline Status Select Component - Click on badge to change status instantly
+const InlineStatusSelect = ({ order, onStatusChange, statusColors, statusLabels }) => {
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  const handleStatusChange = async (newStatus) => {
+    if (newStatus === order.status) return;
+    setIsUpdating(true);
+    try {
+      await onStatusChange(order.id, newStatus);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <Select 
+      value={order.status} 
+      onValueChange={handleStatusChange}
+      disabled={isUpdating}
+    >
+      <SelectTrigger 
+        className={`h-7 px-2 py-0 text-xs font-medium border rounded-full w-auto min-w-[100px] ${statusColors[order.status] || statusColors.new} ${isUpdating ? 'opacity-50' : ''}`}
+        data-testid={`inline-status-${order.id}`}
+      >
+        {isUpdating ? (
+          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+        ) : null}
+        <SelectValue>{statusLabels[order.status] || order.status}</SelectValue>
+      </SelectTrigger>
+      <SelectContent className="bg-slate-800 border-slate-700">
+        {availableStatuses.map((status) => (
+          <SelectItem 
+            key={status.value} 
+            value={status.value}
+            className="text-slate-300 hover:bg-slate-700 focus:bg-slate-700"
+          >
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${statusColors[status.value]?.split(' ')[0] || 'bg-slate-500'}`}></span>
+              <span>{status.label}</span>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+};
+
 // Helper to extract borough from QR code
 const getBoroughFromOrder = (order) => {
   if (order.qr_code && order.qr_code.length > 0) {
