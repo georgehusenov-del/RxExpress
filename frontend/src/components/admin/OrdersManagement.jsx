@@ -629,18 +629,25 @@ export const OrdersManagement = () => {
 
   // Organize orders by status category
   const organizedByStatus = useMemo(() => {
-    const categoryStatuses = ['pending', 'confirmed', 'ready_for_pickup', 'assigned', 'in_transit'];
+    const categoryStatuses = ['ready_for_pickup', 'assigned', 'in_transit'];
     const organized = {};
     
     categoryStatuses.forEach(status => {
-      const ordersInStatus = filteredOrders.filter(order => order.status === status);
-      if (ordersInStatus.length > 0 || true) { // Always show all categories
-        organized[status] = {
-          orders: ordersInStatus,
-          count: ordersInStatus.length,
-          totalCopay: ordersInStatus.reduce((sum, o) => sum + (o.copay_collected ? 0 : (o.copay_amount || 0)), 0)
-        };
+      // Include legacy statuses in the Ready category
+      let ordersInStatus;
+      if (status === 'ready_for_pickup') {
+        ordersInStatus = filteredOrders.filter(order => 
+          ['ready_for_pickup', 'pending', 'confirmed'].includes(order.status)
+        );
+      } else {
+        ordersInStatus = filteredOrders.filter(order => order.status === status);
       }
+      
+      organized[status] = {
+        orders: ordersInStatus,
+        count: ordersInStatus.length,
+        totalCopay: ordersInStatus.reduce((sum, o) => sum + (o.copay_collected ? 0 : (o.copay_amount || 0)), 0)
+      };
     });
     
     return organized;
