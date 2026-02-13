@@ -362,8 +362,8 @@ public class OrdersController : ControllerBase
     [Authorize]
     public async Task<ActionResult> ScanPackage([FromBody] ScanPackageDto dto)
     {
-        var userId = User.FindFirst("sub")?.Value;
-        var userRole = User.FindFirst("role")?.Value;
+        var userId = User.GetUserId();
+        var userRole = User.GetUserRole();
         
         // Find order by QR code
         var order = await _db.Orders.Find(o => o.QrCode == dto.QrCode).FirstOrDefaultAsync();

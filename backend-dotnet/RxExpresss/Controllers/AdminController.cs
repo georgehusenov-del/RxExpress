@@ -936,8 +936,8 @@ public class AdminController : ControllerBase
     [HttpPost("packages/verify/{qrCode}")]
     public async Task<ActionResult> VerifyPackage(string qrCode)
     {
-        var userId = User.FindFirst("sub")?.Value;
-        var userRole = User.FindFirst("role")?.Value;
+        var userId = User.GetUserId();
+        var userRole = User.GetUserRole();
         
         var order = await _db.Orders.Find(o => o.QrCode == qrCode).FirstOrDefaultAsync();
         if (order == null)

@@ -30,7 +30,7 @@ public class DriverPortalController : ControllerBase
             _logger.LogInformation($"Claim: {claim.Type} = {claim.Value}");
         }
         
-        var userId = User.FindFirst("sub")?.Value 
+        var userId = User.GetUserId() 
             ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         _logger.LogInformation($"GetMyDeliveries called for userId: {userId}");
         
@@ -83,7 +83,7 @@ public class DriverPortalController : ControllerBase
     [HttpGet("deliveries/{orderId}")]
     public async Task<ActionResult> GetDelivery(string orderId)
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.GetUserId();
         
         var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
         if (driver == null)
@@ -129,8 +129,8 @@ public class DriverPortalController : ControllerBase
         [FromQuery] double? latitude = null,
         [FromQuery] double? longitude = null)
     {
-        var userId = User.FindFirst("sub")?.Value;
-        var userRole = User.FindFirst("role")?.Value;
+        var userId = User.GetUserId();
+        var userRole = User.GetUserRole();
         
         var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
         if (driver == null)
@@ -222,7 +222,7 @@ public class DriverPortalController : ControllerBase
         string orderId,
         [FromQuery] string? method = "cash")
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.GetUserId();
         
         var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
         if (driver == null)
@@ -263,7 +263,7 @@ public class DriverPortalController : ControllerBase
         string orderId,
         [FromBody] CompleteDeliveryDto? dto = null)
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.GetUserId();
         
         var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
         if (driver == null)
@@ -327,7 +327,7 @@ public class DriverPortalController : ControllerBase
     [HttpPut("status")]
     public async Task<ActionResult> UpdateMyStatus([FromBody] Dictionary<string, string> body)
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.GetUserId();
         var status = body.GetValueOrDefault("status");
         
         if (string.IsNullOrEmpty(status))
@@ -350,7 +350,7 @@ public class DriverPortalController : ControllerBase
     [HttpPut("location")]
     public async Task<ActionResult> UpdateMyLocation([FromBody] Dictionary<string, double> body)
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.GetUserId();
         
         if (!body.ContainsKey("latitude") || !body.ContainsKey("longitude"))
         {

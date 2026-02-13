@@ -115,7 +115,7 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<ActionResult<UserResponseDto>> GetCurrentUser()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { detail = "Invalid token" });

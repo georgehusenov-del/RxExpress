@@ -24,8 +24,8 @@ public class DriversController : ControllerBase
     [Authorize]
     public async Task<ActionResult> RegisterDriver([FromBody] DriverCreateDto dto)
     {
-        var role = User.FindFirst("role")?.Value;
-        var userId = User.FindFirst("sub")?.Value;
+        var role = User.GetUserRole();
+        var userId = User.GetUserId();
         
         if (role != "driver" && role != "admin")
         {
@@ -131,7 +131,7 @@ public class DriversController : ControllerBase
     [Authorize]
     public async Task<ActionResult> GetMyDeliveries()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.GetUserId();
         
         var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
         if (driver == null)

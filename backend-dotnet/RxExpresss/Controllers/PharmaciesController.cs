@@ -24,8 +24,8 @@ public class PharmaciesController : ControllerBase
     [Authorize]
     public async Task<ActionResult> RegisterPharmacy([FromBody] PharmacyCreateDto dto)
     {
-        var role = User.FindFirst("role")?.Value;
-        var userId = User.FindFirst("sub")?.Value;
+        var role = User.GetUserRole();
+        var userId = User.GetUserId();
         
         if (role != "pharmacy" && role != "admin")
         {
@@ -142,8 +142,8 @@ public class PharmaciesController : ControllerBase
     [Authorize]
     public async Task<ActionResult> AddPharmacyLocation(string pharmacyId, [FromBody] PharmacyLocationCreateDto dto)
     {
-        var userId = User.FindFirst("sub")?.Value;
-        var role = User.FindFirst("role")?.Value;
+        var userId = User.GetUserId();
+        var role = User.GetUserRole();
         
         var pharmacy = await _db.Pharmacies.Find(p => p.Id == pharmacyId).FirstOrDefaultAsync();
         if (pharmacy == null)
@@ -211,7 +211,7 @@ public class PharmaciesController : ControllerBase
     [Authorize]
     public async Task<ActionResult> GetMyPharmacy()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.GetUserId();
         
         var pharmacy = await _db.Pharmacies.Find(p => p.UserId == userId).FirstOrDefaultAsync();
         if (pharmacy == null)

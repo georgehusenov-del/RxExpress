@@ -111,7 +111,7 @@ public class PricingController : ControllerBase
     [Authorize]
     public async Task<ActionResult> CreatePricing([FromBody] DeliveryPricingCreateDto dto)
     {
-        var role = User.FindFirst("role")?.Value;
+        var role = User.GetUserRole();
         if (role != "admin")
         {
             return StatusCode(403, new { detail = "Only admins can create pricing" });
@@ -141,7 +141,7 @@ public class PricingController : ControllerBase
     [Authorize]
     public async Task<ActionResult> UpdatePricing(string pricingId, [FromBody] DeliveryPricingUpdateDto dto)
     {
-        var role = User.FindFirst("role")?.Value;
+        var role = User.GetUserRole();
         if (role != "admin")
         {
             return StatusCode(403, new { detail = "Only admins can update pricing" });
@@ -180,7 +180,7 @@ public class PricingController : ControllerBase
     [Authorize]
     public async Task<ActionResult> DeletePricing(string pricingId)
     {
-        var role = User.FindFirst("role")?.Value;
+        var role = User.GetUserRole();
         if (role != "admin")
         {
             return StatusCode(403, new { detail = "Only admins can delete pricing" });
