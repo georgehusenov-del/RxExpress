@@ -594,7 +594,9 @@ export const DriverPortal = () => {
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="picked_up">Picked Up</SelectItem>
                     <SelectItem value="in_transit">In Transit</SelectItem>
+                    <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
                     <SelectItem value="delivered">Delivered</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
                   </SelectContent>
