@@ -359,12 +359,14 @@ public class DriverPortalController : ControllerBase
     }
     
     [HttpPut("status")]
-    public async Task<ActionResult> UpdateMyStatus([FromBody] Dictionary<string, string> body)
+    public async Task<ActionResult> UpdateMyStatus(
+        [FromQuery] string? status = null,
+        [FromBody] Dictionary<string, string>? body = null)
     {
         var userId = User.GetUserId();
-        var status = body.GetValueOrDefault("status");
+        var statusValue = status ?? body?.GetValueOrDefault("status");
         
-        if (string.IsNullOrEmpty(status))
+        if (string.IsNullOrEmpty(statusValue))
         {
             return BadRequest(new { detail = "status is required" });
         }
@@ -375,18 +377,24 @@ public class DriverPortalController : ControllerBase
             return NotFound(new { detail = "Driver profile not found" });
         }
         
-        var update = Builders<DriverProfile>.Update.Set(d => d.Status, status);
+        var update = Builders<DriverProfile>.Update.Set(d => d.Status, statusValue);
         await _db.Drivers.UpdateOneAsync(d => d.Id == driver.Id, update);
         
-        return Ok(new { message = $"Status updated to {status}" });
+        return Ok(new { message = $"Status updated to {statusValue}" });
     }
     
     [HttpPut("location")]
-    public async Task<ActionResult> UpdateMyLocation([FromBody] Dictionary<string, double> body)
+    public async Task<ActionResult> UpdateMyLocation(
+        [FromQuery] double? latitude = null,
+        [FromQuery] double? longitude = null,
+        [FromBody] Dictionary<string, double>? body = null)
     {
         var userId = User.GetUserId();
         
-        if (!body.ContainsKey("latitude") || !body.ContainsKey("longitude"))
+        var lat = latitude ?? body?.GetValueOrDefault("latitude");
+        var lng = longitude ?? body?.GetValueOrDefault("longitude");
+        
+        if (!lat.HasValue || !lng.HasValue)
         {
             return BadRequest(new { detail = "latitude and longitude are required" });
         }
