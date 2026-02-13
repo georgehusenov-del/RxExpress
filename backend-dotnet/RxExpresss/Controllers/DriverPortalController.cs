@@ -25,12 +25,24 @@ public class DriverPortalController : ControllerBase
     public async Task<ActionResult> GetMyDeliveries()
     {
         var userId = User.FindFirst("sub")?.Value;
+        _logger.LogInformation($"GetMyDeliveries called for userId: {userId}");
+        
+        // Try to find the driver by user_id
+        var allDrivers = await _db.Drivers.Find(_ => true).ToListAsync();
+        _logger.LogInformation($"Total drivers in DB: {allDrivers.Count}");
+        foreach (var d in allDrivers)
+        {
+            _logger.LogInformation($"Driver: Id={d.Id}, UserId={d.UserId}");
+        }
         
         var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
         if (driver == null)
         {
+            _logger.LogWarning($"Driver profile not found for userId: {userId}");
             return NotFound(new { detail = "Driver profile not found" });
         }
+        
+        _logger.LogInformation($"Found driver: {driver.Id}");
         
         var orders = await _db.Orders
             .Find(o => o.DriverId == driver.Id && 
