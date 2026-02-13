@@ -226,6 +226,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
         requires_photo_proof: formData.requires_photo_proof,
         requires_id_verification: formData.requires_id_verification,
         delivery_notes: formData.delivery_notes || null,
+        pharmacy_notes: formData.pharmacy_notes || null,
         estimated_cost: calculateTotal(),
         copay_amount: formData.copay_amount || 0
       };
