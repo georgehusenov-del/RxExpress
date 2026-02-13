@@ -35,8 +35,8 @@ const statusColors = {
   ready_for_pickup: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   assigned: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
   picked_up: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  in_transit: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  out_for_delivery: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
+  in_transit: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  out_for_delivery: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   delivered: 'bg-green-500/20 text-green-400 border-green-500/30',
   failed: 'bg-red-500/20 text-red-400 border-red-500/30',
   cancelled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
@@ -44,9 +44,9 @@ const statusColors = {
 
 const statusLabels = {
   assigned: 'Assigned',
-  picked_up: 'Picked Up',
+  picked_up: 'In Transit',
   in_transit: 'In Transit',
-  out_for_delivery: 'Out for Delivery',
+  out_for_delivery: 'In Transit',
   delivered: 'Delivered',
   failed: 'Failed',
 };
