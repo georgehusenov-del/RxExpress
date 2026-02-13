@@ -37,6 +37,9 @@ public class User
     [BsonElement("is_verified")]
     public bool IsVerified { get; set; } = false;
     
+    [BsonElement("notes")]
+    public string? Notes { get; set; }
+    
     [BsonElement("created_at")]
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
     
