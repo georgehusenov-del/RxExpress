@@ -195,14 +195,14 @@ public class AdminController : ControllerBase
         }
         
         var updateBuilder = Builders<Order>.Update
-            .Set(o => o.Status, dto.Status)
+            .Set(o => o.Status, statusValue)
             .Set(o => o.UpdatedAt, DateTime.UtcNow.ToString("o"));
         
-        if (dto.Status == "picked_up")
+        if (statusValue == "picked_up")
         {
             updateBuilder = updateBuilder.Set(o => o.ActualPickupTime, DateTime.UtcNow.ToString("o"));
         }
-        else if (dto.Status == "delivered")
+        else if (statusValue == "delivered")
         {
             updateBuilder = updateBuilder.Set(o => o.ActualDeliveryTime, DateTime.UtcNow.ToString("o"));
         }
@@ -210,14 +210,14 @@ public class AdminController : ControllerBase
         var trackingUpdate = new Dictionary<string, object>
         {
             { "timestamp", DateTime.UtcNow.ToString("o") },
-            { "status", dto.Status },
-            { "notes", dto.Notes ?? "Updated by admin" }
+            { "status", statusValue },
+            { "notes", notesValue ?? "Updated by admin" }
         };
         updateBuilder = updateBuilder.Push(o => o.TrackingUpdates, trackingUpdate);
         
         await _db.Orders.UpdateOneAsync(o => o.Id == orderId, updateBuilder);
         
-        return Ok(new { message = $"Status updated to {dto.Status}" });
+        return Ok(new { message = $"Status updated to {statusValue}" });
     }
     
     [HttpPut("orders/{orderId}/cancel")]
