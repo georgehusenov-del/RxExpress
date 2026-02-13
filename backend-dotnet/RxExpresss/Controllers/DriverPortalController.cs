@@ -407,8 +407,8 @@ public class DriverPortalController : ControllerBase
         
         var location = new LocationPoint
         {
-            Latitude = body["latitude"],
-            Longitude = body["longitude"],
+            Latitude = lat.Value,
+            Longitude = lng.Value,
             Timestamp = DateTime.UtcNow.ToString("o")
         };
         
