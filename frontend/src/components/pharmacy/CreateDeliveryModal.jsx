@@ -267,7 +267,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     if (!start) return '';
     const hour = parseInt(start.split(':')[0]);
     if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
+    if (hour < 16) return 'Afternoon';
     return 'Evening';
   };
 
