@@ -146,6 +146,54 @@ public class AdminController : ControllerBase
         return Ok(new { users = result, total = total });
     }
     
+    [HttpGet("pharmacies")]
+    public async Task<ActionResult> GetAdminPharmacies([FromQuery] int skip = 0, [FromQuery] int limit = 50)
+    {
+        var total = await _db.Pharmacies.CountDocumentsAsync(FilterDefinition<Pharmacy>.Empty);
+        var pharmacies = await _db.Pharmacies
+            .Find(FilterDefinition<Pharmacy>.Empty)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync();
+        
+        var result = pharmacies.Select(p => new
+        {
+            id = p.Id,
+            user_id = p.UserId,
+            name = p.Name,
+            license_number = p.LicenseNumber,
+            npi_number = p.NpiNumber,
+            phone = p.Phone,
+            email = p.Email,
+            website = p.Website,
+            address = p.Address,
+            locations = p.Locations,
+            service_zones = p.ServiceZones,
+            is_active = p.IsActive,
+            is_verified = p.IsVerified,
+            rating = p.Rating,
+            total_deliveries = p.TotalDeliveries,
+            created_at = p.CreatedAt,
+            operating_hours = p.OperatingHours
+        });
+        
+        return Ok(new { pharmacies = result, total = total });
+    }
+    
+    [HttpPut("pharmacies/{pharmacyId}/verify")]
+    public async Task<ActionResult> VerifyPharmacy(string pharmacyId)
+    {
+        var update = Builders<Pharmacy>.Update.Set(p => p.IsVerified, true);
+        var result = await _db.Pharmacies.UpdateOneAsync(p => p.Id == pharmacyId, update);
+        
+        if (result.MatchedCount == 0)
+        {
+            return NotFound(new { detail = "Pharmacy not found" });
+        }
+        
+        return Ok(new { message = "Pharmacy verified successfully" });
+    }
+    
     [HttpPut("users/{userId}/status")]
     public async Task<ActionResult> UpdateUserStatus(string userId, [FromBody] Dictionary<string, bool> body)
     {
