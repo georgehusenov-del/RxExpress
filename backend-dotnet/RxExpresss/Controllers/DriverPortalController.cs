@@ -155,6 +155,140 @@ public class DriverPortalController : ControllerBase
         });
     }
     
+    [HttpPut("deliveries/{orderId}/status")]
+    public async Task<ActionResult> UpdateDeliveryStatus(
+        string orderId,
+        [FromQuery] string status,
+        [FromQuery] string? notes = null)
+    {
+        var userId = User.GetUserId();
+        
+        var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
+        if (driver == null)
+        {
+            return NotFound(new { detail = "Driver profile not found" });
+        }
+        
+        var order = await _db.Orders.Find(o => o.Id == orderId && o.DriverId == driver.Id).FirstOrDefaultAsync();
+        if (order == null)
+        {
+            return NotFound(new { detail = "Delivery not found or not assigned to you" });
+        }
+        
+        var updateBuilder = Builders<Order>.Update
+            .Set(o => o.Status, status)
+            .Set(o => o.UpdatedAt, DateTime.UtcNow.ToString("o"));
+        
+        if (status == "picked_up")
+        {
+            updateBuilder = updateBuilder.Set(o => o.ActualPickupTime, DateTime.UtcNow.ToString("o"));
+        }
+        else if (status == "delivered")
+        {
+            updateBuilder = updateBuilder.Set(o => o.ActualDeliveryTime, DateTime.UtcNow.ToString("o"));
+        }
+        
+        var trackingUpdate = new Dictionary<string, object>
+        {
+            { "timestamp", DateTime.UtcNow.ToString("o") },
+            { "status", status },
+            { "notes", notes ?? $"Status updated by driver" }
+        };
+        updateBuilder = updateBuilder.Push(o => o.TrackingUpdates, trackingUpdate);
+        
+        await _db.Orders.UpdateOneAsync(o => o.Id == orderId, updateBuilder);
+        
+        return Ok(new { message = $"Status updated to {status}" });
+    }
+    
+    [HttpPost("deliveries/{orderId}/pod")]
+    public async Task<ActionResult> SubmitProofOfDelivery(
+        string orderId,
+        [FromBody] CompleteDeliveryDto dto)
+    {
+        var userId = User.GetUserId();
+        
+        var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
+        if (driver == null)
+        {
+            return NotFound(new { detail = "Driver profile not found" });
+        }
+        
+        var order = await _db.Orders.Find(o => o.Id == orderId && o.DriverId == driver.Id).FirstOrDefaultAsync();
+        if (order == null)
+        {
+            return NotFound(new { detail = "Delivery not found or not assigned to you" });
+        }
+        
+        var updateBuilder = Builders<Order>.Update
+            .Set(o => o.Status, "delivered")
+            .Set(o => o.ActualDeliveryTime, DateTime.UtcNow.ToString("o"))
+            .Set(o => o.UpdatedAt, DateTime.UtcNow.ToString("o"));
+        
+        if (!string.IsNullOrEmpty(dto.SignatureUrl))
+            updateBuilder = updateBuilder.Set(o => o.SignatureUrl, dto.SignatureUrl);
+        if (!string.IsNullOrEmpty(dto.RecipientNameSigned))
+            updateBuilder = updateBuilder.Set(o => o.RecipientNameSigned, dto.RecipientNameSigned);
+        if (dto.PhotoUrls != null && dto.PhotoUrls.Count > 0)
+            updateBuilder = updateBuilder.Set(o => o.PhotoUrls, dto.PhotoUrls);
+        if (dto.IdVerified.HasValue)
+            updateBuilder = updateBuilder.Set(o => o.IdVerified, dto.IdVerified.Value);
+        if (dto.Latitude.HasValue && dto.Longitude.HasValue)
+        {
+            updateBuilder = updateBuilder.Set(o => o.DeliveryLocation, new LocationPoint
+            {
+                Latitude = dto.Latitude.Value,
+                Longitude = dto.Longitude.Value,
+                Timestamp = DateTime.UtcNow.ToString("o")
+            });
+        }
+        
+        var trackingUpdate = new Dictionary<string, object>
+        {
+            { "timestamp", DateTime.UtcNow.ToString("o") },
+            { "status", "delivered" },
+            { "notes", "Proof of delivery submitted" }
+        };
+        updateBuilder = updateBuilder.Push(o => o.TrackingUpdates, trackingUpdate);
+        
+        await _db.Orders.UpdateOneAsync(o => o.Id == orderId, updateBuilder);
+        
+        // Update driver stats
+        var driverUpdate = Builders<DriverProfile>.Update.Inc(d => d.TotalDeliveries, 1);
+        await _db.Drivers.UpdateOneAsync(d => d.Id == driver.Id, driverUpdate);
+        
+        return Ok(new { success = true, message = "Proof of delivery submitted successfully" });
+    }
+    
+    [HttpGet("deliveries/{orderId}/pod")]
+    public async Task<ActionResult> GetProofOfDelivery(string orderId)
+    {
+        var userId = User.GetUserId();
+        
+        var driver = await _db.Drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
+        if (driver == null)
+        {
+            return NotFound(new { detail = "Driver profile not found" });
+        }
+        
+        var order = await _db.Orders.Find(o => o.Id == orderId).FirstOrDefaultAsync();
+        if (order == null)
+        {
+            return NotFound(new { detail = "Order not found" });
+        }
+        
+        return Ok(new
+        {
+            order_id = order.Id,
+            signature_url = order.SignatureUrl,
+            recipient_name_signed = order.RecipientNameSigned,
+            photo_urls = order.PhotoUrls,
+            id_verified = order.IdVerified,
+            delivery_location = order.DeliveryLocation,
+            delivered_at = order.ActualDeliveryTime
+        });
+    }
+    
     [HttpPost("deliveries/{orderId}/scan")]
     public async Task<ActionResult> ScanPackage(
         string orderId,
