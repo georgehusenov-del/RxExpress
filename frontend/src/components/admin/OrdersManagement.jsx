@@ -133,26 +133,12 @@ const statusCategoryConfig = {
     bgClass: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30',
     description: 'Ready for driver pickup'
   },
-  pending: { 
-    label: 'New', 
-    icon: Clock, 
-    color: 'amber',
-    bgClass: 'from-amber-500/20 to-amber-600/10 border-amber-500/30',
-    description: 'New orders awaiting processing'
-  },
   assigned: { 
     label: 'Assigned', 
     icon: UserCheck, 
     color: 'indigo',
     bgClass: 'from-indigo-500/20 to-indigo-600/10 border-indigo-500/30',
     description: 'Assigned to drivers'
-  },
-  confirmed: { 
-    label: 'Processing', 
-    icon: CheckCircle2, 
-    color: 'blue',
-    bgClass: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
-    description: 'Being prepared by pharmacy'
   },
   in_transit: { 
     label: 'In Transit', 
