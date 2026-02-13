@@ -1,7 +1,7 @@
 # RX Expresss - Pharmacy Delivery Service
 ## Product Requirements Document
 
-**Last Updated:** 2026-02-12 (Categories View Added)
+**Last Updated:** 2026-02-12 (Backend Rewritten to ASP.NET Core)
 
 ---
 
@@ -24,7 +24,31 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 
 ---
 
+### Technology Stack
+- **Frontend:** React.js, Tailwind CSS, Shadcn/UI, @dnd-kit, @react-google-maps/api
+- **Backend:** ASP.NET Core 8.0 Web API (C#) - **REWRITTEN FROM PYTHON/FASTAPI**
+- **Database:** MongoDB with MongoDB.Driver
+- **Authentication:** JWT Bearer tokens
+
+---
+
 ### What's Been Implemented
+
+#### Phase 14: Backend Rewrite to ASP.NET Core ✅ (2026-02-12)
+- Complete backend rewrite from Python/FastAPI to ASP.NET Core 8.0 C#
+- **New Project Structure:**
+  - `/app/backend-dotnet/RxExpresss/` - Main project directory
+  - `Controllers/` - AuthController, AdminController, OrdersController, DriversController, PharmaciesController, PricingController
+  - `Models/` - User.cs, Order.cs, Enums.cs (MongoDB models with BsonIgnoreExtraElements)
+  - `DTOs/` - DTOs.cs (request/response DTOs)
+  - `Services/` - MongoDbService.cs, AuthService.cs
+- **Key Features Preserved:**
+  - JWT authentication with role-based access
+  - All API routes remain the same for frontend compatibility
+  - MongoDB database connection unchanged
+  - Route optimization with Haversine distance calculation
+  - Admin dashboard stats, orders, drivers management
+  - Order status updates, reassignment, cancellation
 
 #### Phase 1-8: Core Features ✅
 - Multi-role authentication (Admin, Pharmacy, Driver, Patient)
