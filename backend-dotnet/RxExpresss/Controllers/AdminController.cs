@@ -545,19 +545,26 @@ public class AdminController : ControllerBase
             var user = await _db.Users.Find(u => u.Id == driver.UserId).FirstOrDefaultAsync();
             result.Add(new
             {
-                driver.Id,
-                driver.UserId,
-                driver.VehicleType,
-                driver.VehicleNumber,
-                driver.Status,
-                driver.CurrentLocation,
-                driver.Rating,
-                driver.TotalDeliveries,
-                driver.IsVerified,
-                first_name = user?.FirstName,
-                last_name = user?.LastName,
-                email = user?.Email,
-                phone = user?.Phone
+                id = driver.Id,
+                user_id = driver.UserId,
+                vehicle_type = driver.VehicleType,
+                vehicle_number = driver.VehicleNumber,
+                license_number = driver.LicenseNumber,
+                status = driver.Status,
+                current_location = driver.CurrentLocation,
+                rating = driver.Rating,
+                total_deliveries = driver.TotalDeliveries,
+                is_verified = driver.IsVerified,
+                created_at = driver.CreatedAt,
+                user = user == null ? null : new
+                {
+                    id = user.Id,
+                    first_name = user.FirstName,
+                    last_name = user.LastName,
+                    email = user.Email,
+                    phone = user.Phone,
+                    is_active = user.IsActive
+                }
             });
         }
         
