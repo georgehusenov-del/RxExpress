@@ -119,6 +119,7 @@ public class PharmacyLocation
     public string? PickupInstructions { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class Pharmacy
 {
     [BsonId]
