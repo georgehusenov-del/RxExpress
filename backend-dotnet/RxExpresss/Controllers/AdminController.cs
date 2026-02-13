@@ -173,8 +173,21 @@ public class AdminController : ControllerBase
     }
     
     [HttpPut("orders/{orderId}/status")]
-    public async Task<ActionResult> UpdateOrderStatus(string orderId, [FromBody] OrderStatusUpdateDto dto)
+    public async Task<ActionResult> UpdateOrderStatus(
+        string orderId, 
+        [FromQuery] string? status = null,
+        [FromQuery] string? notes = null,
+        [FromBody] OrderStatusUpdateDto? body = null)
     {
+        // Accept both query params and body
+        var statusValue = status ?? body?.Status;
+        var notesValue = notes ?? body?.Notes;
+        
+        if (string.IsNullOrEmpty(statusValue))
+        {
+            return BadRequest(new { detail = "status is required" });
+        }
+        
         var order = await _db.Orders.Find(o => o.Id == orderId).FirstOrDefaultAsync();
         if (order == null)
         {
