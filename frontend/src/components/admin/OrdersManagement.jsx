@@ -1700,6 +1700,14 @@ export const OrdersManagement = () => {
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            className="text-blue-400 hover:bg-slate-700"
+                            onClick={() => handlePrintOrder(order)}
+                            data-testid={`print-order-${order.id}`}
+                          >
+                            <Printer className="w-4 h-4 mr-2" />
+                            Print Label
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             className="text-teal-400 hover:bg-slate-700"
                             onClick={() => openStatusModal(order)}
                             data-testid={`change-status-${order.id}`}
