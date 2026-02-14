@@ -3272,9 +3272,29 @@ async def scan_package_qr(scan_data: QRCodeScan, current_user: dict = Depends(ge
         raise HTTPException(status_code=404, detail="Package not found")
     
     # Update package scan time
+    update_fields = {"packages.$.scanned_at": datetime.now(timezone.utc).isoformat()}
+    
+    # For pickup scans, update order status to picked_up if currently in a "new" state
+    new_status = order.get("status")
+    if scan_data.action == "pickup":
+        pickup_eligible_statuses = ["new", "pending", "confirmed", "ready_for_pickup"]
+        if order.get("status") in pickup_eligible_statuses:
+            new_status = "picked_up"
+            # We need to update the order status as well
+            await db.orders.update_one(
+                {"id": order["id"]},
+                {
+                    "$set": {
+                        "status": "picked_up",
+                        "actual_pickup_time": datetime.now(timezone.utc).isoformat(),
+                        "pickup_scanned_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+    
     await db.orders.update_one(
         {"id": order["id"], "packages.qr_code": scan_data.qr_code},
-        {"$set": {"packages.$.scanned_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": update_fields}
     )
     
     # Log the scan
@@ -3295,7 +3315,7 @@ async def scan_package_qr(scan_data: QRCodeScan, current_user: dict = Depends(ge
         "order_number": order.get("order_number"),
         "recipient_name": order.get("recipient", {}).get("name"),
         "delivery_address": f"{order.get('delivery_address', {}).get('street')}, {order.get('delivery_address', {}).get('city')}",
-        "status": order.get("status"),
+        "status": new_status,
         "prescriptions": package.get("prescriptions", []),
         "requires_signature": package.get("requires_signature", True),
         "requires_refrigeration": package.get("requires_refrigeration", False)
