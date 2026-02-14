@@ -929,7 +929,15 @@ export const OrdersManagement = () => {
     order.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.recipient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.pharmacy_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).filter(order => {
+    // Date filter
+    if (!dateFilter) return true;
+    const orderDate = order.created_at ? new Date(order.created_at) : null;
+    if (!orderDate) return true;
+    const filterStart = startOfDay(dateFilter);
+    const filterEnd = endOfDay(dateFilter);
+    return orderDate >= filterStart && orderDate <= filterEnd;
+  });
 
   // Smart Organizer: Group orders by borough and time window
   const organizedOrders = useMemo(() => {
