@@ -103,6 +103,10 @@ export const circuitAPI = {
   listLocalPlans: (params) => api.get('/circuit/route-plans', { params }),
   getPendingOrders: (params) => api.get('/circuit/pending-orders', { params }),
   
+  // Auto-assignment and driver assignment
+  autoAssignByBorough: (status = 'out_for_delivery') => api.post('/circuit/auto-assign-by-borough', { status }),
+  assignDriverToGig: (planId, driverId) => api.post(`/circuit/plans/${extractPlanId(planId)}/assign-driver`, { driver_id: driverId }),
+  
   // Sync
   syncOrder: (orderId) => api.post(`/circuit/sync-order/${orderId}`),
   getDeliveryProof: (planId, stopId) => api.get(`/circuit/plans/${extractPlanId(planId)}/stops/${stopId}/proof`),
