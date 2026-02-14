@@ -470,8 +470,10 @@ export const RouteManagement = () => {
                   data-testid={`route-plan-${plan.id}`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center">
-                      <Route className="w-5 h-5 text-teal-400" />
+                    <div className="w-12 h-12 rounded-lg bg-teal-500/20 flex items-center justify-center">
+                      <span className="text-lg font-bold text-teal-400">
+                        {plan.title?.match(/Route (\d+)/)?.[1] || '#'}
+                      </span>
                     </div>
                     <div>
                       <p className="font-medium text-white">{plan.title}</p>
@@ -484,76 +486,54 @@ export const RouteManagement = () => {
                           <Package className="w-3 h-3" />
                           {plan.stops_count} stops
                         </span>
+                        {plan.distributed && (
+                          <Badge variant="outline" className="border-green-500/50 text-green-400 text-xs">
+                            Sent to Drivers
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline" className={getStatusBadge(plan.status)}>
-                      {plan.status}
-                    </Badge>
-                    {plan.distributed && (
-                      <Badge variant="outline" className="border-purple-500 text-purple-400">
-                        Distributed
-                      </Badge>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedPlan(plan);
-                          setShowAddOrdersModal(true);
-                        }}
-                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                        data-testid={`add-orders-${plan.id}`}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOptimize(plan)}
-                        disabled={optimizing || plan.stops_count === 0}
-                        className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
-                        data-testid={`optimize-${plan.id}`}
-                      >
-                        {optimizing ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Zap className="w-4 h-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDistribute(plan)}
-                        disabled={plan.optimization_status !== 'done'}
-                        className="border-green-500/50 text-green-400 hover:bg-green-500/10"
-                        data-testid={`distribute-${plan.id}`}
-                      >
-                        <Send className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewDetails(plan)}
-                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                        data-testid={`view-details-${plan.id}`}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeletePlan(plan)}
-                        className="border-red-500/50 text-red-400 hover:bg-red-500/10"
-                        data-testid={`delete-plan-${plan.id}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOptimize(plan)}
+                      disabled={optimizing || plan.stops_count === 0}
+                      className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                      title="Optimize route"
+                    >
+                      {optimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDistribute(plan)}
+                      disabled={plan.optimization_status !== 'done'}
+                      className="border-green-500/50 text-green-400 hover:bg-green-500/10"
+                      title="Send to drivers"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewDetails(plan)}
+                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                      title="View details"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeletePlan(plan)}
+                      className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                      title="Delete route"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
