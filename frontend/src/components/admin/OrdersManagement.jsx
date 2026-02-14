@@ -246,6 +246,30 @@ const timeWindowToApiFormat = {
   evening: '4pm-10pm',
 };
 
+// Helper to check if order has refrigerated packages
+const hasRefrigeratedPackages = (order) => {
+  return order.packages?.some(pkg => pkg.requires_refrigeration) || 
+         order.requires_refrigeration || 
+         false;
+};
+
+// Refrigerated Package Indicator Component
+const RefrigeratedIndicator = ({ order, size = 'sm' }) => {
+  if (!hasRefrigeratedPackages(order)) return null;
+  
+  const sizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6'
+  };
+  
+  return (
+    <div className="flex items-center gap-1 text-cyan-400" title="Refrigerated Package - Cold Chain Required">
+      <Snowflake className={`${sizeClasses[size]} animate-pulse`} />
+    </div>
+  );
+};
+
 // Draggable Order Card Component with Quick Driver Assign
 const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onQuickStatusChange, onAssignDriver, drivers, statusColors, statusLabels }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
