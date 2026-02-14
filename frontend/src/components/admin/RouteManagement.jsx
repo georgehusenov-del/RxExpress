@@ -305,15 +305,6 @@ export const RouteManagement = () => {
     }
   };
 
-  // Toggle order selection
-  const toggleOrderSelection = (orderId) => {
-    setSelectedOrders(prev => 
-      prev.includes(orderId) 
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId]
-    );
-  };
-
   // Toggle driver selection
   const toggleDriverSelection = (driverId) => {
     setSelectedDrivers(prev =>
