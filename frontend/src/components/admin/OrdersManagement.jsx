@@ -860,6 +860,67 @@ export const OrdersManagement = () => {
     printWindow.document.close();
   };
 
+  // Order selection functions
+  const toggleOrderSelection = (orderId) => {
+    setSelectedOrderIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllInTimeWindow = (orders) => {
+    const orderIds = orders.map(o => o.id);
+    setSelectedOrderIds(prev => {
+      const newSet = new Set(prev);
+      const allSelected = orderIds.every(id => newSet.has(id));
+      
+      if (allSelected) {
+        // Deselect all
+        orderIds.forEach(id => newSet.delete(id));
+      } else {
+        // Select all
+        orderIds.forEach(id => newSet.add(id));
+      }
+      return newSet;
+    });
+  };
+
+  const isAllSelectedInTimeWindow = (orders) => {
+    if (orders.length === 0) return false;
+    return orders.every(o => selectedOrderIds.has(o.id));
+  };
+
+  const clearSelection = () => {
+    setSelectedOrderIds(new Set());
+  };
+
+  const handleBulkStatusChange = async (newStatus) => {
+    if (selectedOrderIds.size === 0) return;
+    
+    try {
+      const promises = Array.from(selectedOrderIds).map(orderId =>
+        adminAPI.updateOrderStatus(orderId, newStatus, null)
+      );
+      await Promise.all(promises);
+      toast.success(`Updated ${selectedOrderIds.size} orders to ${statusLabels[newStatus]}`);
+      clearSelection();
+      fetchOrders();
+    } catch (err) {
+      toast.error('Failed to update some orders');
+    }
+  };
+
+  const handleBulkPrint = () => {
+    const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
+    selectedOrders.forEach(order => handlePrintOrder(order));
+    toast.success(`Printing ${selectedOrders.length} labels`);
+  };
+
   const filteredOrders = orders.filter(order =>
     order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
