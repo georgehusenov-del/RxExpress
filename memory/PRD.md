@@ -167,6 +167,13 @@ Unified status values:
 ## Changelog
 
 ### Feb 14, 2026 (Session 2)
+- **Revamped Driver Portal with 3 Tabs**:
+  - **Deliveries tab**: Shows out_for_delivery/in_transit orders with "Scan Delivery" and "Complete POD" buttons
+  - **Pick Ups tab**: Shows new orders for pickup with "Scan for Pickup" button (status changes to picked_up only)
+  - **Completed tab**: Shows today's completed deliveries count
+  - Removed rating/stars from driver profile
+  - Removed status options (Available/On Break/Offline), replaced with simple Online/Offline toggle
+  - Out for delivery packages no longer show pickup scan option
 - **Implemented Auto-Assign Orders by Borough** - New endpoint POST /api/circuit/auto-assign-by-borough
   - Automatically groups "out for delivery" orders by NYC borough (Q=Queens, B=Brooklyn, M=Manhattan, X=Bronx, S=Staten Island)
   - Creates new gigs (Gig N) for each borough with orders
