@@ -29,6 +29,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
     delivery_type: 'next_day',
     time_window: '8am-1pm',
     selected_pricing_id: null,
+    scheduled_date: null,
     recipient_name: '',
     recipient_phone: '',
     recipient_email: '',
