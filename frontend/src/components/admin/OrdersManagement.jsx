@@ -172,43 +172,6 @@ const InlineStatusSelect = ({ order, onStatusChange, statusColors, statusLabels 
   );
 };
 
-// Helper to extract borough from QR code
-const getBoroughFromOrder = (order) => {
-  if (order.qr_code && order.qr_code.length > 0) {
-    const firstChar = order.qr_code.charAt(0).toUpperCase();
-    if (boroughConfig[firstChar]) return firstChar;
-  }
-  // Fallback: try to detect from city name
-  const city = order.delivery_address?.city?.toLowerCase() || '';
-  if (city.includes('queens')) return 'Q';
-  if (city.includes('brooklyn')) return 'B';
-  if (city.includes('manhattan') || city.includes('new york')) return 'M';
-  if (city.includes('staten')) return 'S';
-  if (city.includes('bronx')) return 'X';
-  return null;
-};
-
-// Helper to determine time window from order
-const getTimeWindowFromOrder = (order) => {
-  const timeWindow = order.time_window;
-  if (timeWindow) {
-    if (timeWindow.includes('8am') || timeWindow.includes('morning') || timeWindow === '8am-1pm') return 'morning';
-    if (timeWindow.includes('1pm') || timeWindow.includes('afternoon') || timeWindow === '1pm-4pm') return 'afternoon';
-    if (timeWindow.includes('4pm') || timeWindow.includes('evening') || timeWindow === '4pm-10pm') return 'evening';
-  }
-  // For priority/same-day, default to morning
-  if (order.delivery_type === 'priority') return 'morning';
-  if (order.delivery_type === 'same_day') return 'afternoon';
-  return 'morning'; // Default
-};
-
-// Map internal time window names to API format
-const timeWindowToApiFormat = {
-  morning: '8am-1pm',
-  afternoon: '1pm-4pm',
-  evening: '4pm-10pm',
-};
-
 // Helper to check if order has refrigerated packages
 const hasRefrigeratedPackages = (order) => {
   return order.packages?.some(pkg => pkg.requires_refrigeration) || 
