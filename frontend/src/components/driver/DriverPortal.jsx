@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -10,18 +10,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
   Truck, Package, MapPin, Clock, CheckCircle, AlertCircle,
   QrCode, Navigation, Phone, User, RefreshCw, LogOut,
-  ChevronRight, Star, Thermometer, FileSignature, XCircle, Camera
+  ChevronRight, Thermometer, FileSignature, Upload
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { driverPortalAPI } from '@/lib/api';
@@ -37,7 +28,6 @@ const statusColors = {
   delivered: 'bg-green-500/20 text-green-400 border-green-500/30',
   failed: 'bg-red-500/20 text-red-400 border-red-500/30',
   canceled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-  // Legacy mappings
   pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   confirmed: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   ready_for_pickup: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
@@ -53,47 +43,63 @@ const statusLabels = {
   delivered: 'Delivered',
   failed: 'Failed',
   canceled: 'Canceled',
-  // Legacy mappings
   assigned: 'Out for Delivery',
   cancelled: 'Canceled',
 };
 
-const driverStatusColors = {
-  available: 'bg-green-500',
-  on_route: 'bg-blue-500',
-  on_break: 'bg-amber-500',
-  offline: 'bg-slate-500',
-};
-
 export const DriverPortal = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [profile, setProfile] = useState(null);
-  const [deliveries, setDeliveries] = useState([]);
-  const [completedDeliveries, setCompletedDeliveries] = useState([]);
+  const [deliveries, setDeliveries] = useState([]);        // Out for delivery orders
+  const [pickups, setPickups] = useState([]);              // New orders for pickup
+  const [completedToday, setCompletedToday] = useState([]); // Completed today
   const [loading, setLoading] = useState(true);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [scanAction, setScanAction] = useState('pickup');
-  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [scanAction, setScanAction] = useState('delivery');
   const [showPodModal, setShowPodModal] = useState(false);
-  const [newStatus, setNewStatus] = useState('');
-  const [statusNotes, setStatusNotes] = useState('');
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [activeTab, setActiveTab] = useState('active');
+  const [activeTab, setActiveTab] = useState('deliveries');
+  const [isOnline, setIsOnline] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [profileRes, activeRes, completedRes] = await Promise.all([
+      const [profileRes, allDeliveriesRes, completedRes] = await Promise.all([
         driverPortalAPI.getProfile(),
         driverPortalAPI.getDeliveries(),
         driverPortalAPI.getDeliveries('delivered')
       ]);
       
       setProfile(profileRes.data);
-      setDeliveries(activeRes.data.deliveries || []);
-      setCompletedDeliveries(completedRes.data.deliveries || []);
+      setIsOnline(profileRes.data?.driver?.status !== 'offline');
+      
+      // Separate deliveries and pickups based on status
+      const allOrders = allDeliveriesRes.data.deliveries || [];
+      
+      // Deliveries tab: out_for_delivery, in_transit, assigned orders (ready to deliver)
+      const deliveryOrders = allOrders.filter(o => 
+        ['out_for_delivery', 'in_transit', 'assigned'].includes(o.status)
+      );
+      
+      // Pick Ups tab: new orders that need pickup (status = new, confirmed, ready_for_pickup, pending)
+      const pickupOrders = allOrders.filter(o => 
+        ['new', 'pending', 'confirmed', 'ready_for_pickup'].includes(o.status)
+      );
+      
+      setDeliveries(deliveryOrders);
+      setPickups(pickupOrders);
+      
+      // Filter completed deliveries for today only
+      const today = new Date().toDateString();
+      const todayCompleted = (completedRes.data.deliveries || []).filter(o => {
+        const deliveryDate = o.actual_delivery_time || o.updated_at;
+        if (deliveryDate) {
+          return new Date(deliveryDate).toDateString() === today;
+        }
+        return false;
+      });
+      setCompletedToday(todayCompleted);
     } catch (err) {
       console.error('Failed to fetch driver data:', err);
       if (err.response?.status === 404) {
@@ -123,7 +129,7 @@ export const DriverPortal = () => {
           { enableHighAccuracy: true, timeout: 5000 }
         );
       }
-    }, 60000); // Every minute
+    }, 60000);
     
     return () => clearInterval(locationInterval);
   }, [fetchData]);
@@ -133,31 +139,12 @@ export const DriverPortal = () => {
     window.location.href = '/login';
   };
 
-  const handleStatusUpdate = async () => {
-    if (!selectedDelivery || !newStatus) return;
-    
-    setUpdatingStatus(true);
+  const toggleOnlineStatus = async () => {
+    const newStatus = isOnline ? 'offline' : 'available';
     try {
-      await driverPortalAPI.updateDeliveryStatus(selectedDelivery.id, newStatus, statusNotes || null);
-      toast.success(`Delivery status updated to ${statusLabels[newStatus]}`);
-      setShowStatusModal(false);
-      setShowDeliveryModal(false);
-      setSelectedDelivery(null);
-      setNewStatus('');
-      setStatusNotes('');
-      fetchData();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to update status');
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
-
-  const handleDriverStatusChange = async (status) => {
-    try {
-      await driverPortalAPI.updateStatus(status);
-      toast.success(`Status updated to ${status}`);
-      fetchData();
+      await driverPortalAPI.updateStatus(newStatus);
+      setIsOnline(!isOnline);
+      toast.success(isOnline ? 'You are now offline' : 'You are now online');
     } catch (err) {
       toast.error('Failed to update status');
     }
@@ -170,16 +157,23 @@ export const DriverPortal = () => {
   };
 
   const handleScanSuccess = async (scanResult) => {
-    toast.success(`Package scanned for ${scanAction}!`);
+    toast.success(`Package scanned successfully!`);
     setShowScanner(false);
     fetchData();
   };
 
-  const openStatusModal = (delivery) => {
-    setSelectedDelivery(delivery);
-    setNewStatus(delivery.status);
-    setStatusNotes('');
-    setShowStatusModal(true);
+  // Handle pickup scan - only changes from new to picked_up
+  const handlePickupScan = (delivery) => {
+    if (['out_for_delivery', 'in_transit', 'assigned'].includes(delivery.status)) {
+      toast.error('This package is already out for delivery. No pickup scan needed.');
+      return;
+    }
+    openScanner(delivery, 'pickup');
+  };
+
+  // Handle delivery scan - for completing delivery
+  const handleDeliveryScan = (delivery) => {
+    openScanner(delivery, 'delivery');
   };
 
   if (loading) {
@@ -243,7 +237,7 @@ export const DriverPortal = () => {
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Driver Profile Card */}
+        {/* Driver Profile Card - Simplified */}
         <Card className="bg-slate-800 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
@@ -254,146 +248,155 @@ export const DriverPortal = () => {
                 <h2 className="text-lg font-semibold text-white">
                   {profile.user?.first_name} {profile.user?.last_name}
                 </h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className={`w-2 h-2 rounded-full ${driverStatusColors[profile.driver?.status] || driverStatusColors.offline}`} />
-                  <span className="text-sm text-slate-400 capitalize">{profile.driver?.status || 'Offline'}</span>
+                <p className="text-xs text-slate-500">{profile.stats?.total_deliveries || 0} total deliveries</p>
+              </div>
+              {/* Online/Offline Toggle */}
+              <Button
+                onClick={toggleOnlineStatus}
+                className={`${isOnline ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 hover:bg-slate-700'}`}
+                data-testid="online-toggle-btn"
+              >
+                <div className={`w-2 h-2 rounded-full mr-2 ${isOnline ? 'bg-green-300' : 'bg-slate-400'}`} />
+                {isOnline ? 'Online' : 'Offline'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats Summary - Today's Completed */}
+        <Card className="bg-gradient-to-br from-green-500/20 to-green-600/10 border-green-500/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-8 h-8 text-green-400" />
+                <div>
+                  <p className="text-2xl font-bold text-white">{completedToday.length}</p>
+                  <p className="text-xs text-slate-400">Completed Today</p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="flex items-center gap-1 text-amber-400">
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <span className="font-semibold">{profile.stats?.rating?.toFixed(1) || '5.0'}</span>
-                </div>
-                <p className="text-xs text-slate-500">{profile.stats?.total_deliveries || 0} deliveries</p>
-              </div>
-            </div>
-            
-            {/* Status Toggle */}
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <Label className="text-sm text-slate-400 mb-2 block">Your Status</Label>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  size="sm"
-                  variant={profile.driver?.status === 'available' ? 'default' : 'outline'}
-                  className={profile.driver?.status === 'available' ? 'bg-green-600 hover:bg-green-700' : 'border-slate-600'}
-                  onClick={() => handleDriverStatusChange('available')}
-                  data-testid="status-available-btn"
-                >
-                  Available
-                </Button>
-                <Button
-                  size="sm"
-                  variant={profile.driver?.status === 'on_break' ? 'default' : 'outline'}
-                  className={profile.driver?.status === 'on_break' ? 'bg-amber-600 hover:bg-amber-700' : 'border-slate-600'}
-                  onClick={() => handleDriverStatusChange('on_break')}
-                >
-                  On Break
-                </Button>
-                <Button
-                  size="sm"
-                  variant={profile.driver?.status === 'offline' ? 'default' : 'outline'}
-                  className={profile.driver?.status === 'offline' ? 'bg-slate-600 hover:bg-slate-700' : 'border-slate-600'}
-                  onClick={() => handleDriverStatusChange('offline')}
-                >
-                  Offline
-                </Button>
+                <p className="text-sm text-slate-400">{deliveries.length} to deliver</p>
+                <p className="text-sm text-slate-400">{pickups.length} to pick up</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Stats Summary */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-gradient-to-br from-teal-500/20 to-teal-600/10 border-teal-500/30">
-            <CardContent className="p-4 text-center">
-              <Package className="w-8 h-8 text-teal-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-white">{profile.stats?.active_deliveries || 0}</p>
-              <p className="text-xs text-slate-400">Active Deliveries</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-green-500/20 to-green-600/10 border-green-500/30">
-            <CardContent className="p-4 text-center">
-              <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-white">{profile.stats?.total_deliveries || 0}</p>
-              <p className="text-xs text-slate-400">Total Completed</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex gap-2 bg-slate-800 p-1 rounded-lg">
+        {/* 3 Tab Navigation */}
+        <div className="flex gap-1 bg-slate-800 p-1 rounded-lg">
           <Button
-            variant={activeTab === 'active' ? 'default' : 'ghost'}
-            className={`flex-1 ${activeTab === 'active' ? 'bg-teal-600' : ''}`}
-            onClick={() => setActiveTab('active')}
+            variant={activeTab === 'deliveries' ? 'default' : 'ghost'}
+            className={`flex-1 text-xs ${activeTab === 'deliveries' ? 'bg-teal-600' : ''}`}
+            onClick={() => setActiveTab('deliveries')}
+            data-testid="tab-deliveries"
           >
-            <Package className="w-4 h-4 mr-2" />
-            Active ({deliveries.length})
+            <Truck className="w-3 h-3 mr-1" />
+            Deliveries ({deliveries.length})
+          </Button>
+          <Button
+            variant={activeTab === 'pickups' ? 'default' : 'ghost'}
+            className={`flex-1 text-xs ${activeTab === 'pickups' ? 'bg-blue-600' : ''}`}
+            onClick={() => setActiveTab('pickups')}
+            data-testid="tab-pickups"
+          >
+            <Upload className="w-3 h-3 mr-1" />
+            Pick Ups ({pickups.length})
           </Button>
           <Button
             variant={activeTab === 'completed' ? 'default' : 'ghost'}
-            className={`flex-1 ${activeTab === 'completed' ? 'bg-teal-600' : ''}`}
+            className={`flex-1 text-xs ${activeTab === 'completed' ? 'bg-green-600' : ''}`}
             onClick={() => setActiveTab('completed')}
+            data-testid="tab-completed"
           >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Completed
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Completed ({completedToday.length})
           </Button>
         </div>
 
-        {/* Deliveries List */}
-        <div className="space-y-3">
-          {activeTab === 'active' && (
-            <>
-              {deliveries.length === 0 ? (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardContent className="p-8 text-center">
-                    <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-400">No active deliveries</p>
-                    <p className="text-xs text-slate-500 mt-1">New deliveries will appear here</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                deliveries.map((delivery) => (
-                  <DeliveryCard
-                    key={delivery.id}
-                    delivery={delivery}
-                    onView={() => {
-                      setSelectedDelivery(delivery);
-                      setShowDeliveryModal(true);
-                    }}
-                    onScan={(action) => openScanner(delivery, action)}
-                    onUpdateStatus={() => openStatusModal(delivery)}
-                  />
-                ))
-              )}
-            </>
-          )}
-          
-          {activeTab === 'completed' && (
-            <>
-              {completedDeliveries.length === 0 ? (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardContent className="p-8 text-center">
-                    <CheckCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-400">No completed deliveries</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                completedDeliveries.slice(0, 10).map((delivery) => (
-                  <DeliveryCard
-                    key={delivery.id}
-                    delivery={delivery}
-                    completed
-                    onView={() => {
-                      setSelectedDelivery(delivery);
-                      setShowDeliveryModal(true);
-                    }}
-                  />
-                ))
-              )}
-            </>
-          )}
-        </div>
+        {/* Deliveries Tab - Orders to deliver */}
+        {activeTab === 'deliveries' && (
+          <div className="space-y-3">
+            {deliveries.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-8 text-center">
+                  <Truck className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No deliveries pending</p>
+                  <p className="text-xs text-slate-500 mt-1">Orders out for delivery will appear here</p>
+                </CardContent>
+              </Card>
+            ) : (
+              deliveries.map((delivery) => (
+                <DeliveryCard
+                  key={delivery.id}
+                  delivery={delivery}
+                  type="delivery"
+                  onView={() => {
+                    setSelectedDelivery(delivery);
+                    setShowDeliveryModal(true);
+                  }}
+                  onScanDelivery={() => handleDeliveryScan(delivery)}
+                  onCompletePod={() => {
+                    setSelectedDelivery(delivery);
+                    setShowPodModal(true);
+                  }}
+                />
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Pick Ups Tab - Orders to pick up */}
+        {activeTab === 'pickups' && (
+          <div className="space-y-3">
+            {pickups.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-8 text-center">
+                  <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No pickups pending</p>
+                  <p className="text-xs text-slate-500 mt-1">New orders for pickup will appear here</p>
+                </CardContent>
+              </Card>
+            ) : (
+              pickups.map((delivery) => (
+                <PickupCard
+                  key={delivery.id}
+                  delivery={delivery}
+                  onView={() => {
+                    setSelectedDelivery(delivery);
+                    setShowDeliveryModal(true);
+                  }}
+                  onScanPickup={() => handlePickupScan(delivery)}
+                />
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Completed Tab - Today's completed deliveries */}
+        {activeTab === 'completed' && (
+          <div className="space-y-3">
+            {completedToday.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-8 text-center">
+                  <CheckCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No completed deliveries today</p>
+                  <p className="text-xs text-slate-500 mt-1">Your completed deliveries will appear here</p>
+                </CardContent>
+              </Card>
+            ) : (
+              completedToday.map((delivery) => (
+                <CompletedCard
+                  key={delivery.id}
+                  delivery={delivery}
+                  onView={() => {
+                    setSelectedDelivery(delivery);
+                    setShowDeliveryModal(true);
+                  }}
+                />
+              ))
+            )}
+          </div>
+        )}
 
         {/* Refresh Button */}
         <Button
@@ -403,7 +406,7 @@ export const DriverPortal = () => {
           data-testid="refresh-deliveries-btn"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh Deliveries
+          Refresh
         </Button>
       </main>
 
@@ -491,50 +494,48 @@ export const DriverPortal = () => {
           <DialogFooter className="flex-col gap-2 sm:flex-col">
             {selectedDelivery && !['delivered', 'failed', 'cancelled'].includes(selectedDelivery.status) && (
               <>
-                <div className="grid grid-cols-2 gap-2 w-full">
+                {/* Show Pickup Scan only for new orders (not out for delivery) */}
+                {['new', 'pending', 'confirmed', 'ready_for_pickup'].includes(selectedDelivery.status) && (
                   <Button
                     onClick={() => {
                       setShowDeliveryModal(false);
-                      openScanner(selectedDelivery, 'pickup');
+                      handlePickupScan(selectedDelivery);
                     }}
                     variant="outline"
-                    className="border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+                    className="w-full border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
                   >
                     <QrCode className="w-4 h-4 mr-2" />
-                    Scan Pickup
+                    Scan for Pickup
                   </Button>
-                  <Button
-                    onClick={() => {
-                      setShowDeliveryModal(false);
-                      openScanner(selectedDelivery, 'delivery');
-                    }}
-                    variant="outline"
-                    className="border-green-500/50 text-green-400 hover:bg-green-500/20"
-                  >
-                    <QrCode className="w-4 h-4 mr-2" />
-                    Scan Delivery
-                  </Button>
-                </div>
-                {/* Complete Delivery with POD */}
-                <Button
-                  onClick={() => {
-                    setShowDeliveryModal(false);
-                    setShowPodModal(true);
-                  }}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  data-testid="complete-delivery-btn"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Complete Delivery (POD)
-                </Button>
-                <Button
-                  onClick={() => openStatusModal(selectedDelivery)}
-                  variant="outline"
-                  className="w-full border-slate-600"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Update Status
-                </Button>
+                )}
+                
+                {/* Show Delivery options only for out_for_delivery orders */}
+                {['out_for_delivery', 'in_transit', 'assigned'].includes(selectedDelivery.status) && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        setShowDeliveryModal(false);
+                        handleDeliveryScan(selectedDelivery);
+                      }}
+                      variant="outline"
+                      className="w-full border-green-500/50 text-green-400 hover:bg-green-500/20"
+                    >
+                      <QrCode className="w-4 h-4 mr-2" />
+                      Scan for Delivery
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowDeliveryModal(false);
+                        setShowPodModal(true);
+                      }}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      data-testid="complete-delivery-btn"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Complete Delivery (POD)
+                    </Button>
+                  </>
+                )}
               </>
             )}
             {selectedDelivery?.delivery_address && (
@@ -570,66 +571,6 @@ export const DriverPortal = () => {
         />
       )}
 
-      {/* Status Update Modal */}
-      <Dialog open={showStatusModal} onOpenChange={setShowStatusModal}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle>Update Delivery Status</DialogTitle>
-          </DialogHeader>
-          {selectedDelivery && (
-            <div className="space-y-4">
-              <div className="p-3 bg-slate-700/50 rounded-lg">
-                <p className="font-mono text-sm text-teal-400">{selectedDelivery.order_number}</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Current: <Badge variant="outline" className={statusColors[selectedDelivery.status]}>
-                    {statusLabels[selectedDelivery.status] || selectedDelivery.status}
-                  </Badge>
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-slate-300">New Status</Label>
-                <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="picked_up">Picked Up</SelectItem>
-                    <SelectItem value="in_transit">In Transit</SelectItem>
-                    <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-slate-300">Notes (Optional)</Label>
-                <Textarea
-                  value={statusNotes}
-                  onChange={(e) => setStatusNotes(e.target.value)}
-                  placeholder="Add notes..."
-                  className="bg-slate-700 border-slate-600 text-white resize-none"
-                  rows={2}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStatusModal(false)} className="border-slate-600">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleStatusUpdate}
-              disabled={updatingStatus || !newStatus}
-              className="bg-teal-600 hover:bg-teal-700"
-            >
-              {updatingStatus ? 'Updating...' : 'Update'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* QR Scanner Modal */}
       {showScanner && selectedDelivery && (
         <QRScanner
@@ -642,8 +583,8 @@ export const DriverPortal = () => {
   );
 };
 
-// Delivery Card Component
-const DeliveryCard = ({ delivery, completed, onView, onScan, onUpdateStatus }) => {
+// Delivery Card Component - For orders to deliver
+const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod }) => {
   return (
     <Card
       className="bg-slate-800 border-slate-700 cursor-pointer hover:bg-slate-750 transition-colors"
@@ -670,7 +611,7 @@ const DeliveryCard = ({ delivery, completed, onView, onScan, onUpdateStatus }) =
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <Clock className="w-4 h-4" />
+            <Package className="w-4 h-4" />
             <span>{delivery.packages?.length || 0} packages</span>
             {delivery.packages?.some(p => p.requires_refrigeration) && (
               <Thermometer className="w-4 h-4 text-cyan-400" />
@@ -679,41 +620,132 @@ const DeliveryCard = ({ delivery, completed, onView, onScan, onUpdateStatus }) =
               <FileSignature className="w-4 h-4 text-blue-400" />
             )}
           </div>
+        </div>
+        
+        {/* Action buttons for delivery */}
+        <div className="mt-3 pt-3 border-t border-slate-700 flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 border-green-500/50 text-green-400 hover:bg-green-500/20"
+            onClick={onScanDelivery}
+            data-testid={`scan-delivery-${delivery.id}`}
+          >
+            <QrCode className="w-3 h-3 mr-1" />
+            Scan Delivery
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 bg-green-600 hover:bg-green-700"
+            onClick={onCompletePod}
+            data-testid={`complete-pod-${delivery.id}`}
+          >
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Complete POD
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Pickup Card Component - For orders to pick up
+const PickupCard = ({ delivery, onView, onScanPickup }) => {
+  return (
+    <Card
+      className="bg-slate-800 border-slate-700 cursor-pointer hover:bg-slate-750 transition-colors"
+      onClick={onView}
+      data-testid={`pickup-card-${delivery.id}`}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="font-mono text-sm text-blue-400">{delivery.order_number}</p>
+            <p className="text-xs text-slate-500">{delivery.pharmacy?.name || 'Pharmacy'}</p>
+          </div>
+          <Badge variant="outline" className={statusColors[delivery.status]}>
+            {statusLabels[delivery.status] || delivery.status}
+          </Badge>
+        </div>
+        
+        {/* Pickup location */}
+        <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg mb-3">
+          <p className="text-xs text-blue-400 mb-1">PICKUP FROM</p>
+          <p className="text-sm text-slate-300">
+            {delivery.pharmacy?.address?.street || delivery.pickup_address?.street || 'Pharmacy location'}
+          </p>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <Package className="w-4 h-4" />
+            <span>{delivery.packages?.length || 0} packages</span>
+            {delivery.packages?.some(p => p.requires_refrigeration) && (
+              <Thermometer className="w-4 h-4 text-cyan-400" />
+            )}
+          </div>
           <ChevronRight className="w-5 h-5 text-slate-500" />
         </div>
         
-        {!completed && (
-          <div className="mt-3 pt-3 border-t border-slate-700 flex gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 border-slate-600 text-slate-300"
-              onClick={() => onScan?.('pickup')}
-              data-testid={`scan-pickup-${delivery.id}`}
-            >
-              <QrCode className="w-3 h-3 mr-1" />
-              Pickup
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 border-slate-600 text-slate-300"
-              onClick={() => onScan?.('delivery')}
-              data-testid={`scan-delivery-${delivery.id}`}
-            >
-              <QrCode className="w-3 h-3 mr-1" />
-              Deliver
-            </Button>
-            <Button
-              size="sm"
-              className="bg-teal-600 hover:bg-teal-700"
-              onClick={onUpdateStatus}
-              data-testid={`update-status-${delivery.id}`}
-            >
-              <RefreshCw className="w-3 h-3" />
-            </Button>
+        {/* Pickup action button */}
+        <div className="mt-3 pt-3 border-t border-slate-700" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            onClick={onScanPickup}
+            data-testid={`scan-pickup-${delivery.id}`}
+          >
+            <QrCode className="w-3 h-3 mr-2" />
+            Scan for Pickup
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Completed Card Component - For completed deliveries
+const CompletedCard = ({ delivery, onView }) => {
+  const deliveryTime = delivery.actual_delivery_time || delivery.updated_at;
+  const timeStr = deliveryTime ? new Date(deliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  
+  return (
+    <Card
+      className="bg-slate-800 border-slate-700 cursor-pointer hover:bg-slate-750 transition-colors"
+      onClick={onView}
+      data-testid={`completed-card-${delivery.id}`}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <p className="font-mono text-sm text-green-400">{delivery.order_number}</p>
+            <p className="text-xs text-slate-500">{delivery.pharmacy?.name || 'Pharmacy'}</p>
           </div>
-        )}
+          <div className="text-right">
+            <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
+              Delivered
+            </Badge>
+            {timeStr && <p className="text-xs text-slate-500 mt-1">{timeStr}</p>}
+          </div>
+        </div>
+        
+        <div className="flex items-start gap-2 text-slate-400 text-sm">
+          <MapPin className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
+          <span>
+            {delivery.delivery_address?.street}, {delivery.delivery_address?.city}
+          </span>
+        </div>
+        
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center gap-2 text-slate-500 text-xs">
+            <Package className="w-3 h-3" />
+            <span>{delivery.packages?.length || 0} packages</span>
+          </div>
+          <div className="flex items-center gap-1 text-green-400 text-xs">
+            <CheckCircle className="w-3 h-3" />
+            <span>Completed</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
