@@ -62,15 +62,15 @@ export const RouteManagement = () => {
   const [filterDeliveryType, setFilterDeliveryType] = useState('');
   const [quickAddRoute, setQuickAddRoute] = useState('');
 
-  // Get next route number
-  const getNextRouteNumber = useCallback(() => {
-    const routeNumbers = plans
+  // Get next gig number
+  const getNextGigNumber = useCallback(() => {
+    const gigNumbers = plans
       .map(p => {
-        const match = p.title?.match(/Route (\d+)/);
+        const match = p.title?.match(/Gig (\d+)/i);
         return match ? parseInt(match[1]) : 0;
       })
       .filter(n => n > 0);
-    return routeNumbers.length > 0 ? Math.max(...routeNumbers) + 1 : 1;
+    return gigNumbers.length > 0 ? Math.max(...gigNumbers) + 1 : 1;
   }, [plans]);
 
   // Fetch Circuit status
