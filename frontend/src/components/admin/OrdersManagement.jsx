@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/select';
 import {
   Package, Search, Eye, MoreVertical, MapPin, Truck,
-  Clock, XCircle, ExternalLink, CalendarIcon, User, RefreshCw,
+  Clock, XCircle, ExternalLink, CalendarIcon, User, RefreshCw, Edit,
   List, ChevronDown, ChevronRight, DollarSign,
   UserPlus, Zap, Loader2,
   Layers, AlertCircle, UserCheck, Printer, Snowflake
