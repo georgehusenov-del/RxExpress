@@ -132,6 +132,8 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
       options = pricing?.grouped?.same_day || [];
     } else if (tabValue === 'priority') {
       options = pricing?.grouped?.priority || [];
+    } else if (tabValue === 'scheduled') {
+      options = pricing?.grouped?.scheduled || [];
     }
     
     if (options.length > 0) {
