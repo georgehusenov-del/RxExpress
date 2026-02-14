@@ -515,6 +515,107 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                         })}
                       </div>
                     </TabsContent>
+
+                    {/* Scheduled Bulk Delivery Tab Content */}
+                    <TabsContent value="scheduled" className="mt-4">
+                      <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 mb-4">
+                        <h4 className="font-semibold text-teal-900 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Scheduled Bulk Delivery
+                        </h4>
+                        <p className="text-sm text-teal-700 mt-1">
+                          Schedule deliveries for a future date. Local deliveries only.
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant="outline" className="border-teal-500 text-teal-700 bg-teal-100">
+                            Min 15+ packages
+                          </Badge>
+                          <Badge variant="outline" className="border-teal-500 text-teal-700 bg-teal-100">
+                            8AM - 10PM
+                          </Badge>
+                          <Badge variant="outline" className="border-teal-500 text-teal-700 bg-teal-100">
+                            Local only
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        {pricing?.grouped?.scheduled?.map((option) => {
+                          const isSelected = formData.selected_pricing_id === option.id;
+                          
+                          return (
+                            <div
+                              key={option.id}
+                              onClick={() => selectPricing(option)}
+                              className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                                isSelected 
+                                  ? 'border-teal-500 bg-teal-50 shadow-md' 
+                                  : 'border-slate-200 hover:border-teal-300 hover:bg-slate-50'
+                              }`}
+                              data-testid={`pricing-option-${option.id}`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                  isSelected ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                  <Calendar className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-lg text-slate-900">{option.name}</span>
+                                    <Badge variant="outline" className="border-teal-500 text-teal-600">
+                                      $9 flat rate
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-slate-500 mt-1">{option.description}</p>
+                                  {option.minimum_packages && (
+                                    <p className="text-xs text-amber-600 mt-1 font-medium">
+                                      ⚠️ Requires minimum {option.minimum_packages} packages
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-2xl font-bold ${isSelected ? 'text-teal-600' : 'text-slate-700'}`}>
+                                  ${option.base_price}
+                                </p>
+                                {isSelected && (
+                                  <Badge className="bg-teal-500 text-white mt-1">Selected</Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {(!pricing?.grouped?.scheduled || pricing.grouped.scheduled.length === 0) && (
+                          <div className="text-center py-8 text-slate-500">
+                            <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                            <p>Scheduled delivery not available</p>
+                            <p className="text-xs">Contact admin to enable this option</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Date picker for scheduled delivery */}
+                      {formData.delivery_type === 'scheduled' && (
+                        <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                          <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                            Select Delivery Date
+                          </Label>
+                          <Input
+                            type="date"
+                            value={formData.scheduled_date || ''}
+                            onChange={(e) => updateField('scheduled_date', e.target.value)}
+                            min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                            className="w-full"
+                            data-testid="scheduled-date-input"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">
+                            Choose a date at least 1 day in advance
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
                   </Tabs>
 
                   {/* Add-ons Section */}
