@@ -301,30 +301,38 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                 <>
                   {/* Delivery Type Tabs */}
                   <Tabs value={activeDeliveryTab} onValueChange={handleTabChange} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-slate-100 p-1 rounded-xl">
+                    <TabsList className="grid w-full grid-cols-4 bg-slate-100 p-1 rounded-xl">
                       <TabsTrigger 
                         value="next_day" 
-                        className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-lg font-medium"
+                        className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-lg font-medium text-xs"
                         data-testid="tab-next-day"
                       >
-                        <Calendar className="w-4 h-4 mr-2" />
+                        <Calendar className="w-3 h-3 mr-1" />
                         Next Day
                       </TabsTrigger>
                       <TabsTrigger 
                         value="same_day"
-                        className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-lg font-medium"
+                        className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-lg font-medium text-xs"
                         data-testid="tab-same-day"
                       >
-                        <Zap className="w-4 h-4 mr-2" />
+                        <Zap className="w-3 h-3 mr-1" />
                         Same Day
                       </TabsTrigger>
                       <TabsTrigger 
                         value="priority"
-                        className="data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-lg font-medium"
+                        className="data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-lg font-medium text-xs"
                         data-testid="tab-priority"
                       >
-                        <Zap className="w-4 h-4 mr-2" />
+                        <Zap className="w-3 h-3 mr-1" />
                         Priority
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="scheduled"
+                        className="data-[state=active]:bg-teal-600 data-[state=active]:text-white rounded-lg font-medium text-xs"
+                        data-testid="tab-scheduled"
+                      >
+                        <Calendar className="w-3 h-3 mr-1" />
+                        Scheduled
                       </TabsTrigger>
                     </TabsList>
 
