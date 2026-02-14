@@ -543,16 +543,16 @@ export const RouteManagement = () => {
               )}
             </CardTitle>
             <div className="flex gap-2 items-center">
-              {/* Quick Add to Route dropdown - only show when orders selected */}
+              {/* Quick Add to Gig dropdown - only show when orders selected */}
               {selectedOrders.length > 0 && plans.length > 0 && (
                 <Select value="" onValueChange={(planId) => handleQuickAddToRoute(planId)}>
-                  <SelectTrigger className="w-44 bg-teal-600 border-teal-500 text-white text-sm">
-                    <SelectValue placeholder={`Add ${selectedOrders.length} to Route`} />
+                  <SelectTrigger className="w-48 bg-teal-600 border-teal-500 text-white text-sm">
+                    <SelectValue placeholder={`Add ${selectedOrders.length} to Gig`} />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-700 border-slate-600">
                     {plans.map(plan => (
                       <SelectItem key={plan.id} value={plan.id} className="text-white">
-                        {plan.title} ({plan.stops_count} stops)
+                        {plan.title} ({plan.stops_count} orders)
                       </SelectItem>
                     ))}
                   </SelectContent>
