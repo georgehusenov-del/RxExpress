@@ -458,6 +458,17 @@ export const RouteManagement = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Map View Toggle */}
+          <Button
+            variant={showMapView ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowMapView(!showMapView)}
+            className={showMapView ? 'bg-teal-600 hover:bg-teal-700' : 'border-slate-600 text-slate-300 hover:bg-slate-700'}
+            data-testid="routes-map-view-toggle"
+          >
+            <Map className="w-4 h-4 mr-2" />
+            {showMapView ? 'Hide Map' : 'Map View'}
+          </Button>
           <Button
             variant="outline"
             size="sm"
