@@ -261,10 +261,12 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" tha
 - ✅ **Admin Routing Page (Fixed 2026-02-13)**
 
 **P1 - High Priority:**
-- ⚠️ **Backend Supervisor Configuration:** The .NET backend runs manually. Consider setting up auto-start mechanism
+- ✅ **Backend Migration Completed (2026-02-14):** .NET backend now runs via Python proxy, managed by supervisor
 - Configure Twilio for SMS notifications
 - Configure SendGrid for email notifications
 - Enhanced reporting & analytics
+- Complete Bulk Order Selection feature (UI done, action handlers needed)
+- Streamline Admin Page (remove extra steps per user request)
 
 **P2 - Medium Priority:**
 - Driver rating system
