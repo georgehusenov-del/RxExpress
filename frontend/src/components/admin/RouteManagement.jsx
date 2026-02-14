@@ -1432,6 +1432,168 @@ export const RouteManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Gig Modal */}
+      <Dialog open={showEditGigModal} onOpenChange={setShowEditGigModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Edit className="w-5 h-5 text-teal-400" />
+              Edit Gig
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Update gig details
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Gig Name</Label>
+              <Input
+                value={editGigName}
+                onChange={(e) => setEditGigName(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Gig name"
+                data-testid="edit-gig-name-input"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-slate-300">Delivery Date</Label>
+              <Input
+                type="date"
+                value={editGigDate}
+                onChange={(e) => setEditGigDate(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white"
+                data-testid="edit-gig-date-input"
+              />
+            </div>
+            
+            {circuitDrivers.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-slate-300">Assign Driver</Label>
+                <Select value={editGigDriver} onValueChange={setEditGigDriver}>
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectValue placeholder="Select driver" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectItem value="none" className="text-white hover:bg-slate-600">
+                      No driver assigned
+                    </SelectItem>
+                    {circuitDrivers.map((driver) => (
+                      <SelectItem 
+                        key={driver.id} 
+                        value={driver.id}
+                        className="text-white hover:bg-slate-600"
+                      >
+                        {driver.name || driver.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowEditGigModal(false)}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveGigEdit}
+              className="bg-teal-600 hover:bg-teal-700"
+              data-testid="save-gig-edit-btn"
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Orders from Gig Modal */}
+      <Dialog open={showRemoveOrdersModal} onOpenChange={setShowRemoveOrdersModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <X className="w-5 h-5 text-red-400" />
+              Remove Orders from Gig
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Select orders to remove from {editingGig?.title || 'this gig'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {gigDetails?.linked_orders?.length > 0 ? (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {gigDetails.linked_orders.map((order) => (
+                  <label
+                    key={order.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      ordersToRemove.includes(order.id)
+                        ? 'border-red-500 bg-red-500/10'
+                        : 'border-slate-600 hover:border-slate-500'
+                    }`}
+                  >
+                    <Checkbox
+                      checked={ordersToRemove.includes(order.id)}
+                      onCheckedChange={() => toggleOrderForRemoval(order.id)}
+                      className="border-slate-500"
+                    />
+                    <div className="flex-1">
+                      <p className="font-mono text-sm text-teal-400">{order.order_number}</p>
+                      <p className="text-xs text-slate-400">
+                        {order.delivery_address?.street}, {order.delivery_address?.city}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="border-slate-500 text-slate-300 text-xs">
+                      {order.status}
+                    </Badge>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400">No orders in this gig</p>
+              </div>
+            )}
+            
+            {ordersToRemove.length > 0 && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-red-400 text-sm">
+                  {ordersToRemove.length} order(s) selected for removal
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRemoveOrdersModal(false);
+                setOrdersToRemove([]);
+              }}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRemoveOrdersFromGig}
+              disabled={ordersToRemove.length === 0}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="remove-orders-btn"
+            >
+              Remove Selected Orders
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
