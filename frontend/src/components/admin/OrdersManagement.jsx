@@ -635,6 +635,17 @@ export const OrdersManagement = () => {
           <p className="text-sm text-slate-400">View and manage all delivery orders</p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Map View Toggle */}
+          <Button
+            variant={showOrdersMapView ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowOrdersMapView(!showOrdersMapView)}
+            className={showOrdersMapView ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 text-slate-300 hover:bg-slate-700'}
+            data-testid="orders-map-view-toggle"
+          >
+            <Map className="w-4 h-4 mr-2" />
+            {showOrdersMapView ? 'Hide Map' : 'Map View'}
+          </Button>
           {/* View Mode Toggle */}
           <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-1">
             <Button
