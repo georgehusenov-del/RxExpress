@@ -60,6 +60,18 @@ export const RouteManagement = () => {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [filterDate, setFilterDate] = useState('');
   const [filterDeliveryType, setFilterDeliveryType] = useState('');
+  const [quickAddRoute, setQuickAddRoute] = useState('');
+
+  // Get next route number
+  const getNextRouteNumber = useCallback(() => {
+    const routeNumbers = plans
+      .map(p => {
+        const match = p.title?.match(/Route (\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      })
+      .filter(n => n > 0);
+    return routeNumbers.length > 0 ? Math.max(...routeNumbers) + 1 : 1;
+  }, [plans]);
 
   // Fetch Circuit status
   const fetchStatus = useCallback(async () => {
