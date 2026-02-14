@@ -471,8 +471,6 @@ export const OrdersManagement = () => {
   const [routePreviewData, setRoutePreviewData] = useState(null);
   const [optimizingRoute, setOptimizingRoute] = useState(false);
   const [selectedRouteContext, setSelectedRouteContext] = useState({ borough: null, timeWindow: null });
-    useSensor(KeyboardSensor)
-  );
 
   const fetchOrders = useCallback(async () => {
     try {
