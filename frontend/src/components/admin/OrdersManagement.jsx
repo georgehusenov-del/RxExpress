@@ -1682,9 +1682,12 @@ export const OrdersManagement = () => {
                     data-testid={`order-row-${order.id}`}
                   >
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-white font-mono text-sm">{order.order_number}</p>
-                        <p className="text-xs text-slate-500 font-mono">{order.tracking_number}</p>
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <p className="font-medium text-white font-mono text-sm">{order.order_number}</p>
+                          <p className="text-xs text-slate-500 font-mono">{order.tracking_number}</p>
+                        </div>
+                        <RefrigeratedIndicator order={order} size="md" />
                       </div>
                     </TableCell>
                     <TableCell className="text-slate-300">
