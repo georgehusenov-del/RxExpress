@@ -293,8 +293,9 @@ Unified status values:
 - All comprehensive testing passed (100% backend, 100% frontend)
 
 ## Known Issues
-- OrdersManagement.jsx is 2200+ lines and should be refactored into smaller components
+- OrdersManagement.jsx is still ~1200 lines and could be further refactored (reduced from 2200+ after Smart Organizer removal)
 - Twilio/SendGrid not configured (marked as MOCKED in test reports)
+- Circuit API batch import has minor issue with 'zipCode' field name (should be 'zip')
 
 ## Notes
 - Preview URL: https://rx-route-optimize.preview.emergentagent.com
