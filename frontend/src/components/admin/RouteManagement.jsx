@@ -307,6 +307,53 @@ export const RouteManagement = () => {
     }
   };
 
+  // Auto-assign orders by borough
+  const handleAutoAssign = async () => {
+    setAutoAssigning(true);
+    try {
+      const response = await circuitAPI.autoAssignByBorough('out_for_delivery');
+      const result = response.data;
+      
+      if (result.total_assigned > 0) {
+        toast.success(`Auto-assigned ${result.total_assigned} orders to ${result.gigs_created} gig(s)`);
+        
+        // Show borough breakdown
+        Object.entries(result.by_borough || {}).forEach(([borough, data]) => {
+          if (data.orders_count > 0 && !data.error) {
+            toast.info(`${borough}: ${data.orders_count} orders → ${data.gig}`);
+          }
+        });
+      } else {
+        toast.info('No "out for delivery" orders found to auto-assign');
+      }
+      
+      fetchPlans();
+      fetchPendingOrders();
+    } catch (err) {
+      console.error('Failed to auto-assign:', err);
+      toast.error(err.response?.data?.detail || 'Failed to auto-assign orders');
+    } finally {
+      setAutoAssigning(false);
+    }
+  };
+
+  // Assign driver to gig
+  const handleAssignDriver = async (plan, driverId) => {
+    if (!driverId) return;
+    
+    setAssigningDriver(plan.id);
+    try {
+      const response = await circuitAPI.assignDriverToGig(plan.circuit_plan_id, driverId);
+      toast.success(response.data.message || 'Driver assigned successfully');
+      fetchPlans();
+    } catch (err) {
+      console.error('Failed to assign driver:', err);
+      toast.error(err.response?.data?.detail || 'Failed to assign driver');
+    } finally {
+      setAssigningDriver(null);
+    }
+  };
+
   // Toggle driver selection
   const toggleDriverSelection = (driverId) => {
     setSelectedDrivers(prev =>
