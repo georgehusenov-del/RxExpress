@@ -169,13 +169,28 @@ Unified status values:
 ## Changelog
 
 ### Feb 14, 2026 (Session 3)
-- **Copay Collection Checkbox**:
-  - Added mandatory "Did you collect copay?" checkbox on each delivery card
-  - POD button stays disabled (grayed out) until checkbox is checked
-  - Shows green "✓ Copay collected" when checked
-  - Helper text "Check the copay box to enable POD" when unchecked
-  - Also added to delivery details modal for consistency
-  - data-testid: `copay-checkbox-{order_id}` and `modal-copay-checkbox`
+- **Copay Collection Checkbox Fix**:
+  - Copay checkbox now only shows for orders with `copay_amount > 0`
+  - Orders without copay have POD button enabled by default
+  - Displays the exact copay amount: "Collect copay $XX.XX"
+  - Warning shows specific amount: "Collect $XX.XX copay to enable POD"
+
+- **Scheduled Bulk Delivery - Pharmacy Portal**:
+  - Added new "Scheduled" tab to Create Delivery modal
+  - $9 flat rate pricing
+  - 8AM-10PM delivery window
+  - Minimum 15 packages required (with validation)
+  - Local deliveries only
+  - Date picker for scheduling in advance (min 1 day ahead)
+  - Badges: "Min 15+ packages", "8AM-10PM", "Local only"
+
+- **Scheduled Bulk Delivery - Admin Portal**:
+  - Added "Scheduled Bulk" delivery type to pricing management
+  - New form fields: minimum_packages, local_only, allow_future_date
+  - Displays constraints: "Min 15 packages", "Local Only" badges
+  - Editable via admin pricing interface
+
+- All tests passed (100% frontend verification)
 
 - **QR Scanner for Pickup Tab**:
   - "Scan for Pickup" button on each pickup card opens QR Scanner modal
@@ -188,6 +203,8 @@ Unified status values:
   - Updated `/api/orders/scan` to handle pickup action and change status from `ready_for_pickup` → `picked_up`
   - Updated `/api/driver-portal/deliveries` to include pickup statuses (`new`, `pending`, `confirmed`, `ready_for_pickup`)
   - Added `keep_status` parameter to order assignment endpoint for pickup workflow
+  - DeliveryPricing model extended with: `minimum_packages`, `local_only`, `allow_future_date`
+  - Added "scheduled" to DeliveryType enum
 
 - All tests passed (100% backend, 100% frontend)
 
