@@ -4602,8 +4602,6 @@ async def get_driver_performance_report(
     }
 
 
-api_router.include_router(reports_router)
-
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
