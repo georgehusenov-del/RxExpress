@@ -301,24 +301,6 @@ export const OrdersManagement = () => {
     fetchDrivers(); // Refresh driver list
   };
 
-  // Route optimization preview handler
-  const handleOptimizeRoute = async (borough, timeWindow, orderIds = []) => {
-    setOptimizingRoute(true);
-    setSelectedRouteContext({ borough, timeWindow });
-    
-    try {
-      const apiTimeWindow = timeWindowToApiFormat[timeWindow];
-      const response = await adminAPI.optimizeRoutePreview(orderIds, borough, apiTimeWindow);
-      setRoutePreviewData(response.data);
-      setShowRoutePreview(true);
-    } catch (err) {
-      console.error('Failed to optimize route:', err);
-      toast.error('Failed to generate route preview');
-    } finally {
-      setOptimizingRoute(false);
-    }
-  };
-
   const handleCancelOrder = async (orderId) => {
     if (!confirm('Are you sure you want to cancel this order?')) return;
     try {
