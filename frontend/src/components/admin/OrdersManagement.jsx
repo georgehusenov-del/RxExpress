@@ -520,58 +520,6 @@ export const OrdersManagement = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Drag and Drop handlers
-  const handleDragStart = (event) => {
-    const { active } = event;
-    setActiveId(active.id);
-    const order = orders.find(o => o.id === active.id);
-    setActiveOrder(order);
-  };
-
-  const handleDragEnd = async (event) => {
-    const { active, over } = event;
-    setActiveId(null);
-    setActiveOrder(null);
-
-    if (!over) return;
-
-    const orderId = active.id;
-    const dropZoneId = over.id;
-
-    // Parse drop zone ID (format: "borough-timewindow", e.g., "Q-morning")
-    const parts = dropZoneId.split('-');
-    if (parts.length < 2) return;
-
-    const targetTimeWindow = parts[parts.length - 1]; // Last part is time window
-    const apiTimeWindow = timeWindowToApiFormat[targetTimeWindow];
-
-    if (!apiTimeWindow) return;
-
-    // Get current order's time window
-    const order = orders.find(o => o.id === orderId);
-    const currentTimeWindow = getTimeWindowFromOrder(order);
-
-    // Only update if time window changed
-    if (currentTimeWindow === targetTimeWindow) {
-      toast.info('Order is already in this time window');
-      return;
-    }
-
-    try {
-      await adminAPI.reassignOrder(orderId, apiTimeWindow, null);
-      toast.success(`Order moved to ${timeWindowConfig[targetTimeWindow].label}`);
-      fetchOrders(); // Refresh to show updated data
-    } catch (err) {
-      console.error('Failed to reassign order:', err);
-      toast.error('Failed to move order');
-    }
-  };
-
-  const handleDragCancel = () => {
-    setActiveId(null);
-    setActiveOrder(null);
-  };
-
   // Assign driver to order (from modal)
   const handleAssignDriver = async (driverId) => {
     if (!selectedOrderForDriver) return;
