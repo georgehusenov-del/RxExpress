@@ -431,103 +431,99 @@ export const RouteManagement = () => {
         </Card>
       </div>
 
-      {/* Route Plans */}
+      {/* Gigs / Route Plans */}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-base flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-teal-400" />
-            Route Plans
+            <TruckIcon className="w-4 h-4 text-teal-400" />
+            Active Gigs
           </CardTitle>
         </CardHeader>
         <CardContent>
           {plans.length === 0 ? (
             <div className="text-center py-8">
               <Route className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 mb-4">No route plans created yet</p>
+              <p className="text-slate-400 mb-4">No gigs created yet</p>
               <Button
                 onClick={() => setShowCreateModal(true)}
                 className="bg-teal-600 hover:bg-teal-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create First Plan
+                Create First Gig
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {plans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600"
-                  data-testid={`route-plan-${plan.id}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-teal-500/20 flex items-center justify-center">
-                      <span className="text-lg font-bold text-teal-400">
-                        {plan.title?.match(/Route (\d+)/)?.[1] || '#'}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-white">{plan.title}</p>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {plan.date}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Package className="w-3 h-3" />
-                          {plan.stops_count} stops
-                        </span>
-                        {plan.distributed && (
-                          <Badge variant="outline" className="border-green-500/50 text-green-400 text-xs">
-                            Sent to Drivers
-                          </Badge>
-                        )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {plans.map((plan) => {
+                const gigMatch = plan.title?.match(/Gig (\d+)/i);
+                const gigNumber = gigMatch ? gigMatch[1] : plan.title?.match(/Route (\d+)/)?.[1] || '#';
+                
+                return (
+                  <div
+                    key={plan.id}
+                    className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-teal-500/50 transition-colors"
+                    data-testid={`route-plan-${plan.id}`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-lg">
+                          <span className="text-xl font-bold text-white">{gigNumber}</span>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-white text-lg">{plan.title}</p>
+                          <p className="text-sm text-slate-400">{plan.date}</p>
+                        </div>
                       </div>
                     </div>
+                    
+                    <div className="flex items-center gap-3 mb-4 text-sm">
+                      <div className="flex items-center gap-1 text-slate-300">
+                        <Package className="w-4 h-4 text-amber-400" />
+                        <span className="font-medium">{plan.stops_count}</span> orders
+                      </div>
+                      {plan.distributed && (
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOptimize(plan)}
+                        disabled={optimizing || plan.stops_count === 0}
+                        className="flex-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                        title="Optimize route"
+                      >
+                        {optimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 mr-1" />}
+                        Optimize
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDistribute(plan)}
+                        disabled={plan.optimization_status !== 'done'}
+                        className="flex-1 border-green-500/50 text-green-400 hover:bg-green-500/10"
+                        title="Send to drivers"
+                      >
+                        <Send className="w-4 h-4 mr-1" />
+                        Send
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeletePlan(plan)}
+                        className="text-red-400 hover:bg-red-500/10"
+                        title="Delete gig"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOptimize(plan)}
-                      disabled={optimizing || plan.stops_count === 0}
-                      className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
-                      title="Optimize route"
-                    >
-                      {optimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDistribute(plan)}
-                      disabled={plan.optimization_status !== 'done'}
-                      className="border-green-500/50 text-green-400 hover:bg-green-500/10"
-                      title="Send to drivers"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewDetails(plan)}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                      title="View details"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeletePlan(plan)}
-                      className="border-red-500/50 text-red-400 hover:bg-red-500/10"
-                      title="Delete route"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
