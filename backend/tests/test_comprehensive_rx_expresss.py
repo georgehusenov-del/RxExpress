@@ -15,7 +15,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://express-pod-system.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rx-route-optimize.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
 ADMIN_CREDS = {"email": "admin@rxexpresss.com", "password": "admin123"}
