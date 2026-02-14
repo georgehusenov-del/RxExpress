@@ -114,9 +114,9 @@ class TestGigManagement:
     # ===== Test: Unlink Order from Gig Endpoint =====
     def test_unlink_order_endpoint_exists(self):
         """Test that DELETE /api/circuit/order/{order_id}/unlink endpoint exists"""
-        # Get an order that has circuit_plan_id
+        # Get an order that has circuit_plan_id - use admin orders endpoint
         response = requests.get(
-            f"{BASE_URL}/api/orders?limit=50",
+            f"{BASE_URL}/api/admin/orders?limit=50",
             headers=self.headers
         )
         assert response.status_code == 200, f"Failed to list orders: {response.status_code}"
