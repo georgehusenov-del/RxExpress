@@ -1412,11 +1412,20 @@ export const OrdersManagement = () => {
                             const twOrders = data[tw] || [];
                             const dropZoneId = `${borough}-${tw}`;
                             const TimeIcon = twConfig.icon;
+                            const allSelected = isAllSelectedInTimeWindow(twOrders);
                             
                             return (
                               <div key={tw} className="space-y-2">
-                                {/* Time Window Header */}
+                                {/* Time Window Header with Select All */}
                                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-${twConfig.color}-500/10 border border-${twConfig.color}-500/30`}>
+                                  {twOrders.length > 0 && (
+                                    <Checkbox
+                                      checked={allSelected}
+                                      onCheckedChange={() => selectAllInTimeWindow(twOrders)}
+                                      className="border-slate-500 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                                      data-testid={`select-all-${borough}-${tw}`}
+                                    />
+                                  )}
                                   <TimeIcon className={`w-4 h-4 text-${twConfig.color}-400`} />
                                   <span className="text-sm font-medium text-white">{twConfig.label}</span>
                                   <Badge className={`bg-${twConfig.color}-500/20 text-${twConfig.color}-400`}>
