@@ -1098,12 +1098,22 @@ export const OrdersManagement = () => {
                                 data-testid={`category-order-${order.id}`}
                               >
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                                  <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center flex-shrink-0">
-                                    <Package className="w-5 h-5 text-slate-400" />
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${hasRefrigeratedPackages(order) ? 'bg-cyan-500/20 border border-cyan-500/30' : 'bg-slate-700'}`}>
+                                    {hasRefrigeratedPackages(order) ? (
+                                      <Snowflake className="w-5 h-5 text-cyan-400 animate-pulse" />
+                                    ) : (
+                                      <Package className="w-5 h-5 text-slate-400" />
+                                    )}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <span className="font-mono text-sm font-medium text-white">{order.order_number}</span>
+                                      {hasRefrigeratedPackages(order) && (
+                                        <Badge variant="outline" className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+                                          <Snowflake className="w-3 h-3 mr-1" />
+                                          Cold
+                                        </Badge>
+                                      )}
                                       {order.qr_code && (
                                         <span className="font-mono text-xs text-slate-500">{order.qr_code}</span>
                                       )}
