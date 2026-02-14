@@ -3798,6 +3798,70 @@ async def list_local_route_plans(
     return {"plans": plans, "count": len(plans)}
 
 
+@circuit_router.put("/route-plans/{plan_id}")
+async def update_local_route_plan(
+    plan_id: str,
+    title: str = Body(None, embed=True),
+    date: str = Body(None, embed=True),
+    current_user: dict = Depends(require_admin)
+):
+    """Update local route plan (gig) details"""
+    update_data = {}
+    if title is not None:
+        update_data["title"] = title
+    if date is not None:
+        update_data["date"] = date
+    
+    if not update_data:
+        return {"message": "No updates provided", "updated": False}
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.route_plans.update_one(
+        {"id": plan_id},
+        {"$set": update_data}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    return {"message": "Plan updated", "updated": True}
+
+
+@circuit_router.delete("/order/{order_id}/unlink")
+async def unlink_order_from_plan(
+    order_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Unlink an order from its assigned circuit plan/gig"""
+    # Find the order
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    circuit_plan_id = order.get("circuit_plan_id")
+    circuit_stop_id = order.get("circuit_stop_id")
+    
+    # Update the order to remove circuit association
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$unset": {"circuit_plan_id": "", "circuit_stop_id": "", "stop_sequence": ""}}
+    )
+    
+    # If there's a Circuit stop, try to delete it
+    if circuit_plan_id and circuit_stop_id and circuit_service:
+        try:
+            # Extract the stop ID from the full path
+            stop_id = circuit_stop_id.split("/")[-1] if "/" in circuit_stop_id else circuit_stop_id
+            plan_id = circuit_plan_id.split("/")[-1] if "/" in circuit_plan_id else circuit_plan_id
+            await circuit_service.delete_stop(plan_id, stop_id)
+        except Exception as e:
+            # Log but don't fail - the order is already unlinked locally
+            logger.warning(f"Failed to delete Circuit stop: {e}")
+    
+    return {"message": "Order unlinked from plan", "order_id": order_id}
+
+
 @circuit_router.post("/auto-assign-by-borough")
 async def auto_assign_orders_by_borough(
     request: AutoAssignByBoroughRequest = Body(default=AutoAssignByBoroughRequest()),
