@@ -80,9 +80,17 @@ export const DriverPortal = () => {
       const allOrders = allDeliveriesRes.data.deliveries || [];
       
       // Deliveries tab: out_for_delivery, in_transit, assigned orders (ready to deliver)
-      const deliveryOrders = allOrders.filter(o => 
-        ['out_for_delivery', 'in_transit', 'assigned'].includes(o.status)
-      );
+      // Sort by stop_sequence (if available from Circuit route optimization)
+      const deliveryOrders = allOrders
+        .filter(o => ['out_for_delivery', 'in_transit', 'assigned'].includes(o.status))
+        .sort((a, b) => {
+          // Sort by stop_sequence first (from Circuit optimization)
+          const seqA = a.stop_sequence ?? a.circuit_stop_sequence ?? 999;
+          const seqB = b.stop_sequence ?? b.circuit_stop_sequence ?? 999;
+          if (seqA !== seqB) return seqA - seqB;
+          // Fallback to order creation time
+          return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        });
       
       // Pick Ups tab: new orders that need pickup (status = new, confirmed, ready_for_pickup, pending)
       const pickupOrders = allOrders.filter(o => 
