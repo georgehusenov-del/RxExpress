@@ -86,10 +86,18 @@ app.MapGet("/", () => Results.Ok(new { status = "healthy", service = "RX Express
 app.MapGet("/api", () => Results.Ok(new { status = "healthy", service = "RX Expresss API", version = "1.0.0" }));
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy" }));
 
-// Configure the server to listen on port 8001
-app.Urls.Clear();
-app.Urls.Add("http://0.0.0.0:8001");
-
-Console.WriteLine("Starting RX Expresss ASP.NET Core API on port 8001...");
+// Configure the server to listen on the specified port
+// Command line args take precedence (e.g., --urls "http://0.0.0.0:8002")
+// Otherwise defaults to port 8001
+if (!args.Any(a => a.StartsWith("--urls")))
+{
+    app.Urls.Clear();
+    app.Urls.Add("http://0.0.0.0:8001");
+    Console.WriteLine("Starting RX Expresss ASP.NET Core API on port 8001...");
+}
+else
+{
+    Console.WriteLine($"Starting RX Expresss ASP.NET Core API with custom URLs...");
+}
 
 app.Run();
