@@ -758,6 +758,74 @@ export const OrdersManagement = () => {
         </div>
       </div>
 
+      {/* Orders Map View - Shows all order locations */}
+      {showOrdersMapView && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-white text-base flex items-center gap-2">
+              <Map className="w-4 h-4 text-blue-400" />
+              Map View - All Order Locations
+              <Badge className="bg-slate-700 text-slate-300 ml-2">
+                {filteredOrders.filter(o => o.delivery_address?.latitude || o.delivery_address?.lat).length} mapped
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {filteredOrders.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400">No orders to display on map</p>
+              </div>
+            ) : (
+              <DeliveryMap
+                markers={filteredOrders
+                  .filter(order => order.delivery_address?.latitude || order.delivery_address?.lat)
+                  .map((order) => {
+                    const addr = order.delivery_address;
+                    // Get color based on status
+                    const statusColorMap = {
+                      new: '#f59e0b',        // amber
+                      picked_up: '#3b82f6',   // blue
+                      in_transit: '#a855f7',  // purple
+                      out_for_delivery: '#14b8a6', // teal
+                      delivered: '#22c55e',   // green
+                      failed: '#ef4444',      // red
+                      canceled: '#64748b'     // slate
+                    };
+                    return {
+                      id: order.id,
+                      lat: parseFloat(addr.latitude || addr.lat),
+                      lng: parseFloat(addr.longitude || addr.lng),
+                      label: order.order_number,
+                      popup: `${order.order_number}\n${order.recipient?.name || 'Unknown'}\n${addr.street}, ${addr.city}`,
+                      color: statusColorMap[order.status] || '#0d9488'
+                    };
+                  })}
+                showRoute={false}
+                height="400px"
+              />
+            )}
+            <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-700">
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="w-3 h-3 rounded-full bg-amber-500"></div> New
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div> Picked Up
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="w-3 h-3 rounded-full bg-purple-500"></div> In Transit
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="w-3 h-3 rounded-full bg-teal-500"></div> Out for Delivery
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div> Delivered
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Categories View - Organized by Status */}
       {viewMode === 'categories' && (
         <div className="space-y-4" data-testid="categories-view">
