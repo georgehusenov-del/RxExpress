@@ -463,6 +463,10 @@ export const OrdersManagement = () => {
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
   
+  // Order selection states
+  const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  
   // Route optimization states
   const [showRoutePreview, setShowRoutePreview] = useState(false);
   const [routePreviewData, setRoutePreviewData] = useState(null);
