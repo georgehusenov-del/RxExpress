@@ -64,7 +64,6 @@ import { RouteMapPreview } from './RouteMapPreview';
 // Status System
 // Flow: New → Picked Up → In Transit → Out for Delivery → Delivered
 const statusColors = {
-  // Primary statuses
   new: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   picked_up: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   in_transit: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
@@ -72,16 +71,9 @@ const statusColors = {
   delivered: 'bg-green-500/20 text-green-400 border-green-500/30',
   failed: 'bg-red-500/20 text-red-400 border-red-500/30',
   canceled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-  // Legacy status mappings
-  pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  confirmed: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  ready_for_pickup: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  assigned: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
-  cancelled: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
 };
 
 const statusLabels = {
-  // Primary Labels
   new: 'New',
   picked_up: 'Picked Up',
   in_transit: 'In Transit',
@@ -89,12 +81,6 @@ const statusLabels = {
   delivered: 'Delivered',
   failed: 'Failed',
   canceled: 'Canceled',
-  // Legacy mappings
-  pending: 'New',
-  confirmed: 'New',
-  ready_for_pickup: 'New',
-  assigned: 'Out for Delivery',
-  cancelled: 'Canceled',
 };
 
 // Status flow for dropdowns
