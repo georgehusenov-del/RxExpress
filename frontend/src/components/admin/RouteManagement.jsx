@@ -513,7 +513,12 @@ export const RouteManagement = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-white text-base flex items-center gap-2">
               <Package className="w-4 h-4 text-amber-400" />
-              Pending Orders (Ready for Routing)
+              Orders Ready for Routing
+              {pendingOrders.length > 0 && (
+                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                  {pendingOrders.length}
+                </Badge>
+              )}
             </CardTitle>
             <div className="flex gap-2">
               <Input
@@ -534,14 +539,6 @@ export const RouteManagement = () => {
                   <SelectItem value="priority" className="text-white">Priority</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchPendingOrders}
-                className="border-slate-600 text-slate-300 hover:bg-slate-700"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </Button>
             </div>
           </div>
         </CardHeader>
