@@ -456,16 +456,16 @@ const OverviewSection = ({ stats, onRefresh }) => {
         ))}
       </div>
 
-      {/* Ready for Pickup Section - Prominent Display */}
-      {(statsData?.orders_by_status?.ready_for_pickup > 0 || readyForPickupOrders.length > 0) && (
+      {/* New Orders Section - Prominent Display */}
+      {(statsData?.orders_by_status?.new > 0 || newOrders.length > 0) && (
         <Card className="bg-gradient-to-r from-cyan-900/50 to-cyan-800/30 border-cyan-500/50 border-2">
           <CardHeader className="pb-3 border-b border-cyan-500/30">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white flex items-center gap-2 text-base">
                 <Package className="w-5 h-5 text-cyan-400" />
-                Ready for Pickup
+                New Orders
                 <Badge className="bg-cyan-500 text-white ml-2">
-                  {statsData?.orders_by_status?.ready_for_pickup || readyForPickupOrders.length || 0}
+                  {statsData?.orders_by_status?.new || newOrders.length || 0}
                 </Badge>
               </CardTitle>
               <Button
@@ -480,12 +480,12 @@ const OverviewSection = ({ stats, onRefresh }) => {
           </CardHeader>
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {readyForPickupOrders.slice(0, 6).map((order, idx) => (
+              {newOrders.slice(0, 6).map((order, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between p-3 bg-slate-800/80 rounded-lg border border-cyan-500/30 cursor-pointer hover:bg-slate-700 hover:border-cyan-400 transition-all"
                   onClick={() => handleCardClick('orders')}
-                  data-testid={`ready-pickup-${order.order_number}`}
+                  data-testid={`new-order-${order.order_number}`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
@@ -507,10 +507,10 @@ const OverviewSection = ({ stats, onRefresh }) => {
                 </div>
               ))}
             </div>
-            {readyForPickupOrders.length === 0 && (
+            {newOrders.length === 0 && (
               <div className="text-center py-4">
                 <p className="text-cyan-300 text-sm">
-                  {statsData?.orders_by_status?.ready_for_pickup || 0} orders ready for driver pickup
+                  {statsData?.orders_by_status?.new || 0} new orders ready for pickup
                 </p>
                 <Button
                   variant="link"
