@@ -374,6 +374,7 @@ export const DriverPortal = () => {
                     delivery={delivery}
                     type="delivery"
                     stopNumber={delivery.stop_sequence ?? delivery.circuit_stop_sequence ?? index + 1}
+                    isScanned={scannedDeliveries.has(delivery.id)}
                     onView={() => {
                       setSelectedDelivery(delivery);
                       setShowDeliveryModal(true);
