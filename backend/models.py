@@ -22,6 +22,7 @@ class DeliveryType(str, Enum):
     NEXT_DAY = "next_day"           # Pickup today, deliver tomorrow with 2-3hr ETA window
     PRIORITY = "priority"            # First deliveries of the day
     TIME_WINDOW = "time_window"      # Specific time windows
+    SCHEDULED = "scheduled"          # Scheduled bulk delivery - $9 flat, 8am-10pm, min 15 packages
 
 
 class TimeWindow(str, Enum):
