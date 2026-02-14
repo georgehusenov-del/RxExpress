@@ -55,6 +55,10 @@ export const RouteManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddOrdersModal, setShowAddOrdersModal] = useState(false);
   const [showPlanDetailsModal, setShowPlanDetailsModal] = useState(false);
+  const [showGigDetailsModal, setShowGigDetailsModal] = useState(false);
+  const [gigDetailsLoading, setGigDetailsLoading] = useState(false);
+  const [gigDetails, setGigDetails] = useState(null);
+  const [showMapView, setShowMapView] = useState(false);
   
   // Form state
   const [newPlanDate, setNewPlanDate] = useState(new Date().toISOString().split('T')[0]);
