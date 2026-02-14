@@ -652,3 +652,6 @@ class DeliveryPricingUpdate(BaseModel):
     time_window_start: Optional[str] = None
     time_window_end: Optional[str] = None
     cutoff_time: Optional[str] = None
+    minimum_packages: Optional[int] = None
+    local_only: Optional[bool] = None
+    allow_future_date: Optional[bool] = None
