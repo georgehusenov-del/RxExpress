@@ -50,7 +50,7 @@ public class AdminController : ControllerBase
         
         // Copay statistics
         var copayToCollect = await _db.Orders
-            .Find(o => o.CopayAmount > 0 && !o.CopayCollected && o.Status != "cancelled" && o.Status != "failed")
+            .Find(o => o.CopayAmount > 0 && !o.CopayCollected && o.Status != "canceled" && o.Status != "failed")
             .ToListAsync();
         var copayToCollectSum = copayToCollect.Sum(o => o.CopayAmount);
         var ordersCopayPending = copayToCollect.Count;
