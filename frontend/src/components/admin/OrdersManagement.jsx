@@ -51,7 +51,6 @@ import {
 } from '@/components/ui/collapsible';
 import { adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
-import { RouteMapPreview } from './RouteMapPreview';
 
 // Status System
 // Flow: New → Picked Up → In Transit → Out for Delivery → Delivered
