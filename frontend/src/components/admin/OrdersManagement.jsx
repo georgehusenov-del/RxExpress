@@ -1103,13 +1103,13 @@ export const OrdersManagement = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
-              <SelectItem value="assigned">Assigned</SelectItem>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="picked_up">Picked Up</SelectItem>
               <SelectItem value="in_transit">In Transit</SelectItem>
+              <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
               <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="canceled">Canceled</SelectItem>
             </SelectContent>
           </Select>
         </div>
