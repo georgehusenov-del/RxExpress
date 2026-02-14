@@ -209,6 +209,7 @@ export const OrdersManagement = () => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [pagination, setPagination] = useState({ skip: 0, limit: 100, total: 0 });
   const [viewMode, setViewMode] = useState('categories'); // 'list' or 'categories'
+  const [showOrdersMapView, setShowOrdersMapView] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({ new: true, picked_up: true, in_transit: true, out_for_delivery: true });
   const [drivers, setDrivers] = useState([]);
   const [showDriverModal, setShowDriverModal] = useState(false);
