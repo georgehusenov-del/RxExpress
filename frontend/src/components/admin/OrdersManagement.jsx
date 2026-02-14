@@ -766,6 +766,17 @@ export const OrdersManagement = () => {
             font-weight: bold;
             text-align: center;
           }
+          .refrigerated-alert {
+            background: #e0f7fa;
+            border: 2px solid #00bcd4;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            color: #006064;
+          }
           @media print {
             body { padding: 0; }
             .label { border: 2px solid #000; }
@@ -779,6 +790,12 @@ export const OrdersManagement = () => {
             <div class="order-num">${order.order_number}</div>
             <span class="status-badge">${statusLabels[order.status] || order.status}</span>
           </div>
+          
+          ${hasRefrigeratedPackages(order) ? `
+          <div class="refrigerated-alert">
+            ❄️ REFRIGERATED - KEEP COLD ❄️
+          </div>
+          ` : ''}
           
           <div class="qr-section">
             <img src="${qrCodeUrl}" alt="QR Code" />
