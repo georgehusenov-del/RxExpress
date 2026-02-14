@@ -164,16 +164,19 @@ export const RouteManagement = () => {
     return () => clearInterval(pollInterval);
   }, [operationId, optimizing, fetchPlans]);
 
-  // Create new plan
+  // Create new plan with auto-generated name
   const handleCreatePlan = async () => {
     try {
+      const routeNumber = getNextRouteNumber();
+      const autoTitle = `Route ${routeNumber}`;
+      
       const response = await circuitAPI.createPlanForDate({
-        title: newPlanTitle || undefined,
+        title: newPlanTitle || autoTitle,
         date: newPlanDate,
         driver_ids: selectedDrivers
       });
       
-      toast.success('Route plan created successfully');
+      toast.success(`${newPlanTitle || autoTitle} created successfully`);
       setShowCreateModal(false);
       setNewPlanTitle('');
       setSelectedDrivers([]);
@@ -181,6 +184,46 @@ export const RouteManagement = () => {
     } catch (err) {
       console.error('Failed to create plan:', err);
       toast.error(err.response?.data?.detail || 'Failed to create plan');
+    }
+  };
+
+  // Quick add selected orders to a route
+  const handleQuickAddToRoute = async (planId) => {
+    if (selectedOrders.length === 0) {
+      toast.error('Select orders first');
+      return;
+    }
+    
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+    
+    try {
+      await circuitAPI.batchImportOrders(planId, selectedOrders);
+      toast.success(`${selectedOrders.length} orders added to ${plan.title}`);
+      setSelectedOrders([]);
+      fetchPlans();
+      fetchPendingOrders();
+    } catch (err) {
+      console.error('Failed to add orders:', err);
+      toast.error(err.response?.data?.detail || 'Failed to add orders');
+    }
+  };
+
+  // Toggle order selection
+  const toggleOrderSelection = (orderId) => {
+    setSelectedOrders(prev => 
+      prev.includes(orderId) 
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  // Select all orders
+  const selectAllOrders = () => {
+    if (selectedOrders.length === pendingOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(pendingOrders.map(o => o.id));
     }
   };
 
