@@ -34,8 +34,7 @@ RX Expresss is a full-stack pharmacy delivery service application replicating Dr
 
 ### Admin Dashboard
 - Overview with statistics (Total Users, Pharmacies, Drivers, Orders)
-- Three view modes: Categories, List, Smart Organizer
-- Drag-and-drop route assignment
+- Two view modes: Categories, List
 - Bulk order selection with floating action bar
 - **Calendar date filtering** - Filter orders by date
 - Borough-based organization (Queens, Brooklyn, Manhattan, Staten Island, Bronx)
