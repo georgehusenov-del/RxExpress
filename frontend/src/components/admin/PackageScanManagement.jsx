@@ -34,7 +34,7 @@ import {
 import {
   QrCode, Search, Package, CheckCircle, Clock,
   MoreVertical, Eye, Scan, BarChart3, User,
-  RefreshCw, Filter, Truck, MapPin, Thermometer, FileSignature
+  RefreshCw, Filter, Truck, MapPin, Thermometer, FileSignature, Snowflake
 } from 'lucide-react';
 import {
   DropdownMenu,
