@@ -2155,6 +2155,54 @@ export const OrdersManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Floating Bulk Actions Bar */}
+      {selectedOrderIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 border border-teal-500 rounded-xl shadow-2xl shadow-teal-500/20 p-4 flex items-center gap-4">
+          <div className="flex items-center gap-3 pr-4 border-r border-slate-700">
+            <Checkbox
+              checked={true}
+              className="bg-teal-500 border-teal-500"
+            />
+            <span className="text-white font-medium">{selectedOrderIds.size} selected</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Select onValueChange={handleBulkStatusChange}>
+              <SelectTrigger className="w-40 bg-slate-800 border-slate-600 text-white h-9">
+                <SelectValue placeholder="Change Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableStatuses.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-blue-500 text-blue-400 hover:bg-blue-500/20"
+              onClick={handleBulkPrint}
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Print All
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-white"
+              onClick={clearSelection}
+            >
+              <XCircle className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
