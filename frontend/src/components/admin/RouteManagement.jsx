@@ -47,6 +47,8 @@ export const RouteManagement = () => {
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
   const [operationId, setOperationId] = useState(null);
+  const [autoAssigning, setAutoAssigning] = useState(false);
+  const [assigningDriver, setAssigningDriver] = useState(null); // Track which plan is being assigned
   
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
