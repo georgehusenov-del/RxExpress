@@ -289,7 +289,9 @@ const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onQuickStatu
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center justify-between px-3 py-2.5 bg-slate-800/50 rounded-lg border border-slate-700 mb-2 transition-all ${
+      className={`flex items-center justify-between px-3 py-2.5 bg-slate-800/50 rounded-lg border ${
+        hasRefrigeratedPackages(order) ? 'border-cyan-500/40 bg-cyan-500/5' : 'border-slate-700'
+      } mb-2 transition-all ${
         isDragging ? 'opacity-50 shadow-2xl ring-2 ring-teal-500' : 'hover:bg-slate-700/50 hover:border-slate-600'
       }`}
       data-testid={`draggable-order-${order.id}`}
@@ -304,12 +306,19 @@ const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onQuickStatu
       </div>
       
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-7 h-7 rounded bg-slate-700 flex items-center justify-center flex-shrink-0">
-          <Package className="w-3.5 h-3.5 text-slate-400" />
+        <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${hasRefrigeratedPackages(order) ? 'bg-cyan-500/20' : 'bg-slate-700'}`}>
+          {hasRefrigeratedPackages(order) ? (
+            <Snowflake className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+          ) : (
+            <Package className="w-3.5 h-3.5 text-slate-400" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-sm text-white">{order.order_number}</span>
+            {hasRefrigeratedPackages(order) && (
+              <span className="text-cyan-400 text-xs font-medium">❄️</span>
+            )}
             <InlineStatusSelect
               order={order}
               onStatusChange={onQuickStatusChange}
