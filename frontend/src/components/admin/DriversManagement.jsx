@@ -255,7 +255,6 @@ export const DriversManagement = () => {
                 <TableHead className="text-slate-400">Verification</TableHead>
                 <TableHead className="text-slate-400">Account</TableHead>
                 <TableHead className="text-slate-400">Deliveries</TableHead>
-                <TableHead className="text-slate-400">Rating</TableHead>
                 <TableHead className="text-slate-400 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>

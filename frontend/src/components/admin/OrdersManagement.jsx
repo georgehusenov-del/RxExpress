@@ -1064,16 +1064,6 @@ export const OrdersManagement = () => {
               <List className="w-4 h-4 mr-1" />
               List
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`px-3 py-1.5 ${viewMode === 'smart' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}
-              onClick={() => setViewMode('smart')}
-              data-testid="view-mode-smart"
-            >
-              <LayoutGrid className="w-4 h-4 mr-1" />
-              Smart Organizer
-            </Button>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
