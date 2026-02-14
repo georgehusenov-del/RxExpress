@@ -36,7 +36,7 @@ import {
   Clock, XCircle, ExternalLink, CalendarIcon, User, RefreshCw, Edit,
   List, ChevronDown, ChevronRight, DollarSign,
   UserPlus, Zap, Loader2,
-  Layers, AlertCircle, UserCheck, Printer, Snowflake
+  Layers, AlertCircle, UserCheck, Printer, Snowflake, Map
 } from 'lucide-react';
 import {
   DropdownMenu,
