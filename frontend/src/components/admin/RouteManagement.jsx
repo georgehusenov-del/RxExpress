@@ -361,6 +361,103 @@ export const RouteManagement = () => {
       .filter(Boolean);
   };
 
+  // Open edit gig modal
+  const handleOpenEditGig = (plan, e) => {
+    if (e) e.stopPropagation();
+    setEditingGig(plan);
+    setEditGigName(plan.title || '');
+    setEditGigDate(plan.date || new Date().toISOString().split('T')[0]);
+    setEditGigDriver(plan.assigned_driver?.circuit_driver_id || 'none');
+    setShowEditGigModal(true);
+  };
+
+  // Save gig edits
+  const handleSaveGigEdit = async () => {
+    if (!editingGig) return;
+    
+    try {
+      // Update local plan info
+      await circuitAPI.updateLocalPlan(editingGig.id, {
+        title: editGigName,
+        date: editGigDate
+      });
+      
+      // If driver changed, update driver assignment
+      if (editGigDriver !== (editingGig.assigned_driver?.circuit_driver_id || 'none')) {
+        if (editGigDriver === 'none') {
+          // Remove driver - we might need to handle this differently
+          toast.info('Driver removed from gig');
+        } else {
+          await circuitAPI.assignDriverToGig(editingGig.circuit_plan_id, editGigDriver);
+          toast.success('Driver assigned');
+        }
+      }
+      
+      toast.success('Gig updated successfully');
+      setShowEditGigModal(false);
+      setEditingGig(null);
+      fetchPlans();
+    } catch (err) {
+      console.error('Failed to update gig:', err);
+      toast.error(err.response?.data?.detail || 'Failed to update gig');
+    }
+  };
+
+  // Open remove orders modal from gig
+  const handleOpenRemoveOrders = (plan, e) => {
+    if (e) e.stopPropagation();
+    setEditingGig(plan);
+    setOrdersToRemove([]);
+    // Fetch current orders in gig
+    handleFetchGigOrdersForRemoval(plan);
+  };
+
+  // Fetch orders in gig for removal UI
+  const handleFetchGigOrdersForRemoval = async (plan) => {
+    try {
+      const response = await circuitAPI.getPlanFullStatus(plan.circuit_plan_id);
+      const orders = response.data.linked_orders || [];
+      setGigDetails({ ...response.data, plan, linked_orders: orders });
+      setShowRemoveOrdersModal(true);
+    } catch (err) {
+      console.error('Failed to fetch gig orders:', err);
+      toast.error('Failed to load orders');
+    }
+  };
+
+  // Remove selected orders from gig
+  const handleRemoveOrdersFromGig = async () => {
+    if (ordersToRemove.length === 0) {
+      toast.error('Please select orders to remove');
+      return;
+    }
+    
+    try {
+      // Unlink orders from the circuit plan
+      for (const orderId of ordersToRemove) {
+        await circuitAPI.unlinkOrderFromPlan(orderId);
+      }
+      
+      toast.success(`Removed ${ordersToRemove.length} order(s) from gig`);
+      setShowRemoveOrdersModal(false);
+      setOrdersToRemove([]);
+      fetchPlans();
+      fetchPendingOrders();
+    } catch (err) {
+      console.error('Failed to remove orders:', err);
+      toast.error('Failed to remove orders');
+    }
+  };
+
+  // Toggle order selection for removal
+  const toggleOrderForRemoval = (orderId) => {
+    setOrdersToRemove(prev => 
+      prev.includes(orderId) 
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
   // Delete plan
   const handleDeletePlan = async (plan) => {
     if (!confirm('Are you sure you want to delete this plan? Orders will be unlinked.')) return;
