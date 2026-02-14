@@ -665,12 +665,15 @@ export const DriverPortal = () => {
 };
 
 // Delivery Card Component - For orders to deliver
-const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod, onNavigate, stopNumber }) => {
+const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod, onNavigate, stopNumber, isScanned }) => {
   const [copayCollected, setCopayCollected] = useState(false);
   const hasCopay = (delivery.copay_amount || 0) > 0;
   
-  // If no copay, POD is enabled by default
-  const canCompletePod = hasCopay ? copayCollected : true;
+  // POD is only enabled after scanning AND (if has copay, copay must be collected)
+  const canCompletePod = isScanned && (hasCopay ? copayCollected : true);
+  
+  // Get the first package QR code or fallback to order number
+  const displayCode = delivery.packages?.[0]?.qr_code || delivery.packages?.[0]?.rx_number || delivery.order_number;
   
   return (
     <Card
@@ -686,11 +689,17 @@ const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod, onNavig
               <span className="text-white font-bold text-lg">{stopNumber}</span>
             </div>
             <div>
-              <p className="font-mono text-sm text-teal-400">{delivery.order_number}</p>
+              <p className="font-mono text-sm text-teal-400">{displayCode}</p>
               <p className="text-xs text-slate-500">{delivery.pharmacy?.name || 'Pharmacy'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Scanned indicator */}
+            {isScanned && (
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/50 text-xs">
+                Scanned
+              </Badge>
+            )}
             {/* Navigate Icon Button */}
             <Button
               variant="ghost"
@@ -731,8 +740,8 @@ const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod, onNavig
           </div>
         </div>
         
-        {/* Copay Collection Checkbox - Only show if order has copay */}
-        {hasCopay && (
+        {/* Copay Collection Checkbox - Only show if order has copay AND is scanned */}
+        {hasCopay && isScanned && (
           <div 
             className="mt-3 pt-3 border-t border-slate-700"
             onClick={(e) => e.stopPropagation()}
@@ -756,16 +765,16 @@ const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod, onNavig
         )}
         
         {/* Action buttons for delivery */}
-        <div className={`${hasCopay ? 'mt-2' : 'mt-3 pt-3 border-t border-slate-700'} flex gap-2`} onClick={(e) => e.stopPropagation()}>
+        <div className={`${hasCopay && isScanned ? 'mt-2' : 'mt-3 pt-3 border-t border-slate-700'} flex gap-2`} onClick={(e) => e.stopPropagation()}>
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 border-green-500/50 text-green-400 hover:bg-green-500/20"
+            className={`flex-1 ${isScanned ? 'border-green-500/50 text-green-400' : 'border-green-500/50 text-green-400 hover:bg-green-500/20'}`}
             onClick={onScanDelivery}
             data-testid={`scan-delivery-${delivery.id}`}
           >
             <QrCode className="w-3 h-3 mr-1" />
-            Scan Delivery
+            {isScanned ? 'Scanned ✓' : 'Scan Delivery'}
           </Button>
           <Button
             size="sm"
@@ -779,8 +788,13 @@ const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod, onNavig
           </Button>
         </div>
         
-        {/* Warning if copay not collected */}
-        {hasCopay && !copayCollected && (
+        {/* Warning messages */}
+        {!isScanned && (
+          <p className="text-xs text-amber-400/70 mt-2 text-center">
+            Scan package first to enable POD
+          </p>
+        )}
+        {isScanned && hasCopay && !copayCollected && (
           <p className="text-xs text-amber-400/70 mt-2 text-center">
             Collect ${delivery.copay_amount.toFixed(2)} copay to enable POD
           </p>
