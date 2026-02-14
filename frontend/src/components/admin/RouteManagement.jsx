@@ -59,6 +59,13 @@ export const RouteManagement = () => {
   const [gigDetailsLoading, setGigDetailsLoading] = useState(false);
   const [gigDetails, setGigDetails] = useState(null);
   const [showMapView, setShowMapView] = useState(false);
+  const [showEditGigModal, setShowEditGigModal] = useState(false);
+  const [editingGig, setEditingGig] = useState(null);
+  const [editGigName, setEditGigName] = useState('');
+  const [editGigDate, setEditGigDate] = useState('');
+  const [editGigDriver, setEditGigDriver] = useState('none');
+  const [showRemoveOrdersModal, setShowRemoveOrdersModal] = useState(false);
+  const [ordersToRemove, setOrdersToRemove] = useState([]);
   
   // Form state
   const [newPlanDate, setNewPlanDate] = useState(new Date().toISOString().split('T')[0]);
