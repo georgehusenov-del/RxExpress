@@ -4283,6 +4283,327 @@ api_router.include_router(webhooks_router)
 
 app.include_router(api_router)
 
+# ============== Static File Serving for POD Uploads ==============
+from fastapi.responses import FileResponse
+from pathlib import Path
+
+@app.get("/api/uploads/signatures/{filename}")
+async def get_signature_file(filename: str):
+    """Serve signature image files"""
+    file_path = Path(f"/app/backend/uploads/signatures/{filename}")
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Signature file not found")
+    return FileResponse(file_path, media_type="image/png")
+
+@app.get("/api/uploads/photos/{filename}")
+async def get_photo_file(filename: str):
+    """Serve photo image files"""
+    file_path = Path(f"/app/backend/uploads/photos/{filename}")
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Photo file not found")
+    return FileResponse(file_path, media_type="image/jpeg")
+
+
+# ============== Reports & Analytics Endpoints ==============
+reports_router = APIRouter(prefix="/reports", tags=["Reports"])
+
+@reports_router.get("/dashboard")
+async def get_dashboard_analytics(
+    start_date: str = None,
+    end_date: str = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Get comprehensive dashboard analytics"""
+    # Default to last 30 days
+    if not end_date:
+        end_dt = datetime.now(timezone.utc)
+    else:
+        end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+    
+    if not start_date:
+        start_dt = end_dt - timedelta(days=30)
+    else:
+        start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+    
+    # Build date query
+    date_query = {
+        "created_at": {
+            "$gte": start_dt.isoformat(),
+            "$lte": end_dt.isoformat()
+        }
+    }
+    
+    # Get order statistics
+    total_orders = await db.orders.count_documents(date_query)
+    delivered_orders = await db.orders.count_documents({**date_query, "status": "delivered"})
+    pending_orders = await db.orders.count_documents({**date_query, "status": {"$in": ["new", "pending", "confirmed"]}})
+    in_transit_orders = await db.orders.count_documents({**date_query, "status": {"$in": ["out_for_delivery", "in_transit"]}})
+    failed_orders = await db.orders.count_documents({**date_query, "status": "failed"})
+    
+    # Calculate delivery success rate
+    completed_orders = delivered_orders + failed_orders
+    success_rate = (delivered_orders / completed_orders * 100) if completed_orders > 0 else 0
+    
+    # Get revenue data (orders with payments)
+    revenue_pipeline = [
+        {"$match": {**date_query, "payment_status": "paid"}},
+        {"$group": {"_id": None, "total": {"$sum": "$delivery_fee"}}}
+    ]
+    revenue_result = await db.orders.aggregate(revenue_pipeline).to_list(1)
+    total_revenue = revenue_result[0]["total"] if revenue_result else 0
+    
+    # Get orders by borough
+    borough_pipeline = [
+        {"$match": date_query},
+        {"$group": {"_id": "$borough", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    borough_stats = await db.orders.aggregate(borough_pipeline).to_list(10)
+    orders_by_borough = {b["_id"] or "Unknown": b["count"] for b in borough_stats}
+    
+    # Get orders by status
+    status_pipeline = [
+        {"$match": date_query},
+        {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+    ]
+    status_stats = await db.orders.aggregate(status_pipeline).to_list(20)
+    orders_by_status = {s["_id"]: s["count"] for s in status_stats}
+    
+    # Get driver performance
+    driver_pipeline = [
+        {"$match": {**date_query, "status": "delivered"}},
+        {"$group": {
+            "_id": "$driver_id",
+            "deliveries": {"$sum": 1},
+            "orders": {"$push": "$$ROOT"}
+        }},
+        {"$sort": {"deliveries": -1}},
+        {"$limit": 10}
+    ]
+    driver_stats = await db.orders.aggregate(driver_pipeline).to_list(10)
+    
+    # Enrich with driver names
+    top_drivers = []
+    for stat in driver_stats:
+        driver = await db.drivers.find_one({"id": stat["_id"]}, {"_id": 0})
+        if driver:
+            user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0})
+            top_drivers.append({
+                "driver_id": stat["_id"],
+                "name": f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() if user else "Unknown",
+                "deliveries": stat["deliveries"]
+            })
+    
+    # Get pharmacy performance
+    pharmacy_pipeline = [
+        {"$match": date_query},
+        {"$group": {
+            "_id": "$pharmacy_id",
+            "orders": {"$sum": 1}
+        }},
+        {"$sort": {"orders": -1}},
+        {"$limit": 10}
+    ]
+    pharmacy_stats = await db.orders.aggregate(pharmacy_pipeline).to_list(10)
+    
+    top_pharmacies = []
+    for stat in pharmacy_stats:
+        pharmacy = await db.pharmacies.find_one({"id": stat["_id"]}, {"_id": 0})
+        if pharmacy:
+            top_pharmacies.append({
+                "pharmacy_id": stat["_id"],
+                "name": pharmacy.get("name", "Unknown"),
+                "orders": stat["orders"]
+            })
+    
+    # Get daily order trends
+    daily_pipeline = [
+        {"$match": date_query},
+        {"$addFields": {
+            "date": {"$substr": ["$created_at", 0, 10]}
+        }},
+        {"$group": {
+            "_id": "$date",
+            "orders": {"$sum": 1},
+            "delivered": {"$sum": {"$cond": [{"$eq": ["$status", "delivered"]}, 1, 0]}}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    daily_stats = await db.orders.aggregate(daily_pipeline).to_list(60)
+    daily_trends = [{"date": d["_id"], "orders": d["orders"], "delivered": d["delivered"]} for d in daily_stats]
+    
+    # Get POD statistics
+    total_pods = await db.proof_of_delivery.count_documents({
+        "submitted_at": {"$gte": start_dt.isoformat(), "$lte": end_dt.isoformat()}
+    })
+    
+    return {
+        "period": {
+            "start": start_dt.isoformat(),
+            "end": end_dt.isoformat()
+        },
+        "summary": {
+            "total_orders": total_orders,
+            "delivered": delivered_orders,
+            "pending": pending_orders,
+            "in_transit": in_transit_orders,
+            "failed": failed_orders,
+            "success_rate": round(success_rate, 1),
+            "total_revenue": total_revenue,
+            "total_pods": total_pods
+        },
+        "orders_by_borough": orders_by_borough,
+        "orders_by_status": orders_by_status,
+        "top_drivers": top_drivers,
+        "top_pharmacies": top_pharmacies,
+        "daily_trends": daily_trends
+    }
+
+
+@reports_router.get("/deliveries")
+async def get_delivery_report(
+    start_date: str = None,
+    end_date: str = None,
+    borough: str = None,
+    driver_id: str = None,
+    pharmacy_id: str = None,
+    status: str = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Get detailed delivery report with filters"""
+    # Default to last 7 days
+    if not end_date:
+        end_dt = datetime.now(timezone.utc)
+    else:
+        end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+    
+    if not start_date:
+        start_dt = end_dt - timedelta(days=7)
+    else:
+        start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+    
+    query = {
+        "created_at": {"$gte": start_dt.isoformat(), "$lte": end_dt.isoformat()}
+    }
+    
+    if borough:
+        query["borough"] = borough
+    if driver_id:
+        query["driver_id"] = driver_id
+    if pharmacy_id:
+        query["pharmacy_id"] = pharmacy_id
+    if status:
+        query["status"] = status
+    
+    orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    
+    # Calculate metrics
+    total_delivery_time = 0
+    deliveries_with_time = 0
+    
+    for order in orders:
+        if order.get("delivered_at") and order.get("created_at"):
+            try:
+                created = datetime.fromisoformat(order["created_at"].replace('Z', '+00:00'))
+                delivered = datetime.fromisoformat(order["delivered_at"].replace('Z', '+00:00'))
+                time_diff = (delivered - created).total_seconds() / 3600  # hours
+                total_delivery_time += time_diff
+                deliveries_with_time += 1
+            except:
+                pass
+    
+    avg_delivery_time = total_delivery_time / deliveries_with_time if deliveries_with_time > 0 else 0
+    
+    return {
+        "period": {"start": start_dt.isoformat(), "end": end_dt.isoformat()},
+        "filters": {"borough": borough, "driver_id": driver_id, "pharmacy_id": pharmacy_id, "status": status},
+        "metrics": {
+            "total_orders": len(orders),
+            "avg_delivery_time_hours": round(avg_delivery_time, 2)
+        },
+        "orders": orders[:100]  # Limit response size
+    }
+
+
+@reports_router.get("/drivers/performance")
+async def get_driver_performance_report(
+    start_date: str = None,
+    end_date: str = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Get detailed driver performance metrics"""
+    if not end_date:
+        end_dt = datetime.now(timezone.utc)
+    else:
+        end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+    
+    if not start_date:
+        start_dt = end_dt - timedelta(days=30)
+    else:
+        start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+    
+    date_query = {"created_at": {"$gte": start_dt.isoformat(), "$lte": end_dt.isoformat()}}
+    
+    # Get all drivers
+    drivers = await db.drivers.find({}, {"_id": 0}).to_list(100)
+    
+    driver_performance = []
+    for driver in drivers:
+        # Get user info
+        user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0})
+        
+        # Get delivery stats
+        total_assigned = await db.orders.count_documents({**date_query, "driver_id": driver["id"]})
+        delivered = await db.orders.count_documents({**date_query, "driver_id": driver["id"], "status": "delivered"})
+        failed = await db.orders.count_documents({**date_query, "driver_id": driver["id"], "status": "failed"})
+        
+        # Calculate average delivery time
+        delivery_times = []
+        delivered_orders = await db.orders.find(
+            {**date_query, "driver_id": driver["id"], "status": "delivered", "delivered_at": {"$exists": True}},
+            {"_id": 0, "created_at": 1, "delivered_at": 1}
+        ).to_list(100)
+        
+        for order in delivered_orders:
+            try:
+                created = datetime.fromisoformat(order["created_at"].replace('Z', '+00:00'))
+                delivered_at = datetime.fromisoformat(order["delivered_at"].replace('Z', '+00:00'))
+                delivery_times.append((delivered_at - created).total_seconds() / 3600)
+            except:
+                pass
+        
+        avg_time = sum(delivery_times) / len(delivery_times) if delivery_times else 0
+        success_rate = (delivered / total_assigned * 100) if total_assigned > 0 else 0
+        
+        driver_performance.append({
+            "driver_id": driver["id"],
+            "name": f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() if user else "Unknown",
+            "email": user.get("email") if user else None,
+            "status": driver.get("status", "offline"),
+            "total_assigned": total_assigned,
+            "delivered": delivered,
+            "failed": failed,
+            "success_rate": round(success_rate, 1),
+            "avg_delivery_time_hours": round(avg_time, 2),
+            "vehicle_type": driver.get("vehicle_type")
+        })
+    
+    # Sort by deliveries
+    driver_performance.sort(key=lambda x: x["delivered"], reverse=True)
+    
+    return {
+        "period": {"start": start_dt.isoformat(), "end": end_dt.isoformat()},
+        "drivers": driver_performance,
+        "summary": {
+            "total_drivers": len(drivers),
+            "active_drivers": len([d for d in driver_performance if d["delivered"] > 0]),
+            "total_deliveries": sum(d["delivered"] for d in driver_performance)
+        }
+    }
+
+
+api_router.include_router(reports_router)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
