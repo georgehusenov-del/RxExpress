@@ -272,7 +272,7 @@ const RefrigeratedIndicator = ({ order, size = 'sm' }) => {
 };
 
 // Draggable Order Card Component with Quick Driver Assign
-const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onQuickStatusChange, onAssignDriver, drivers, statusColors, statusLabels }) => {
+const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onQuickStatusChange, onAssignDriver, drivers, statusColors, statusLabels, isSelected, onToggleSelect }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: order.id,
     data: { order },
@@ -291,12 +291,21 @@ const DraggableOrderCard = ({ order, onViewDetails, onChangeStatus, onQuickStatu
       ref={setNodeRef}
       style={style}
       className={`flex items-center justify-between px-3 py-2.5 bg-slate-800/50 rounded-lg border ${
+        isSelected ? 'border-teal-500 bg-teal-500/10' :
         hasRefrigeratedPackages(order) ? 'border-cyan-500/40 bg-cyan-500/5' : 'border-slate-700'
       } mb-2 transition-all ${
         isDragging ? 'opacity-50 shadow-2xl ring-2 ring-teal-500' : 'hover:bg-slate-700/50 hover:border-slate-600'
       }`}
       data-testid={`draggable-order-${order.id}`}
     >
+      {/* Selection Checkbox */}
+      <Checkbox
+        checked={isSelected}
+        onCheckedChange={() => onToggleSelect(order.id)}
+        className="mr-2 border-slate-500 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+        onClick={(e) => e.stopPropagation()}
+      />
+      
       {/* Drag Handle */}
       <div
         {...attributes}
