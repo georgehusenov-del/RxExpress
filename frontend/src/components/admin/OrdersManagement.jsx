@@ -466,6 +466,10 @@ export const OrdersManagement = () => {
   const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
   
+  // Date filter state
+  const [dateFilter, setDateFilter] = useState(null);
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
+  
   // Route optimization states
   const [showRoutePreview, setShowRoutePreview] = useState(false);
   const [routePreviewData, setRoutePreviewData] = useState(null);
