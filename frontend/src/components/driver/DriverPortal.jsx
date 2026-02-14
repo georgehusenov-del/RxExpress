@@ -171,12 +171,14 @@ export const DriverPortal = () => {
     toast.success(`Package scanned successfully!`);
     setShowScanner(false);
     
-    // After successful scan, activate POD modal for deliveries
+    // Mark the delivery as scanned
+    if (selectedDelivery) {
+      setScannedDeliveries(prev => new Set([...prev, selectedDelivery.id]));
+    }
+    
+    // After successful scan, show success message (POD can now be completed)
     if (scanAction === 'delivery' && selectedDelivery) {
-      // Small delay to let scanner close properly
-      setTimeout(() => {
-        setShowPodModal(true);
-      }, 300);
+      toast.success('Package verified! You can now complete POD');
     } else {
       // For pickups, just refresh the data
       fetchData();
