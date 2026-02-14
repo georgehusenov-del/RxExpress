@@ -1077,6 +1077,67 @@ export const OrdersManagement = () => {
               data-testid="search-orders-input"
             />
           </div>
+          {/* Date Filter */}
+          <Popover open={dateFilterOpen} onOpenChange={setDateFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`w-44 justify-start text-left font-normal bg-slate-800 border-slate-700 text-white hover:bg-slate-700 ${!dateFilter ? 'text-slate-400' : ''}`}
+                data-testid="date-filter-btn"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateFilter ? (
+                  isToday(dateFilter) ? 'Today' : 
+                  isYesterday(dateFilter) ? 'Yesterday' : 
+                  format(dateFilter, 'MMM dd, yyyy')
+                ) : 'All Dates'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-slate-800 border-slate-700" align="start">
+              <div className="p-2 border-b border-slate-700">
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-slate-300 hover:text-white hover:bg-slate-700"
+                    onClick={() => { setDateFilter(new Date()); setDateFilterOpen(false); }}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-slate-300 hover:text-white hover:bg-slate-700"
+                    onClick={() => { 
+                      const yesterday = new Date();
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      setDateFilter(yesterday);
+                      setDateFilterOpen(false);
+                    }}
+                  >
+                    Yesterday
+                  </Button>
+                  {dateFilter && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-400 hover:text-red-300 hover:bg-slate-700"
+                      onClick={() => { setDateFilter(null); setDateFilterOpen(false); }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <Calendar
+                mode="single"
+                selected={dateFilter}
+                onSelect={(date) => { setDateFilter(date); setDateFilterOpen(false); }}
+                initialFocus
+                className="bg-slate-800 text-white"
+              />
+            </PopoverContent>
+          </Popover>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40 bg-slate-800 border-slate-700 text-white" data-testid="status-filter">
               <SelectValue placeholder="Filter by status" />
