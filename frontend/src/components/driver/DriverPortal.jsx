@@ -345,22 +345,52 @@ export const DriverPortal = () => {
                 </CardContent>
               </Card>
             ) : (
-              deliveries.map((delivery) => (
-                <DeliveryCard
-                  key={delivery.id}
-                  delivery={delivery}
-                  type="delivery"
-                  onView={() => {
-                    setSelectedDelivery(delivery);
-                    setShowDeliveryModal(true);
-                  }}
-                  onScanDelivery={() => handleDeliveryScan(delivery)}
-                  onCompletePod={() => {
-                    setSelectedDelivery(delivery);
-                    setShowPodModal(true);
-                  }}
-                />
-              ))
+              <>
+                {/* Navigate Full Route Button */}
+                {deliveries.length > 1 && (
+                  <Button
+                    variant="outline"
+                    className="w-full border-teal-500/50 text-teal-400 hover:bg-teal-500/10 mb-2"
+                    onClick={() => {
+                      const url = buildGoogleMapsRouteUrl(deliveries);
+                      if (url) {
+                        window.open(url, '_blank');
+                      } else {
+                        toast.error('Unable to build route - missing addresses');
+                      }
+                    }}
+                    data-testid="navigate-full-route-btn"
+                  >
+                    <Route className="w-4 h-4 mr-2" />
+                    Navigate Full Route ({deliveries.length} stops)
+                  </Button>
+                )}
+                {deliveries.map((delivery, index) => (
+                  <DeliveryCard
+                    key={delivery.id}
+                    delivery={delivery}
+                    type="delivery"
+                    stopNumber={delivery.stop_sequence ?? delivery.circuit_stop_sequence ?? index + 1}
+                    onView={() => {
+                      setSelectedDelivery(delivery);
+                      setShowDeliveryModal(true);
+                    }}
+                    onScanDelivery={() => handleDeliveryScan(delivery)}
+                    onCompletePod={() => {
+                      setSelectedDelivery(delivery);
+                      setShowPodModal(true);
+                    }}
+                    onNavigate={() => {
+                      const url = buildSingleAddressUrl(delivery.delivery_address);
+                      if (url) {
+                        window.open(url, '_blank');
+                      } else {
+                        toast.error('Unable to navigate - missing address');
+                      }
+                    }}
+                  />
+                ))}
+              </>
             )}
           </div>
         )}
