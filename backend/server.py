@@ -2543,7 +2543,10 @@ async def admin_create_pricing(
         time_window_start=pricing_data.time_window_start,
         time_window_end=pricing_data.time_window_end,
         cutoff_time=pricing_data.cutoff_time,
-        is_addon=pricing_data.is_addon
+        is_addon=pricing_data.is_addon,
+        minimum_packages=pricing_data.minimum_packages,
+        local_only=pricing_data.local_only,
+        allow_future_date=pricing_data.allow_future_date
     )
     
     pricing_dict = pricing.model_dump()
