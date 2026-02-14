@@ -3962,6 +3962,7 @@ api_router.include_router(admin_router)
 api_router.include_router(zones_router)
 api_router.include_router(driver_portal_router)
 api_router.include_router(public_router)
+api_router.include_router(webhooks_router)
 
 app.include_router(api_router)
 
