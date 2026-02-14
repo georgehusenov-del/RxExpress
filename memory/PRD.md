@@ -29,6 +29,8 @@ RX Expresss is a full-stack pharmacy delivery service application replicating Dr
 - Proof of Delivery (POD) with signature and photo capture
 - Status updates (Available, On Break, Offline)
 - GPS navigation integration
+- **Copay collection confirmation** - Checkbox before POD can be submitted
+- **Pickup scanning** - QR scan changes order status to picked_up
 
 ### Admin Dashboard
 - Overview with statistics (Total Users, Pharmacies, Drivers, Orders)
