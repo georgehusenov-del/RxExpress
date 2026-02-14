@@ -539,36 +539,41 @@ export const DriverPortal = () => {
                       Scan for Delivery
                     </Button>
                     
-                    {/* Copay Collection Checkbox in Modal */}
-                    <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-slate-700/50 border border-slate-600 w-full">
-                      <input
-                        type="checkbox"
-                        checked={modalCopayCollected}
-                        onChange={(e) => setModalCopayCollected(e.target.checked)}
-                        className="w-5 h-5 rounded border-2 border-amber-500 bg-slate-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer"
-                        data-testid="modal-copay-checkbox"
-                      />
-                      <span className={`text-sm font-medium ${modalCopayCollected ? 'text-green-400' : 'text-amber-400'}`}>
-                        {modalCopayCollected ? '✓ Copay collected' : 'Did you collect copay?'}
-                      </span>
-                    </label>
+                    {/* Copay Collection Checkbox in Modal - Only show if order has copay */}
+                    {(selectedDelivery?.copay_amount || 0) > 0 && (
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 w-full">
+                        <input
+                          type="checkbox"
+                          checked={modalCopayCollected}
+                          onChange={(e) => setModalCopayCollected(e.target.checked)}
+                          className="w-5 h-5 rounded border-2 border-amber-500 bg-slate-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer"
+                          data-testid="modal-copay-checkbox"
+                        />
+                        <div className="flex-1">
+                          <span className={`text-sm font-medium ${modalCopayCollected ? 'text-green-400' : 'text-amber-400'}`}>
+                            {modalCopayCollected ? '✓ Copay collected' : 'Collect copay'}
+                          </span>
+                          <span className="text-amber-300 font-bold ml-2">${selectedDelivery.copay_amount.toFixed(2)}</span>
+                        </div>
+                      </label>
+                    )}
                     
                     <Button
                       onClick={() => {
                         setShowDeliveryModal(false);
                         setShowPodModal(true);
                       }}
-                      className={`w-full ${modalCopayCollected ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 cursor-not-allowed'}`}
-                      disabled={!modalCopayCollected}
+                      className={`w-full ${((selectedDelivery?.copay_amount || 0) > 0 ? modalCopayCollected : true) ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 cursor-not-allowed'}`}
+                      disabled={(selectedDelivery?.copay_amount || 0) > 0 && !modalCopayCollected}
                       data-testid="complete-delivery-btn"
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Complete Delivery (POD)
                     </Button>
                     
-                    {!modalCopayCollected && (
+                    {(selectedDelivery?.copay_amount || 0) > 0 && !modalCopayCollected && (
                       <p className="text-xs text-amber-400/70 text-center w-full">
-                        Check the copay box to enable POD
+                        Collect ${selectedDelivery.copay_amount.toFixed(2)} copay to enable POD
                       </p>
                     )}
                   </>
