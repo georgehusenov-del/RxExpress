@@ -621,12 +621,12 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
                             type="date"
                             value={formData.scheduled_date || ''}
                             onChange={(e) => updateField('scheduled_date', e.target.value)}
-                            min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                            min={new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0]}
                             className="w-full"
                             data-testid="scheduled-date-input"
                           />
                           <p className="text-xs text-slate-500 mt-1">
-                            Choose a date at least 1 day in advance
+                            Choose a date at least 2 days in advance
                           </p>
                         </div>
                       )}
