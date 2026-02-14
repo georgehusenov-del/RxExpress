@@ -340,13 +340,13 @@ export const PackageScanManagement = () => {
                         <TableCell>
                           <div className="flex gap-1">
                             {pkg.requires_signature && (
-                              <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">
+                              <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30" title="Signature Required">
                                 <FileSignature className="w-3 h-3" />
                               </Badge>
                             )}
                             {pkg.requires_refrigeration && (
-                              <Badge variant="outline" className="text-xs bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                                <Thermometer className="w-3 h-3" />
+                              <Badge variant="outline" className="text-xs bg-cyan-500/20 text-cyan-400 border-cyan-500/30 animate-pulse" title="Refrigerated - Keep Cold">
+                                <Snowflake className="w-3 h-3" />
                               </Badge>
                             )}
                           </div>
