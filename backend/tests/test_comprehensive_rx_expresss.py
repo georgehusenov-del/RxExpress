@@ -225,8 +225,12 @@ class TestAdminRouteManagement:
         # Could be 200 (success) or 400/520 (Circuit API limitation)
         if response.status_code == 200:
             data = response.json()
-            assert "plan_id" in data or "circuit_plan_id" in data
-            plan_id = data.get("plan_id") or data.get("circuit_plan_id")
+            # Response can have plan_id, circuit_plan_id, local_id, or plan.id
+            plan_id = (data.get("plan_id") or 
+                      data.get("circuit_plan_id") or 
+                      data.get("local_id") or 
+                      data.get("plan", {}).get("id"))
+            assert plan_id is not None, f"No plan ID found in response: {data}"
             print(f"✓ Created route plan: {plan_id}")
             
             # Clean up - delete the plan
