@@ -297,6 +297,63 @@ export const RouteManagement = () => {
     }
   };
 
+  // Open gig details modal with sorted stops
+  const handleOpenGigDetails = async (plan) => {
+    setGigDetailsLoading(true);
+    setShowGigDetailsModal(true);
+    setGigDetails(null);
+    
+    try {
+      const response = await circuitAPI.getPlanFullStatus(plan.circuit_plan_id);
+      const fullStatus = response.data;
+      
+      // Sort linked_orders by stop sequence
+      const sortedOrders = [...(fullStatus.linked_orders || [])].sort((a, b) => {
+        const seqA = a.stop_sequence ?? a.circuit_stop_sequence ?? 999;
+        const seqB = b.stop_sequence ?? b.circuit_stop_sequence ?? 999;
+        return seqA - seqB;
+      });
+      
+      setGigDetails({
+        ...fullStatus,
+        plan,
+        linked_orders: sortedOrders
+      });
+    } catch (err) {
+      console.error('Failed to fetch gig details:', err);
+      toast.error('Failed to load gig details');
+    } finally {
+      setGigDetailsLoading(false);
+    }
+  };
+
+  // Prepare map markers from gig orders
+  const getGigMapMarkers = () => {
+    if (!gigDetails?.linked_orders) return [];
+    
+    return gigDetails.linked_orders
+      .filter(order => order.delivery_address)
+      .map((order, index) => {
+        const addr = order.delivery_address;
+        // Use geocoded coordinates if available, otherwise default to null
+        const lat = addr.latitude || addr.lat;
+        const lng = addr.longitude || addr.lng;
+        
+        if (!lat || !lng) return null;
+        
+        return {
+          id: order.id,
+          lat: parseFloat(lat),
+          lng: parseFloat(lng),
+          stopNumber: order.stop_sequence ?? order.circuit_stop_sequence ?? index + 1,
+          label: order.order_number,
+          popup: `${addr.street}, ${addr.city}`,
+          color: '#0d9488'
+        };
+      })
+      .filter(Boolean);
+  };
+
   // Delete plan
   const handleDeletePlan = async (plan) => {
     if (!confirm('Are you sure you want to delete this plan? Orders will be unlinked.')) return;
