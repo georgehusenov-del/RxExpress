@@ -1144,6 +1144,13 @@ export const OrdersManagement = () => {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
                                       <DropdownMenuItem
+                                        className="text-blue-400 hover:bg-slate-700"
+                                        onClick={() => handlePrintOrder(order)}
+                                      >
+                                        <Printer className="w-4 h-4 mr-2" />
+                                        Print Label
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
                                         className="text-slate-300 hover:bg-slate-700"
                                         onClick={() => openDriverAssignModal(order)}
                                       >
