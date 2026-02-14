@@ -338,12 +338,6 @@ export const DriversManagement = () => {
                     <TableCell className="text-slate-300">
                       {driver.total_deliveries || 0}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-slate-300">
-                        <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                        <span>{driver.rating?.toFixed(1) || '0.0'}</span>
-                      </div>
-                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
