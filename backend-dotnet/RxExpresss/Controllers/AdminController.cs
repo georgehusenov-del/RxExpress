@@ -36,17 +36,16 @@ public class AdminController : ControllerBase
         var activeDrivers = await _db.Drivers.CountDocumentsAsync(d => d.Status != "offline");
         var totalOrders = await _db.Orders.CountDocumentsAsync(FilterDefinition<Order>.Empty);
         
-        // Orders by status
+        // Orders by status (using new status system)
         var ordersByStatus = new Dictionary<string, long>
         {
-            ["pending"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "pending"),
-            ["confirmed"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "confirmed"),
-            ["ready_for_pickup"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "ready_for_pickup"),
-            ["assigned"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "assigned"),
+            ["new"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "new"),
             ["picked_up"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "picked_up"),
             ["in_transit"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "in_transit"),
+            ["out_for_delivery"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "out_for_delivery"),
             ["delivered"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "delivered"),
-            ["cancelled"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "cancelled")
+            ["failed"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "failed"),
+            ["canceled"] = await _db.Orders.CountDocumentsAsync(o => o.Status == "canceled")
         };
         
         // Copay statistics
