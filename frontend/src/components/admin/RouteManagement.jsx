@@ -401,7 +401,6 @@ export const RouteManagement = () => {
               <Button
                 onClick={() => setShowCreateModal(true)}
                 className="bg-teal-600 hover:bg-teal-700"
-                disabled={circuitStatus?.status !== 'connected'}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Plan
