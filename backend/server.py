@@ -3176,6 +3176,7 @@ async def get_active_pricing():
         "next_day": [],
         "same_day": [],
         "priority": [],
+        "scheduled": [],
         "addons": []
     }
     
