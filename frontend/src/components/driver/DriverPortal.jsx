@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +12,13 @@ import {
 import {
   Truck, Package, MapPin, Clock, CheckCircle, AlertCircle,
   QrCode, Navigation, Phone, User, RefreshCw, LogOut,
-  ChevronRight, Thermometer, FileSignature, Upload
+  ChevronRight, Thermometer, FileSignature, Upload, Route
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { driverPortalAPI } from '@/lib/api';
 import { QRScanner } from '@/components/scanner/QRScanner';
 import { ProofOfDeliveryModal } from '@/components/pod/ProofOfDeliveryModal';
+import { buildGoogleMapsRouteUrl, buildSingleAddressUrl } from '@/components/maps/DeliveryMap';
 import { toast } from 'sonner';
 
 const statusColors = {
