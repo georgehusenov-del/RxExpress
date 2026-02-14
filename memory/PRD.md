@@ -5,9 +5,10 @@ RX Expresss is a full-stack pharmacy delivery service application replicating Dr
 
 ## Tech Stack
 - **Backend:** Python/FastAPI
-- **Frontend:** React.js, Tailwind CSS, dnd-kit, lucide-react, date-fns
+- **Frontend:** React.js, Tailwind CSS, Shadcn/UI, Lucide React, date-fns
 - **Database:** MongoDB
 - **External Services:** Circuit Spoke, Google Maps, Stripe
+- **Maps:** Leaflet (react-leaflet) for visualization, Google Maps for navigation
 
 ## Core Features
 
@@ -22,25 +23,44 @@ RX Expresss is a full-stack pharmacy delivery service application replicating Dr
 - Copay tracking
 - Time window selection (8am-1pm, 1pm-4pm, 4pm-10pm)
 - Refrigerated package indicators
+- Scheduled bulk delivery option ($9 flat rate, min 15 packages)
 
 ### Driver Portal
-- View assigned deliveries
+- View assigned deliveries **sorted by stop order** (stop 1, stop 2, stop 3...)
+- **Stop number badges** on each delivery card
+- **Navigate icon** next to each delivery to open Google Maps
+- **Navigate Full Route button** to open all stops in Google Maps sequence
 - QR code scanning for pickup/delivery
 - Proof of Delivery (POD) with signature and photo capture
-- Status updates (Available, On Break, Offline)
+- Online/Offline status toggle
 - GPS navigation integration
-- **Copay collection confirmation** - Checkbox before POD can be submitted
-- **Pickup scanning** - QR scan changes order status to picked_up
+- Copay collection confirmation
 
 ### Admin Dashboard
 - Overview with statistics (Total Users, Pharmacies, Drivers, Orders)
 - Two view modes: Categories, List
 - Bulk order selection with floating action bar
-- **Calendar date filtering** - Filter orders by date
-- Borough-based organization (Queens, Brooklyn, Manhattan, Staten Island, Bronx)
+- Calendar date filtering
+- Borough-based organization
 - Route optimization
 - Real-time status management
 - Quick-print labels
+- **Map View toggle** on Orders page showing all delivery locations
+- **Color-coded markers** by order status (amber=new, blue=picked_up, etc.)
+
+### Route Management
+- **Map View toggle** showing orders ready for routing
+- Active Gigs display with numbered badges
+- **Clickable gig cards** that open details modal
+- **Gig Details Modal** with:
+  - Sorted stops by route order
+  - Navigate Full Route button for Google Maps
+  - Route Map preview (Leaflet)
+  - Driver assignment status
+  - Optimization status
+- Driver assignment dropdown
+- Auto-assign by borough feature
+- Route optimization via Circuit API
 
 ### Order Status System
 Unified status values:
@@ -51,48 +71,6 @@ Unified status values:
 - `delivered` - Successfully delivered
 - `failed` - Delivery failed
 - `canceled` - Order canceled
-
-## Completed Implementations (Feb 14, 2026)
-
-### 1. Calendar Date Filter
-- Added date picker popover to Orders page header
-- Quick buttons: Today, Yesterday, Clear
-- Full calendar month view
-- Filters orders by created_at date
-
-### 2. Bulk Order Selection
-- Checkboxes on all order cards in Smart Organizer view
-- Floating action bar at bottom when orders selected
-- Bulk status change dropdown
-- Bulk print functionality
-- Clear selection button
-
-### 3. Circuit Spoke Webhook
-- Endpoint: `POST /api/webhooks/circuit`
-- Production URL: `https://backend.rxexpresss.com/api/webhooks/circuit`
-- Handles events:
-  - `stop.completed` / `stop.succeeded` - Mark orders as delivered
-  - `stop.failed` / `stop.attempted` - Mark orders as failed
-  - `stop.out_for_delivery` - Update order status
-  - `plan.optimized` - Update plan optimization status
-  - `plan.distributed` - Mark plan as distributed
-  - `driver.location` - Update driver location
-- Webhook logging for debugging
-- Logs endpoint: `GET /api/webhooks/circuit/logs`
-
-### 4. Proof of Delivery (POD)
-- Full signature pad with canvas drawing
-- Photo capture option
-- Recipient name confirmation
-- Delivery notes field
-- Validation for signature-required packages
-- GPS location capture on submission
-
-### 5. Stripe Integration
-- Checkout session creation
-- Payment status polling
-- Webhook handling for payment events
-- Transaction logging in database
 
 ## Test Credentials
 
@@ -105,20 +83,17 @@ Unified status values:
 ## Key Files
 
 ### Backend
-- `/app/backend/server.py` - Main FastAPI application (3900+ lines)
+- `/app/backend/server.py` - Main FastAPI application
 - `/app/backend/models.py` - Data models
 - `/app/backend/auth.py` - Authentication
 - `/app/backend/circuit_service.py` - Circuit integration
-- `/app/backend/maps_service.py` - Google Maps integration
-- `/app/backend/notifications.py` - Notification service
 
 ### Frontend
-- `/app/frontend/src/components/admin/OrdersManagement.jsx` - Orders page with date filter, bulk selection
-- `/app/frontend/src/components/admin/RouteManagement.jsx` - Route management
-- `/app/frontend/src/components/driver/DriverPortal.jsx` - Driver portal
+- `/app/frontend/src/components/driver/DriverPortal.jsx` - Driver portal with sorted stops and navigation
+- `/app/frontend/src/components/admin/OrdersManagement.jsx` - Orders page with Map View
+- `/app/frontend/src/components/admin/RouteManagement.jsx` - Routes page with Map View and Gig Details Modal
+- `/app/frontend/src/components/maps/DeliveryMap.jsx` - Reusable Leaflet map component
 - `/app/frontend/src/components/pod/ProofOfDeliveryModal.jsx` - POD modal
-- `/app/frontend/src/components/pod/SignaturePad.jsx` - Signature canvas
-- `/app/frontend/src/components/pod/PhotoCapture.jsx` - Photo capture
 
 ## API Endpoints
 
@@ -132,173 +107,85 @@ Unified status values:
 - `GET /api/admin/orders` - List orders with filters
 - `PUT /api/admin/orders/{id}/status` - Update order status
 - `GET /api/admin/drivers` - List drivers
-- `GET /api/admin/drivers/locations` - Driver locations
 
 ### Circuit Integration
 - `GET /api/circuit/status` - Connection status
 - `POST /api/circuit/plans/create-for-date` - Create route plan
 - `POST /api/circuit/plans/{id}/batch-import` - Batch import orders
 - `POST /api/circuit/plans/{id}/optimize-and-distribute` - Optimize routes
-
-### Webhooks
-- `POST /api/webhooks/circuit` - Circuit Spoke webhook
-- `POST /api/webhook/stripe` - Stripe payment webhook
-- `GET /api/webhooks/circuit/logs` - View webhook logs
+- `GET /api/circuit/route-plans/{id}/full-status` - Get full plan status with linked orders
+- `POST /api/circuit/plans/{id}/assign-driver` - Assign driver to gig
 
 ### Driver Portal
 - `GET /api/driver-portal/profile` - Driver profile
-- `GET /api/driver-portal/deliveries` - Assigned deliveries
+- `GET /api/driver-portal/deliveries` - Assigned deliveries (includes stop_sequence)
 - `POST /api/driver-portal/deliveries/{id}/pod` - Submit POD
 - `PUT /api/driver-portal/status` - Update driver status
 
-## Upcoming Tasks (Priority Order)
+## Changelog
+
+### Feb 14, 2026 (Session 5) - Navigation & Visualization Features
+- **Driver Portal Enhancements:**
+  - Deliveries now sorted by `stop_sequence` (stop 1, 2, 3...)
+  - Added stop number badges in teal gradient circles
+  - Added navigation icon (blue arrow) next to each delivery
+  - Added "Navigate Full Route (X stops)" button to open all stops in Google Maps
+  
+- **Admin Routes Page Enhancements:**
+  - Added Map View toggle showing orders ready for routing (Leaflet map)
+  - Gig cards are now clickable - open Gig Details Modal
+  - Gig Details Modal shows: sorted stops, status, driver, "Navigate Full Route" button, route map
+  
+- **Admin Orders Page Enhancements:**
+  - Added Map View toggle showing all order locations on Leaflet map
+  - Color-coded markers by status (amber=new, blue=picked_up, purple=in_transit, teal=out_for_delivery, green=delivered)
+  - Status legend below map
+
+- **New Component:**
+  - Created `/app/frontend/src/components/maps/DeliveryMap.jsx` - Reusable Leaflet map component
+  - Helper functions: `buildGoogleMapsRouteUrl()`, `buildSingleAddressUrl()`
+
+- All tests passed (100% frontend)
+- Test report: `/app/test_reports/iteration_16.json`
+
+### Feb 14, 2026 (Session 4)
+- Removed "Smart Organizer" view from Orders page
+- Removed Driver Rating UI
+- Fixed Route Optimization API call (empty body issue)
+- Fixed Gig Assignment API
+- Fixed Order Details Modal crash
+
+### Previous Sessions
+- Full POD implementation (signature, photo, GPS)
+- Circuit Spoke webhook integration
+- Stripe backend integration
+- QR scanning for pickup/delivery
+- Auto-assign orders by borough
+- Scheduled bulk delivery type
+
+## Upcoming Tasks
 
 ### P1 - Immediate
 - Twilio SMS notifications for order updates
 - SendGrid email notifications
+- Bulk order selection in "List" view
 
 ### P2 - Short Term
+- Cloud storage for POD images (AWS S3)
+- Stripe frontend checkout flow
 - Pharmacy software integration
-- Enhanced reporting & analytics
 
 ### P3 - Future
+- Backend refactoring (split server.py into routers)
+- Enhanced reporting & analytics
 - Implement Figma design (need accessible link)
-- Cancel time optimization
-
-## Changelog
-
-### Feb 14, 2026 (Session 4)
-- **Fix 1: Assign Driver to Gig**:
-  - Driver assignment API was already working
-  - UI dropdown on Routes page shows 4 available Circuit drivers
-  - One-click assignment updates both local DB and Circuit API
-  - Verified: George Husenov assigned to Gig 10 successfully
-
-- **Fix 2: Route Optimization**:
-  - Fixed `circuit_service.py` - POST requests without body now send empty object `{}` instead of `None`
-  - This resolved the "Body cannot be empty when content-type is set to 'application/json'" error
-  - Route optimization works correctly when driver is assigned (409 error for "no drivers" is expected behavior)
-
-- **Fix 3: Remove Smart Organizer from Orders**:
-  - Completely removed Smart Organizer view button from Orders Management
-  - Removed all related code: DndContext, DraggableOrderCard, DroppableTimeWindow components
-  - Removed unused state variables: expandedBoroughs, expandedTimeWindows, activeId, activeOrder, sensors
-  - Removed unused functions: handleDragStart, handleDragEnd, handleDragCancel, organizedOrders memo
-  - Removed Route Optimization Preview Modal (only used by Smart Organizer)
-  - Cleaned up imports: removed DnD-kit, unused lucide icons (Sun, Sunset, Moon, GripVertical)
-  - Orders page now has only "Categories" and "List" view modes
-
-- **Fix 4: Order Details Modal**:
-  - Fixed missing `Edit` icon import in OrdersManagement.jsx
-  - Order Details modal now opens correctly when clicking Eye icon
-  - Shows: order number, tracking ID, recipient info, delivery details, packages, pricing
-
-- **Fix 5: Remove Driver Rating from Driver Management**:
-  - Removed Rating column from drivers table header
-  - Removed Rating cell from driver table rows
-  - Removed Rating display from driver details modal
-  - Removed unused `Star` icon import
-
-- All tests passed (100% backend: 6/6, 100% frontend: 9/9)
-- Test report: `/app/test_reports/iteration_15.json`
-
-### Feb 14, 2026 (Session 3)
-- **Copay Collection Checkbox Fix**:
-  - Copay checkbox now only shows for orders with `copay_amount > 0`
-  - Orders without copay have POD button enabled by default
-  - Displays the exact copay amount: "Collect copay $XX.XX"
-  - Warning shows specific amount: "Collect $XX.XX copay to enable POD"
-
-- **Scheduled Bulk Delivery - Pharmacy Portal**:
-  - Added new "Scheduled" tab to Create Delivery modal
-  - $9 flat rate pricing
-  - 8AM-10PM delivery window
-  - Minimum 15 packages required (with validation)
-  - Local deliveries only
-  - Date picker for scheduling in advance (min 1 day ahead)
-  - Badges: "Min 15+ packages", "8AM-10PM", "Local only"
-
-- **Scheduled Bulk Delivery - Admin Portal**:
-  - Added "Scheduled Bulk" delivery type to pricing management
-  - New form fields: minimum_packages, local_only, allow_future_date
-  - Displays constraints: "Min 15 packages", "Local Only" badges
-  - Editable via admin pricing interface
-
-- All tests passed (100% frontend verification)
-
-- **QR Scanner for Pickup Tab**:
-  - "Scan for Pickup" button on each pickup card opens QR Scanner modal
-  - Scanner modal shows "Pickup" action badge
-  - Supports camera scanning and manual QR code entry
-  - On successful pickup scan, order status changes to `picked_up`
-  - Records `actual_pickup_time` timestamp
-
-- **Backend Enhancements**:
-  - Updated `/api/orders/scan` to handle pickup action and change status from `ready_for_pickup` → `picked_up`
-  - Updated `/api/driver-portal/deliveries` to include pickup statuses (`new`, `pending`, `confirmed`, `ready_for_pickup`)
-  - Added `keep_status` parameter to order assignment endpoint for pickup workflow
-  - DeliveryPricing model extended with: `minimum_packages`, `local_only`, `allow_future_date`
-  - Added "scheduled" to DeliveryType enum
-
-- All tests passed (100% backend, 100% frontend)
-
-### Feb 14, 2026 (Session 2 - Continued)
-- **Driver Scan → POD Flow**: After driver scans delivery label, POD modal automatically opens
-- **Cleaned Up Extra Routes**: Deleted 12 test/duplicate routes, only Gig 6-9 with actual orders remain
-- **POD Cloud Storage**:
-  - Signatures saved to `/api/uploads/signatures/{pod_id}_signature.png`
-  - Photos saved to `/api/uploads/photos/{pod_id}_photo.jpg`
-  - Static file serving endpoints added for retrieving stored POD images
-- **Enhanced Reports & Analytics**:
-  - New `/api/reports/dashboard` endpoint with comprehensive stats
-  - New `/api/reports/drivers/performance` endpoint with driver metrics
-  - New `/api/reports/deliveries` endpoint with filtered delivery data
-  - Reports UI with 3 tabs: Overview, Drivers, Boroughs
-  - Date range picker and CSV export functionality
-  - Top Pharmacies list, Order Status Breakdown, Daily Trends chart
-- All tests passed (100% backend, 100% frontend)
-
-### Feb 14, 2026 (Session 2)
-- **Revamped Driver Portal with 3 Tabs**:
-  - **Deliveries tab**: Shows out_for_delivery/in_transit orders with "Scan Delivery" and "Complete POD" buttons
-  - **Pick Ups tab**: Shows new orders for pickup with "Scan for Pickup" button (status changes to picked_up only)
-  - **Completed tab**: Shows today's completed deliveries count
-  - Removed rating/stars from driver profile
-  - Removed status options (Available/On Break/Offline), replaced with simple Online/Offline toggle
-  - Out for delivery packages no longer show pickup scan option
-- **Implemented Auto-Assign Orders by Borough** - New endpoint POST /api/circuit/auto-assign-by-borough
-  - Automatically groups "out for delivery" orders by NYC borough (Q=Queens, B=Brooklyn, M=Manhattan, X=Bronx, S=Staten Island)
-  - Creates new gigs (Gig N) for each borough with orders
-  - Imports orders as stops to Circuit plans
-- **Implemented One-Click Driver Assignment** - New endpoint POST /api/circuit/plans/{plan_id}/assign-driver
-  - Easy dropdown on each gig card to assign drivers
-  - Shows all 4 available Circuit drivers
-  - Assigned drivers displayed with green background
-- **Updated Route Management UI**:
-  - Added "Auto-Assign" button in header (amber color with lightning icon)
-  - Added "Assign Driver" dropdown on each gig card
-  - Added borough badges (Queens/Brooklyn/Manhattan/Other) on gig cards
-- All tests passed (100% backend, 100% frontend)
-
-### Feb 14, 2026 (Session 1)
-- Fixed backend by restoring Python/FastAPI (was broken due to .NET migration in fork)
-- Added Calendar date filter to Orders page
-- Implemented Circuit Spoke webhook endpoint with full event handling
-- Verified bulk order selection with floating action bar
-- Verified POD (Proof of Delivery) with signature and photo capture
-- Verified Stripe integration is working
-- **Simplified Routes page to use "Gig" naming (Gig 1, Gig 2, Gig 3...)**
-- **Added clean card grid layout for gigs with gradient number badges**
-- **Streamlined "New Gig" creation modal**
-- All comprehensive testing passed (100% backend, 100% frontend)
 
 ## Known Issues
-- OrdersManagement.jsx is still ~1200 lines and could be further refactored (reduced from 2200+ after Smart Organizer removal)
-- Twilio/SendGrid not configured (marked as MOCKED in test reports)
-- Circuit API batch import has minor issue with 'zipCode' field name (should be 'zip')
+- Gig Details Modal may show "No stops" if orders are not linked via Circuit API (data-dependent)
+- Figma design link is inaccessible (BLOCKED)
+- Cloud storage for PODs is still local persistent file storage
 
 ## Notes
 - Preview URL: https://logistics-hub-327.preview.emergentagent.com
-- Circuit API is connected with 4 drivers configured (Usman, George Husenov, Tigran Ayrapetov, Test dd)
-
-
+- Circuit API connected with 4 drivers configured
+- Leaflet library used for map visualization (free, no API key required)
