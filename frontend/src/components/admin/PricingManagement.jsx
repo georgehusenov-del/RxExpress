@@ -191,6 +191,9 @@ export const PricingManagement = () => {
       time_window_end: pricingItem.time_window_end || '',
       cutoff_time: pricingItem.cutoff_time || '',
       is_addon: pricingItem.is_addon || false,
+      minimum_packages: pricingItem.minimum_packages || '',
+      local_only: pricingItem.local_only || false,
+      allow_future_date: pricingItem.allow_future_date || false,
     });
     setShowEditModal(true);
   };
