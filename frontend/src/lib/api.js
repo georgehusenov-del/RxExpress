@@ -86,6 +86,10 @@ export const circuitAPI = {
   getPlanFullStatus: (planId) => api.get(`/circuit/plans/${extractPlanId(planId)}/full-status`),
   deletePlan: (planId) => api.delete(`/circuit/plans/${extractPlanId(planId)}`),
   
+  // Local plan management (for editing gigs)
+  updateLocalPlan: (planId, data) => api.put(`/circuit/route-plans/${planId}`, data),
+  unlinkOrderFromPlan: (orderId) => api.delete(`/circuit/order/${orderId}/unlink`),
+  
   // Stops
   listStops: (planId) => api.get(`/circuit/plans/${extractPlanId(planId)}/stops`),
   addOrderToPlan: (planId, orderId) => api.post(`/circuit/plans/${extractPlanId(planId)}/stops`, null, { params: { order_id: orderId } }),
