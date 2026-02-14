@@ -2756,8 +2756,10 @@ async def get_driver_deliveries(
     if status:
         query["status"] = status
     else:
-        # By default, get active deliveries
-        query["status"] = {"$in": ["assigned", "picked_up", "in_transit", "out_for_delivery"]}
+        # By default, get active deliveries including pickups
+        # Includes: pickup statuses (new, pending, confirmed, ready_for_pickup) 
+        # and delivery statuses (assigned, picked_up, in_transit, out_for_delivery)
+        query["status"] = {"$in": ["new", "pending", "confirmed", "ready_for_pickup", "assigned", "picked_up", "in_transit", "out_for_delivery"]}
     
     orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
     
