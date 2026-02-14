@@ -2592,6 +2592,12 @@ async def admin_update_pricing(
         update_data["time_window_end"] = pricing_data.time_window_end
     if pricing_data.cutoff_time is not None:
         update_data["cutoff_time"] = pricing_data.cutoff_time
+    if pricing_data.minimum_packages is not None:
+        update_data["minimum_packages"] = pricing_data.minimum_packages
+    if pricing_data.local_only is not None:
+        update_data["local_only"] = pricing_data.local_only
+    if pricing_data.allow_future_date is not None:
+        update_data["allow_future_date"] = pricing_data.allow_future_date
     
     await db.delivery_pricing.update_one({"id": pricing_id}, {"$set": update_data})
     
