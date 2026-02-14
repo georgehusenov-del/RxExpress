@@ -520,12 +520,6 @@ export const OrdersManagement = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  useEffect(() => {
-    if (viewMode === 'smart') {
-      fetchDrivers();
-    }
-  }, [viewMode, fetchDrivers]);
-
   // Drag and Drop handlers
   const handleDragStart = (event) => {
     const { active } = event;
