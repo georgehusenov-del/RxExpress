@@ -538,6 +538,9 @@ export const RouteManagement = () => {
                   displayName = plan.title?.length > 25 ? plan.title.substring(0, 22) + '...' : plan.title;
                 }
                 
+                // Get assigned driver info
+                const assignedDriver = plan.assigned_driver;
+                
                 return (
                   <div
                     key={plan.id}
@@ -556,7 +559,7 @@ export const RouteManagement = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2 mb-3 text-sm">
+                    <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
                       <div className="flex items-center gap-1 text-slate-300">
                         <Package className="w-3 h-3 text-amber-400" />
                         <span className="font-medium">{plan.stops_count}</span> orders
@@ -570,6 +573,73 @@ export const RouteManagement = () => {
                         <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
                           Optimized
                         </Badge>
+                      )}
+                      {plan.borough_name && (
+                        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                          {plan.borough_name}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {/* Driver Assignment - One-click dropdown */}
+                    <div className="mb-3">
+                      {assignedDriver ? (
+                        <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg border border-green-500/30">
+                          <Users className="w-4 h-4 text-green-400" />
+                          <span className="text-sm text-green-400 font-medium truncate">
+                            {assignedDriver.name || assignedDriver.email}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              // Reset driver - show dropdown again
+                              const planCopy = {...plan};
+                              delete planCopy.assigned_driver;
+                              setPlans(prev => prev.map(p => p.id === plan.id ? planCopy : p));
+                            }}
+                            className="h-6 w-6 p-0 ml-auto text-slate-400 hover:text-white hover:bg-slate-600"
+                            title="Change driver"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select 
+                          value="" 
+                          onValueChange={(driverId) => handleAssignDriver(plan, driverId)}
+                          disabled={assigningDriver === plan.id}
+                        >
+                          <SelectTrigger 
+                            className="w-full h-9 bg-slate-600/50 border-slate-500 text-white text-sm"
+                            data-testid={`assign-driver-${plan.id}`}
+                          >
+                            <SelectValue placeholder={
+                              assigningDriver === plan.id 
+                                ? "Assigning..." 
+                                : "Assign Driver"
+                            } />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-700 border-slate-600">
+                            {circuitDrivers.map((driver) => (
+                              <SelectItem 
+                                key={driver.id} 
+                                value={driver.id} 
+                                className="text-white hover:bg-slate-600"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Users className="w-3 h-3 text-slate-400" />
+                                  {driver.name || driver.email}
+                                </div>
+                              </SelectItem>
+                            ))}
+                            {circuitDrivers.length === 0 && (
+                              <div className="p-2 text-sm text-slate-400 text-center">
+                                No drivers available
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
                       )}
                     </div>
                     
