@@ -294,27 +294,13 @@ export const RouteManagement = () => {
         <div>
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Route className="w-5 h-5 text-teal-400" />
-            Route Management (Circuit/Spoke)
+            Route Management
           </h3>
           <p className="text-sm text-slate-400 mt-1">
-            Create optimized delivery routes and distribute to drivers
+            Create and manage delivery routes for drivers
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Circuit Status */}
-          <Badge 
-            variant="outline" 
-            className={circuitStatus?.status === 'connected' 
-              ? 'border-green-500 text-green-400' 
-              : 'border-red-500 text-red-400'
-            }
-          >
-            {circuitStatus?.status === 'connected' ? (
-              <><CheckCircle className="w-3 h-3 mr-1" /> Connected</>
-            ) : (
-              <><AlertCircle className="w-3 h-3 mr-1" /> {circuitStatus?.message || 'Disconnected'}</>
-            )}
-          </Badge>
           <Button
             variant="outline"
             size="sm"
@@ -334,7 +320,6 @@ export const RouteManagement = () => {
             onClick={() => setShowCreateModal(true)}
             className="bg-teal-600 hover:bg-teal-700"
             data-testid="create-route-btn"
-            disabled={circuitStatus?.status !== 'connected'}
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Route Plan
@@ -343,7 +328,7 @@ export const RouteManagement = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-slate-800 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -365,7 +350,7 @@ export const RouteManagement = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{pendingOrders.length}</p>
-                <p className="text-sm text-slate-400">Pending Orders</p>
+                <p className="text-sm text-slate-400">Ready to Route</p>
               </div>
             </div>
           </CardContent>
@@ -378,7 +363,7 @@ export const RouteManagement = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{circuitDrivers.length}</p>
-                <p className="text-sm text-slate-400">Circuit Drivers</p>
+                <p className="text-sm text-slate-400">Available Drivers</p>
               </div>
             </div>
           </CardContent>
