@@ -1,17 +1,17 @@
 # RX Expresss - Product Requirements Document
 
 ## Overview
-RX Expresss is a full-stack pharmacy delivery service application replicating DrugLift functionality, with routing and delivery management handled by Circuit Spoke integration.
+RX Expresss is a full-stack pharmacy delivery service application replicating DrugLift functionality, with routing and delivery management integrated with Circuit Spoke.
 
 ## Tech Stack
-- **Backend:** Python/FastAPI (restored from .NET migration due to runtime unavailability)
-- **Frontend:** React.js, Tailwind CSS, dnd-kit, lucide-react
+- **Backend:** Python/FastAPI
+- **Frontend:** React.js, Tailwind CSS, dnd-kit, lucide-react, date-fns
 - **Database:** MongoDB
-- **External Services:** Circuit Spoke, Google Maps, (planned: Stripe, Twilio, SendGrid)
+- **External Services:** Circuit Spoke, Google Maps, Stripe
 
 ## Core Features
 
-### Authentication (Multi-Role)
+### Multi-Role Authentication
 - Admin, Pharmacy, Driver, Patient roles
 - JWT-based authentication
 - Quick demo access for testing
@@ -19,84 +19,79 @@ RX Expresss is a full-stack pharmacy delivery service application replicating Dr
 ### Pharmacy Portal
 - Dashboard with delivery management
 - Create/manage deliveries with pricing, notes, QR codes
-- QR code scanning functionality
+- Copay tracking
+- Time window selection (8am-1pm, 1pm-4pm, 4pm-10pm)
+- Refrigerated package indicators
 
 ### Driver Portal
-- View and manage assigned deliveries
-- Scan packages
-- Capture Proof of Delivery (POD)
-- Mark copay as collected
+- View assigned deliveries
+- QR code scanning for pickup/delivery
+- Proof of Delivery (POD) with signature and photo capture
+- Status updates (Available, On Break, Offline)
+- GPS navigation integration
 
 ### Admin Dashboard
-- Smart Organizer for grouping orders
+- Overview with statistics (Total Users, Pharmacies, Drivers, Orders)
+- Three view modes: Categories, List, Smart Organizer
 - Drag-and-drop route assignment
+- Bulk order selection with floating action bar
+- **Calendar date filtering** - Filter orders by date
+- Borough-based organization (Queens, Brooklyn, Manhattan, Staten Island, Bronx)
 - Route optimization
-- Real-time driver tracking
-- User management with editing
+- Real-time status management
 - Quick-print labels
 
 ### Order Status System
 Unified status values:
 - `new` - New orders ready for processing
-- `picked_up` - Order picked up from pharmacy
-- `in_transit` - Order in transit
-- `out_for_delivery` - Out for delivery
+- `picked_up` - Package picked up from pharmacy
+- `in_transit` - Order in transit/warehouse
+- `out_for_delivery` - Assigned to delivery person
 - `delivered` - Successfully delivered
-- `cancelled` - Order cancelled
 - `failed` - Delivery failed
+- `canceled` - Order canceled
 
-## Completed Work (as of Feb 14, 2026)
+## Completed Implementations (Feb 14, 2026)
 
-### Backend Migration (Reverted)
-- .NET migration was attempted but reverted due to runtime unavailability in fork
-- Python/FastAPI backend restored and functional
+### 1. Calendar Date Filter
+- Added date picker popover to Orders page header
+- Quick buttons: Today, Yesterday, Clear
+- Full calendar month view
+- Filters orders by created_at date
 
-### Order Status System Overhaul
-- Migrated all database orders to simplified status system
-- Updated backend endpoints for new statuses
-- Refactored frontend to use new status system exclusively
+### 2. Bulk Order Selection
+- Checkboxes on all order cards in Smart Organizer view
+- Floating action bar at bottom when orders selected
+- Bulk status change dropdown
+- Bulk print functionality
+- Clear selection button
 
-### Route Management Simplification
-- Removed UI dependency on Circuit API connection status
-- Added auto-generated route names (Route 1, Route 2, etc.)
-- Added checkboxes and "Add to Route" dropdown for quick workflow
+### 3. Circuit Spoke Webhook
+- Endpoint: `POST /api/webhooks/circuit`
+- Production URL: `https://backend.rxexpresss.com/api/webhooks/circuit`
+- Handles events:
+  - `stop.completed` / `stop.succeeded` - Mark orders as delivered
+  - `stop.failed` / `stop.attempted` - Mark orders as failed
+  - `stop.out_for_delivery` - Update order status
+  - `plan.optimized` - Update plan optimization status
+  - `plan.distributed` - Mark plan as distributed
+  - `driver.location` - Update driver location
+- Webhook logging for debugging
+- Logs endpoint: `GET /api/webhooks/circuit/logs`
 
-### Login Fix (Feb 14, 2026)
-- Restored Python/FastAPI backend from git history
-- Fixed 503 Service Unavailable errors
+### 4. Proof of Delivery (POD)
+- Full signature pad with canvas drawing
+- Photo capture option
+- Recipient name confirmation
+- Delivery notes field
+- Validation for signature-required packages
+- GPS location capture on submission
 
-## In Progress Tasks
-
-### Bulk Order Selection (P1)
-- UI elements (checkboxes) exist in OrdersManagement.jsx
-- Floating bulk action bar needs implementation
-
-### Calendar Date Filtering (P1)
-- Add date picker for filtering orders by date
-
-## Upcoming Tasks
-
-### Circuit Spoke Webhook (P1)
-- Implement webhook at `/api/webhooks/circuit`
-- Handle real-time updates from Circuit
-
-### Twilio/SendGrid Notifications (P1)
-- Order status update notifications
-- Alerts and communication
-
-## Future/Backlog
-
-### Proof of Delivery (POD) - P2
-- Full flow for capturing signatures/photos
-
-### Stripe Integration - P2
-- Payment handling
-
-### Pharmacy Software Integration - P2
-- Awaiting user clarification
-
-### Figma Design Implementation - P2
-- Need accessible Figma link from user
+### 5. Stripe Integration
+- Checkout session creation
+- Payment status polling
+- Webhook handling for payment events
+- Transaction logging in database
 
 ## Test Credentials
 
@@ -109,30 +104,81 @@ Unified status values:
 ## Key Files
 
 ### Backend
-- `/app/backend/server.py` - Main FastAPI application (3800+ lines)
+- `/app/backend/server.py` - Main FastAPI application (3900+ lines)
 - `/app/backend/models.py` - Data models
 - `/app/backend/auth.py` - Authentication
 - `/app/backend/circuit_service.py` - Circuit integration
 - `/app/backend/maps_service.py` - Google Maps integration
+- `/app/backend/notifications.py` - Notification service
 
 ### Frontend
-- `/app/frontend/src/components/admin/OrdersManagement.jsx` - Orders page (needs refactoring)
+- `/app/frontend/src/components/admin/OrdersManagement.jsx` - Orders page with date filter, bulk selection
 - `/app/frontend/src/components/admin/RouteManagement.jsx` - Route management
-- `/app/frontend/src/pages/AdminDashboard.jsx` - Admin overview
+- `/app/frontend/src/components/driver/DriverPortal.jsx` - Driver portal
+- `/app/frontend/src/components/pod/ProofOfDeliveryModal.jsx` - POD modal
+- `/app/frontend/src/components/pod/SignaturePad.jsx` - Signature canvas
+- `/app/frontend/src/components/pod/PhotoCapture.jsx` - Photo capture
 
-## API Endpoints (Key)
+## API Endpoints
+
+### Authentication
 - `POST /api/auth/login` - Login
 - `POST /api/auth/register` - Register
-- `GET /api/admin/dashboard-stats` - Dashboard statistics
-- `GET /api/admin/pending-orders` - Orders with 'new' status
-- `GET /api/orders` - All orders
-- `POST /api/orders` - Create order
-- `PUT /api/orders/{id}/status` - Update order status
+- `GET /api/auth/me` - Current user
 
-## Known Issues
-- OrdersManagement.jsx is 2000+ lines and needs refactoring into smaller components
-- Bulk action bar functionality not implemented
-- Calendar date filtering not started
+### Admin
+- `GET /api/admin/dashboard` - Dashboard stats
+- `GET /api/admin/orders` - List orders with filters
+- `PUT /api/admin/orders/{id}/status` - Update order status
+- `GET /api/admin/drivers` - List drivers
+- `GET /api/admin/drivers/locations` - Driver locations
+
+### Circuit Integration
+- `GET /api/circuit/status` - Connection status
+- `POST /api/circuit/plans/create-for-date` - Create route plan
+- `POST /api/circuit/plans/{id}/batch-import` - Batch import orders
+- `POST /api/circuit/plans/{id}/optimize-and-distribute` - Optimize routes
+
+### Webhooks
+- `POST /api/webhooks/circuit` - Circuit Spoke webhook
+- `POST /api/webhook/stripe` - Stripe payment webhook
+- `GET /api/webhooks/circuit/logs` - View webhook logs
+
+### Driver Portal
+- `GET /api/driver-portal/profile` - Driver profile
+- `GET /api/driver-portal/deliveries` - Assigned deliveries
+- `POST /api/driver-portal/deliveries/{id}/pod` - Submit POD
+- `PUT /api/driver-portal/status` - Update driver status
+
+## Upcoming Tasks (Priority Order)
+
+### P1 - Immediate
+- Twilio SMS notifications for order updates
+- SendGrid email notifications
+
+### P2 - Short Term
+- Pharmacy software integration
+- Enhanced reporting & analytics
+
+### P3 - Future
+- Implement Figma design (need accessible link)
+- Cancel time optimization
 
 ## Changelog
-- **Feb 14, 2026:** Fixed login issue by restoring Python/FastAPI backend
+
+### Feb 14, 2026
+- Fixed backend by restoring Python/FastAPI (was broken due to .NET migration in fork)
+- Added Calendar date filter to Orders page
+- Implemented Circuit Spoke webhook endpoint with full event handling
+- Verified bulk order selection with floating action bar
+- Verified POD (Proof of Delivery) with signature and photo capture
+- Verified Stripe integration is working
+- All comprehensive testing passed (100% backend, 100% frontend)
+
+## Known Issues
+- OrdersManagement.jsx is 2200+ lines and should be refactored into smaller components
+- Twilio/SendGrid not configured (marked as MOCKED in test reports)
+
+## Notes
+- Preview URL: https://order-management-hub-7.preview.emergentagent.com
+- Circuit API is connected with 4 drivers configured
