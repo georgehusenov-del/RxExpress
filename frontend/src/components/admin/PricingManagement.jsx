@@ -542,6 +542,72 @@ export const PricingManagement = () => {
               </div>
             )}
 
+            {/* Scheduled Delivery Options */}
+            {formData.delivery_type === 'scheduled' && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">Window Start</Label>
+                    <Input
+                      type="time"
+                      value={formData.time_window_start}
+                      onChange={(e) => setFormData({ ...formData, time_window_start: e.target.value })}
+                      className="bg-slate-700 border-slate-600 text-white"
+                      placeholder="08:00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">Window End</Label>
+                    <Input
+                      type="time"
+                      value={formData.time_window_end}
+                      onChange={(e) => setFormData({ ...formData, time_window_end: e.target.value })}
+                      className="bg-slate-700 border-slate-600 text-white"
+                      placeholder="22:00"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-slate-300">Minimum Packages</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.minimum_packages}
+                    onChange={(e) => setFormData({ ...formData, minimum_packages: e.target.value })}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    placeholder="15"
+                    data-testid="min-packages-input"
+                  />
+                  <p className="text-xs text-slate-500">Minimum packages required for this delivery type</p>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                  <div>
+                    <Label className="text-slate-300">Local Deliveries Only</Label>
+                    <p className="text-xs text-slate-500">Restrict to local service area</p>
+                  </div>
+                  <Switch
+                    checked={formData.local_only}
+                    onCheckedChange={(checked) => setFormData({ ...formData, local_only: checked })}
+                    data-testid="local-only-switch"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                  <div>
+                    <Label className="text-slate-300">Allow Future Scheduling</Label>
+                    <p className="text-xs text-slate-500">Allow scheduling days in advance</p>
+                  </div>
+                  <Switch
+                    checked={formData.allow_future_date}
+                    onCheckedChange={(checked) => setFormData({ ...formData, allow_future_date: checked })}
+                    data-testid="allow-future-switch"
+                  />
+                </div>
+              </>
+            )}
+
             {/* Is Add-on */}
             {!showEditModal && (
               <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
