@@ -3748,6 +3748,204 @@ async def delete_circuit_plan(plan_id: str, current_user: dict = Depends(require
     return {"message": "Plan deleted successfully"}
 
 
+# ============== Circuit Spoke Webhook Endpoint ==============
+webhooks_router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
+
+@webhooks_router.post("/circuit")
+async def circuit_webhook(request: Request):
+    """
+    Handle Circuit Spoke webhook events.
+    Events include: stop.completed, stop.failed, plan.optimized, driver.location, etc.
+    
+    Webhook URL to configure in Circuit: https://backend.rxexpresss.com/api/webhooks/circuit
+    """
+    try:
+        payload = await request.json()
+    except:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    
+    event_type = payload.get("type") or payload.get("event")
+    event_data = payload.get("data") or payload
+    
+    logger.info(f"[Circuit Webhook] Received event: {event_type}")
+    logger.info(f"[Circuit Webhook] Payload: {json.dumps(payload)[:500]}")
+    
+    try:
+        if event_type in ["stop.completed", "stop.succeeded"]:
+            # Delivery was successfully completed
+            stop_id = event_data.get("stopId") or event_data.get("stop_id")
+            plan_id = event_data.get("planId") or event_data.get("plan_id")
+            
+            # Find the order by circuit_stop_id
+            order = await db.orders.find_one({
+                "$or": [
+                    {"circuit_stop_id": stop_id},
+                    {"circuit_stop_id": {"$regex": f"/{stop_id}$"}}
+                ]
+            }, {"_id": 0})
+            
+            if order:
+                update_data = {
+                    "status": OrderStatus.DELIVERED,
+                    "actual_delivery_time": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Extract POD data if available
+                if event_data.get("signatureUrl"):
+                    update_data["signature_data"] = event_data["signatureUrl"]
+                if event_data.get("photoUrls"):
+                    update_data["delivery_photo_url"] = event_data["photoUrls"][0]
+                if event_data.get("recipientName"):
+                    update_data["recipient_confirmed_name"] = event_data["recipientName"]
+                
+                await db.orders.update_one({"id": order["id"]}, {"$set": update_data})
+                logger.info(f"[Circuit Webhook] Order {order['order_number']} marked as delivered")
+                
+                # Send notification to customer (async)
+                try:
+                    await notification_service.send_order_notification(
+                        order["id"], "delivered", 
+                        "Your prescription has been delivered successfully!"
+                    )
+                except Exception as e:
+                    logger.error(f"[Circuit Webhook] Notification error: {e}")
+        
+        elif event_type in ["stop.failed", "stop.attempted"]:
+            # Delivery attempt failed
+            stop_id = event_data.get("stopId") or event_data.get("stop_id")
+            reason = event_data.get("failReason") or event_data.get("reason") or "Delivery attempt failed"
+            
+            order = await db.orders.find_one({
+                "$or": [
+                    {"circuit_stop_id": stop_id},
+                    {"circuit_stop_id": {"$regex": f"/{stop_id}$"}}
+                ]
+            }, {"_id": 0})
+            
+            if order:
+                update_data = {
+                    "status": OrderStatus.FAILED,
+                    "delivery_notes": reason,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.orders.update_one({"id": order["id"]}, {"$set": update_data})
+                logger.info(f"[Circuit Webhook] Order {order['order_number']} marked as failed: {reason}")
+        
+        elif event_type == "stop.out_for_delivery":
+            # Driver has started delivery for this stop
+            stop_id = event_data.get("stopId") or event_data.get("stop_id")
+            
+            order = await db.orders.find_one({
+                "$or": [
+                    {"circuit_stop_id": stop_id},
+                    {"circuit_stop_id": {"$regex": f"/{stop_id}$"}}
+                ]
+            }, {"_id": 0})
+            
+            if order:
+                await db.orders.update_one(
+                    {"id": order["id"]}, 
+                    {"$set": {
+                        "status": OrderStatus.OUT_FOR_DELIVERY,
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                logger.info(f"[Circuit Webhook] Order {order['order_number']} is out for delivery")
+        
+        elif event_type == "plan.optimized":
+            # Route optimization completed
+            plan_id = event_data.get("planId") or event_data.get("plan_id")
+            
+            await db.route_plans.update_one(
+                {"circuit_plan_id": {"$regex": plan_id}},
+                {"$set": {
+                    "optimization_status": "completed",
+                    "status": "optimized",
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            logger.info(f"[Circuit Webhook] Plan {plan_id} optimization completed")
+        
+        elif event_type == "plan.distributed":
+            # Plan was distributed to drivers
+            plan_id = event_data.get("planId") or event_data.get("plan_id")
+            
+            await db.route_plans.update_one(
+                {"circuit_plan_id": {"$regex": plan_id}},
+                {"$set": {
+                    "distributed": True,
+                    "status": "distributed",
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            logger.info(f"[Circuit Webhook] Plan {plan_id} distributed to drivers")
+        
+        elif event_type == "driver.location":
+            # Driver location update
+            driver_id = event_data.get("driverId") or event_data.get("driver_id")
+            lat = event_data.get("latitude") or event_data.get("lat")
+            lng = event_data.get("longitude") or event_data.get("lng")
+            
+            if driver_id and lat and lng:
+                # Update driver location in DB
+                await db.drivers.update_one(
+                    {"circuit_driver_id": driver_id},
+                    {"$set": {
+                        "current_location": {"latitude": lat, "longitude": lng},
+                        "last_location_update": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                
+                # Store in location history
+                await db.location_history.insert_one({
+                    "driver_id": driver_id,
+                    "latitude": lat,
+                    "longitude": lng,
+                    "timestamp": datetime.now(timezone.utc),
+                    "source": "circuit_webhook"
+                })
+        
+        # Log webhook for audit
+        await db.webhook_logs.insert_one({
+            "source": "circuit",
+            "event_type": event_type,
+            "payload": payload,
+            "processed_at": datetime.now(timezone.utc).isoformat(),
+            "status": "processed"
+        })
+        
+        return {"status": "ok", "event": event_type, "message": "Webhook processed"}
+    
+    except Exception as e:
+        logger.error(f"[Circuit Webhook] Error processing webhook: {e}")
+        # Log failed webhook
+        await db.webhook_logs.insert_one({
+            "source": "circuit",
+            "event_type": event_type,
+            "payload": payload,
+            "processed_at": datetime.now(timezone.utc).isoformat(),
+            "status": "error",
+            "error": str(e)
+        })
+        return {"status": "error", "message": str(e)}
+
+
+@webhooks_router.get("/circuit/logs")
+async def get_webhook_logs(
+    limit: int = 50,
+    status: str = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Get recent webhook logs for debugging"""
+    query = {"source": "circuit"}
+    if status:
+        query["status"] = status
+    
+    logs = await db.webhook_logs.find(query, {"_id": 0}).sort("processed_at", -1).to_list(limit)
+    return {"logs": logs, "count": len(logs)}
+
+
 # Include all routers
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
