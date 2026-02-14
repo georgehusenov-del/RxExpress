@@ -65,6 +65,9 @@ export const PricingManagement = () => {
     time_window_end: '',
     cutoff_time: '',
     is_addon: false,
+    minimum_packages: '',
+    local_only: false,
+    allow_future_date: false,
   });
 
   const fetchPricing = useCallback(async () => {
