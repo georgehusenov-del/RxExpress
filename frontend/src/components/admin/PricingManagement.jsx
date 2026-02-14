@@ -98,6 +98,9 @@ export const PricingManagement = () => {
       time_window_end: '',
       cutoff_time: '',
       is_addon: false,
+      minimum_packages: '',
+      local_only: false,
+      allow_future_date: false,
     });
   };
 
@@ -108,7 +111,11 @@ export const PricingManagement = () => {
     }
 
     try {
-      await adminAPI.createPricing(formData);
+      const payload = {
+        ...formData,
+        minimum_packages: formData.minimum_packages ? parseInt(formData.minimum_packages) : null,
+      };
+      await adminAPI.createPricing(payload);
       toast.success('Pricing configuration created successfully');
       setShowCreateModal(false);
       resetForm();
@@ -131,6 +138,9 @@ export const PricingManagement = () => {
         time_window_start: formData.time_window_start,
         time_window_end: formData.time_window_end,
         cutoff_time: formData.cutoff_time,
+        minimum_packages: formData.minimum_packages ? parseInt(formData.minimum_packages) : null,
+        local_only: formData.local_only,
+        allow_future_date: formData.allow_future_date,
       });
       toast.success('Pricing configuration updated successfully');
       setShowEditModal(false);
