@@ -63,6 +63,7 @@ export const DriverPortal = () => {
   const [activeTab, setActiveTab] = useState('deliveries');
   const [isOnline, setIsOnline] = useState(false);
   const [modalCopayCollected, setModalCopayCollected] = useState(false);
+  const [scannedDeliveries, setScannedDeliveries] = useState(new Set()); // Track scanned delivery IDs
 
   const fetchData = useCallback(async () => {
     try {
