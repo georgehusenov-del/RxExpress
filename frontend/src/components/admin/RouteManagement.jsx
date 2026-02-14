@@ -676,14 +676,14 @@ export const RouteManagement = () => {
               <div className="space-y-2">
                 <Label className="text-slate-300">Assign Driver (optional)</Label>
                 <Select 
-                  value={selectedDrivers[0] || ""} 
-                  onValueChange={(v) => setSelectedDrivers(v ? [v] : [])}
+                  value={selectedDrivers[0] || "none"} 
+                  onValueChange={(v) => setSelectedDrivers(v === "none" ? [] : [v])}
                 >
                   <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                     <SelectValue placeholder="Select a driver" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-700 border-slate-600">
-                    <SelectItem value="" className="text-slate-400">No driver</SelectItem>
+                    <SelectItem value="none" className="text-slate-400">No driver</SelectItem>
                     {circuitDrivers.map((driver) => (
                       <SelectItem key={driver.id} value={driver.id} className="text-white">
                         {driver.name || driver.email}
