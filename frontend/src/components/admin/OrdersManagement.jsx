@@ -466,7 +466,7 @@ export const OrdersManagement = () => {
   const [viewMode, setViewMode] = useState('categories'); // 'list', 'smart', or 'categories'
   const [expandedBoroughs, setExpandedBoroughs] = useState({});
   const [expandedTimeWindows, setExpandedTimeWindows] = useState({});
-  const [expandedCategories, setExpandedCategories] = useState({ ready_for_pickup: true, pending: true, assigned: true, confirmed: true });
+  const [expandedCategories, setExpandedCategories] = useState({ new: true, picked_up: true, in_transit: true, out_for_delivery: true });
   const [activeId, setActiveId] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
   const [drivers, setDrivers] = useState([]);
