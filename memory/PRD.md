@@ -166,7 +166,22 @@ Unified status values:
 
 ## Changelog
 
-### Feb 14, 2026
+### Feb 14, 2026 (Session 2)
+- **Implemented Auto-Assign Orders by Borough** - New endpoint POST /api/circuit/auto-assign-by-borough
+  - Automatically groups "out for delivery" orders by NYC borough (Q=Queens, B=Brooklyn, M=Manhattan, X=Bronx, S=Staten Island)
+  - Creates new gigs (Gig N) for each borough with orders
+  - Imports orders as stops to Circuit plans
+- **Implemented One-Click Driver Assignment** - New endpoint POST /api/circuit/plans/{plan_id}/assign-driver
+  - Easy dropdown on each gig card to assign drivers
+  - Shows all 4 available Circuit drivers
+  - Assigned drivers displayed with green background
+- **Updated Route Management UI**:
+  - Added "Auto-Assign" button in header (amber color with lightning icon)
+  - Added "Assign Driver" dropdown on each gig card
+  - Added borough badges (Queens/Brooklyn/Manhattan/Other) on gig cards
+- All tests passed (100% backend, 100% frontend)
+
+### Feb 14, 2026 (Session 1)
 - Fixed backend by restoring Python/FastAPI (was broken due to .NET migration in fork)
 - Added Calendar date filter to Orders page
 - Implemented Circuit Spoke webhook endpoint with full event handling
@@ -184,4 +199,5 @@ Unified status values:
 
 ## Notes
 - Preview URL: https://driver-route-ops.preview.emergentagent.com
-- Circuit API is connected with 4 drivers configured
+- Circuit API is connected with 4 drivers configured (Usman, George Husenov, Tigran Ayrapetov, Test dd)
+
