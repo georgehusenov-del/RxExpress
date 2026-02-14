@@ -49,17 +49,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-  useDraggable,
-} from '@dnd-kit/core';
 import { adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { RouteMapPreview } from './RouteMapPreview';
