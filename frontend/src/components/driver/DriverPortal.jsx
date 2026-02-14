@@ -665,7 +665,7 @@ export const DriverPortal = () => {
 };
 
 // Delivery Card Component - For orders to deliver
-const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod }) => {
+const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod, onNavigate, stopNumber }) => {
   const [copayCollected, setCopayCollected] = useState(false);
   const hasCopay = (delivery.copay_amount || 0) > 0;
   
@@ -680,13 +680,35 @@ const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod }) => {
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
-          <div>
-            <p className="font-mono text-sm text-teal-400">{delivery.order_number}</p>
-            <p className="text-xs text-slate-500">{delivery.pharmacy?.name || 'Pharmacy'}</p>
+          <div className="flex items-center gap-3">
+            {/* Stop Number Badge */}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-bold text-lg">{stopNumber}</span>
+            </div>
+            <div>
+              <p className="font-mono text-sm text-teal-400">{delivery.order_number}</p>
+              <p className="text-xs text-slate-500">{delivery.pharmacy?.name || 'Pharmacy'}</p>
+            </div>
           </div>
-          <Badge variant="outline" className={statusColors[delivery.status]}>
-            {statusLabels[delivery.status] || delivery.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {/* Navigate Icon Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate && onNavigate();
+              }}
+              title="Navigate to this stop"
+              data-testid={`navigate-stop-${delivery.id}`}
+            >
+              <Navigation className="w-5 h-5" />
+            </Button>
+            <Badge variant="outline" className={statusColors[delivery.status]}>
+              {statusLabels[delivery.status] || delivery.status}
+            </Badge>
+          </div>
         </div>
         
         <div className="flex items-start gap-2 text-slate-300 text-sm mb-3">
