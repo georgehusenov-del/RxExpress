@@ -61,6 +61,7 @@ export const DriverPortal = () => {
   const [showPodModal, setShowPodModal] = useState(false);
   const [activeTab, setActiveTab] = useState('deliveries');
   const [isOnline, setIsOnline] = useState(false);
+  const [modalCopayCollected, setModalCopayCollected] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
