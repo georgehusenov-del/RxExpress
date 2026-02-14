@@ -83,11 +83,19 @@ class CircuitService:
         
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
+                # For POST/PUT/PATCH without data, send empty object to satisfy API requirements
+                request_data = data if data is not None else ({} if method.upper() in ["POST", "PUT", "PATCH"] else None)
+                
+                # Only include json parameter and Content-Type if we have data to send
+                headers = {"Authorization": f"Bearer {self.api_key}"}
+                if request_data is not None:
+                    headers["Content-Type"] = "application/json"
+                
                 response = await client.request(
                     method=method,
                     url=url,
-                    headers=self._get_headers(),
-                    json=data,
+                    headers=headers,
+                    json=request_data,
                     params=params
                 )
                 
