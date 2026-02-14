@@ -876,7 +876,49 @@ export const RouteManagement = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOptimize(plan)}
+                        onClick={(e) => handleOpenEditGig(plan, e)}
+                        className="flex-1 h-8 border-slate-500 text-slate-300 hover:bg-slate-600 text-xs"
+                        title="Edit gig"
+                        data-testid={`edit-gig-${plan.id}`}
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => handleOpenRemoveOrders(plan, e)}
+                        disabled={plan.stops_count === 0}
+                        className="flex-1 h-8 border-orange-500/50 text-orange-400 hover:bg-orange-500/10 text-xs"
+                        title="Manage orders"
+                        data-testid={`manage-orders-${plan.id}`}
+                      >
+                        <Package className="w-3 h-3 mr-1" />
+                        Orders
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePlan(plan);
+                        }}
+                        className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/10"
+                        title="Delete gig"
+                        data-testid={`delete-gig-${plan.id}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center gap-1 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOptimize(plan);
+                        }}
                         disabled={optimizing || plan.stops_count === 0}
                         className="flex-1 h-8 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 text-xs"
                         title="Optimize route"
@@ -887,22 +929,16 @@ export const RouteManagement = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDistribute(plan)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDistribute(plan);
+                        }}
                         disabled={plan.optimization_status !== 'done'}
                         className="flex-1 h-8 border-green-500/50 text-green-400 hover:bg-green-500/10 text-xs"
                         title="Send to drivers"
                       >
                         <Send className="w-3 h-3 mr-1" />
                         Send
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeletePlan(plan)}
-                        className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/10"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
