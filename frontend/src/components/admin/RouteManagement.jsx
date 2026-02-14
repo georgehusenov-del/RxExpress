@@ -454,9 +454,25 @@ export const RouteManagement = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {plans.map((plan) => {
-                const gigMatch = plan.title?.match(/Gig (\d+)/i);
-                const gigNumber = gigMatch ? gigMatch[1] : plan.title?.match(/Route (\d+)/)?.[1] || '#';
+              {plans.map((plan, index) => {
+                // Extract a clean display number
+                const gigMatch = plan.title?.match(/^Gig (\d+)$/i);
+                const routeMatch = plan.title?.match(/^Route (\d+)$/i);
+                let displayNumber;
+                let displayName;
+                
+                if (gigMatch) {
+                  displayNumber = gigMatch[1];
+                  displayName = plan.title;
+                } else if (routeMatch && routeMatch[1].length <= 3) {
+                  // Only use route number if it's short (1-999)
+                  displayNumber = routeMatch[1];
+                  displayName = plan.title;
+                } else {
+                  // For legacy routes with long IDs, use sequential index
+                  displayNumber = index + 1;
+                  displayName = plan.title?.length > 25 ? plan.title.substring(0, 22) + '...' : plan.title;
+                }
                 
                 return (
                   <div
@@ -466,38 +482,43 @@ export const RouteManagement = () => {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-lg">
-                          <span className="text-xl font-bold text-white">{gigNumber}</span>
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-lg">
+                          <span className="text-lg font-bold text-white">{displayNumber}</span>
                         </div>
-                        <div>
-                          <p className="font-semibold text-white text-lg">{plan.title}</p>
-                          <p className="text-sm text-slate-400">{plan.date}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-white truncate" title={plan.title}>{displayName}</p>
+                          <p className="text-xs text-slate-400">{plan.date}</p>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3 mb-4 text-sm">
+                    <div className="flex items-center gap-2 mb-3 text-sm">
                       <div className="flex items-center gap-1 text-slate-300">
-                        <Package className="w-4 h-4 text-amber-400" />
+                        <Package className="w-3 h-3 text-amber-400" />
                         <span className="font-medium">{plan.stops_count}</span> orders
                       </div>
                       {plan.distributed && (
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
                           Active
+                        </Badge>
+                      )}
+                      {plan.optimization_status === 'done' && !plan.distributed && (
+                        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+                          Optimized
                         </Badge>
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleOptimize(plan)}
                         disabled={optimizing || plan.stops_count === 0}
-                        className="flex-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                        className="flex-1 h-8 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 text-xs"
                         title="Optimize route"
                       >
-                        {optimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 mr-1" />}
+                        {optimizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3 mr-1" />}
                         Optimize
                       </Button>
                       <Button
@@ -505,20 +526,20 @@ export const RouteManagement = () => {
                         size="sm"
                         onClick={() => handleDistribute(plan)}
                         disabled={plan.optimization_status !== 'done'}
-                        className="flex-1 border-green-500/50 text-green-400 hover:bg-green-500/10"
+                        className="flex-1 h-8 border-green-500/50 text-green-400 hover:bg-green-500/10 text-xs"
                         title="Send to drivers"
                       >
-                        <Send className="w-4 h-4 mr-1" />
+                        <Send className="w-3 h-3 mr-1" />
                         Send
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeletePlan(plan)}
-                        className="text-red-400 hover:bg-red-500/10"
-                        title="Delete gig"
+                        className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/10"
+                        title="Delete"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
