@@ -32,7 +32,7 @@ import {
   Clock, XCircle, ExternalLink, Calendar, User, Edit, RefreshCw,
   LayoutGrid, List, ChevronDown, ChevronRight, Sun, Sunset, Moon, DollarSign,
   GripVertical, UserPlus, ArrowRight, Route, Navigation, Timer, Zap, Loader2,
-  Layers, CheckCircle2, AlertCircle, UserCheck, ClipboardList
+  Layers, CheckCircle2, AlertCircle, UserCheck, ClipboardList, Printer
 } from 'lucide-react';
 import {
   DropdownMenu,
