@@ -368,7 +368,7 @@ export const RouteManagement = () => {
             data-testid="create-route-btn"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Create Route Plan
+            New Gig
           </Button>
         </div>
       </div>
