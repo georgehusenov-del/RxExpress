@@ -93,22 +93,6 @@ const deliveryTypeLabels = {
   time_window: 'Time Window',
 };
 
-// Borough configuration for Smart Organizer
-const boroughConfig = {
-  Q: { name: 'Queens', color: 'blue', bgClass: 'from-blue-500/20 to-blue-600/10 border-blue-500/30' },
-  B: { name: 'Brooklyn', color: 'green', bgClass: 'from-green-500/20 to-green-600/10 border-green-500/30' },
-  M: { name: 'Manhattan', color: 'amber', bgClass: 'from-amber-500/20 to-amber-600/10 border-amber-500/30' },
-  S: { name: 'Staten Island', color: 'purple', bgClass: 'from-purple-500/20 to-purple-600/10 border-purple-500/30' },
-  X: { name: 'Bronx', color: 'red', bgClass: 'from-red-500/20 to-red-600/10 border-red-500/30' },
-};
-
-// Time window configuration
-const timeWindowConfig = {
-  morning: { label: '8am - 1pm', icon: Sun, color: 'amber', start: 8, end: 13 },
-  afternoon: { label: '1pm - 4pm', icon: Sunset, color: 'orange', start: 13, end: 16 },
-  evening: { label: '4pm - 10pm', icon: Moon, color: 'indigo', start: 16, end: 22 },
-};
-
 // Status Category configuration for Categories View
 const statusCategoryConfig = {
   new: { 
