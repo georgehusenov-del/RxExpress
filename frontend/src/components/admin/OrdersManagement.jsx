@@ -35,7 +35,7 @@ import {
   Package, Search, Eye, MoreVertical, MapPin, Truck,
   Clock, XCircle, ExternalLink, CalendarIcon, User, RefreshCw,
   List, ChevronDown, ChevronRight, DollarSign,
-  UserPlus, ArrowRight, Route, Timer, Zap, Loader2,
+  UserPlus, Zap, Loader2,
   Layers, AlertCircle, UserCheck, Printer, Snowflake
 } from 'lucide-react';
 import {
