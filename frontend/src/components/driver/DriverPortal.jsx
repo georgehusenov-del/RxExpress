@@ -422,7 +422,10 @@ export const DriverPortal = () => {
       </main>
 
       {/* Delivery Details Modal */}
-      <Dialog open={showDeliveryModal} onOpenChange={setShowDeliveryModal}>
+      <Dialog open={showDeliveryModal} onOpenChange={(open) => {
+        setShowDeliveryModal(open);
+        if (!open) setModalCopayCollected(false); // Reset copay checkbox when modal closes
+      }}>
         <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md">
           <DialogHeader>
             <DialogTitle>Delivery Details</DialogTitle>
