@@ -3837,7 +3837,7 @@ async def auto_assign_orders_by_borough(
                 
                 # Import stops to Circuit
                 plan_id = circuit_result.get("id", "").replace("plans/", "")
-                await circuit_service.batch_create_stops(plan_id, stops)
+                await circuit_service.batch_import_stops(plan_id, stops)
                 
                 # Update orders with plan reference
                 for order in borough_orders:
