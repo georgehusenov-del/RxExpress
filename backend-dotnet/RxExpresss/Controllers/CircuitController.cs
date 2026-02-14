@@ -198,7 +198,8 @@ public class CircuitController : ControllerBase
     [HttpGet("pending-orders")]
     public async Task<ActionResult> GetPendingOrders([FromQuery] string? date = null)
     {
-        var filter = Builders<Order>.Filter.In(o => o.Status, new[] { "pending", "confirmed", "ready_for_pickup" });
+        // Filter for orders with "new" status (ready for routing)
+        var filter = Builders<Order>.Filter.Eq(o => o.Status, "new");
         
         if (!string.IsNullOrEmpty(date))
         {
