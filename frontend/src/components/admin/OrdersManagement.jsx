@@ -221,12 +221,6 @@ export const OrdersManagement = () => {
   // Date filter state
   const [dateFilter, setDateFilter] = useState(null);
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
-  
-  // Route optimization states
-  const [showRoutePreview, setShowRoutePreview] = useState(false);
-  const [routePreviewData, setRoutePreviewData] = useState(null);
-  const [optimizingRoute, setOptimizingRoute] = useState(false);
-  const [selectedRouteContext, setSelectedRouteContext] = useState({ borough: null, timeWindow: null });
 
   const fetchOrders = useCallback(async () => {
     try {
