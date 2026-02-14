@@ -399,6 +399,21 @@ export const RouteManagement = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={handleAutoAssign}
+            disabled={autoAssigning}
+            className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+            data-testid="auto-assign-btn"
+          >
+            {autoAssigning ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="w-4 h-4 mr-2" />
+            )}
+            Auto-Assign
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               fetchPlans();
               fetchPendingOrders();
