@@ -40,6 +40,7 @@ const DELIVERY_TYPES = [
   { value: 'same_day', label: 'Same-Day Delivery', icon: Clock, description: 'Cutoff 2pm, deliver same day' },
   { value: 'priority', label: 'Priority Delivery', icon: Zap, description: 'First deliveries of the day' },
   { value: 'time_window', label: 'Time Window', icon: Truck, description: 'Specific time slot delivery' },
+  { value: 'scheduled', label: 'Scheduled Bulk', icon: Calendar, description: 'Schedule days in advance, min 15 packages, local only' },
 ];
 
 export const PricingManagement = () => {
