@@ -31,9 +31,10 @@ import {
 import {
   Route, Plus, Play, Send, RefreshCw, Trash2, Package,
   MapPin, Clock, CheckCircle, AlertCircle, Loader2, 
-  ChevronRight, Users, Calendar, Zap, TruckIcon
+  ChevronRight, Users, Calendar, Zap, TruckIcon, Eye, Map, Navigation
 } from 'lucide-react';
 import { circuitAPI } from '@/lib/api';
+import { DeliveryMap, buildGoogleMapsRouteUrl } from '@/components/maps/DeliveryMap';
 import { toast } from 'sonner';
 
 export const RouteManagement = () => {
