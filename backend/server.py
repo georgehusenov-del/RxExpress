@@ -820,7 +820,13 @@ async def get_order(order_id: str, current_user: dict = Depends(get_current_user
 
 
 @orders_router.put("/{order_id}/assign")
-async def assign_driver(order_id: str, driver_id: str, background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
+async def assign_driver(
+    order_id: str, 
+    driver_id: str, 
+    background_tasks: BackgroundTasks, 
+    current_user: dict = Depends(get_current_user),
+    keep_status: bool = False  # If True, keeps current status (for pickup assignments)
+):
     """Assign a driver to an order"""
     # Get order
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
@@ -832,12 +838,20 @@ async def assign_driver(order_id: str, driver_id: str, background_tasks: Backgro
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
     
+    # Determine new status
+    # If keep_status is True and order is in a pickup state, keep it for the pickup flow
+    pickup_statuses = ["new", "pending", "confirmed", "ready_for_pickup"]
+    if keep_status and order.get("status") in pickup_statuses:
+        new_status = order.get("status")
+    else:
+        new_status = OrderStatus.ASSIGNED
+    
     # Update order
     await db.orders.update_one(
         {"id": order_id},
         {"$set": {
             "driver_id": driver_id,
-            "status": OrderStatus.ASSIGNED,
+            "status": new_status,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }}
     )
