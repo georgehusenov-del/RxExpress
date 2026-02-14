@@ -1142,6 +1142,154 @@ export const RouteManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Gig Details Modal with Sorted Stops and Map */}
+      <Dialog open={showGigDetailsModal} onOpenChange={setShowGigDetailsModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <TruckIcon className="w-5 h-5 text-teal-400" />
+              {gigDetails?.plan?.title || 'Gig Details'}
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              {gigDetails?.plan?.date} • {gigDetails?.linked_orders?.length || 0} stops
+            </DialogDescription>
+          </DialogHeader>
+          
+          {gigDetailsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+            </div>
+          ) : gigDetails && (
+            <div className="space-y-4 py-4">
+              {/* Status and Driver Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="p-3 bg-slate-700/50 rounded-lg">
+                  <p className="text-xs text-slate-400">Stops</p>
+                  <p className="text-xl font-bold text-white">{gigDetails.linked_orders?.length || 0}</p>
+                </div>
+                <div className="p-3 bg-slate-700/50 rounded-lg">
+                  <p className="text-xs text-slate-400">Status</p>
+                  <Badge variant="outline" className={getStatusBadge(gigDetails.optimization_status)}>
+                    {gigDetails.optimization_status || 'pending'}
+                  </Badge>
+                </div>
+                <div className="p-3 bg-slate-700/50 rounded-lg">
+                  <p className="text-xs text-slate-400">Driver</p>
+                  <p className="text-sm text-white">
+                    {gigDetails.plan?.assigned_driver?.name || gigDetails.plan?.assigned_driver?.email || 'Not assigned'}
+                  </p>
+                </div>
+                <div className="p-3 bg-slate-700/50 rounded-lg">
+                  <p className="text-xs text-slate-400">Distributed</p>
+                  <p className="text-sm text-white">{gigDetails.distributed ? 'Yes' : 'No'}</p>
+                </div>
+              </div>
+
+              {/* Navigate Full Route Button */}
+              {gigDetails.linked_orders?.length > 0 && (
+                <Button
+                  variant="outline"
+                  className="w-full border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+                  onClick={() => {
+                    const url = buildGoogleMapsRouteUrl(gigDetails.linked_orders);
+                    if (url) {
+                      window.open(url, '_blank');
+                    } else {
+                      toast.error('Unable to build route - missing addresses');
+                    }
+                  }}
+                  data-testid="gig-navigate-route-btn"
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Navigate Full Route in Google Maps
+                </Button>
+              )}
+
+              {/* Map View of Stops */}
+              {gigDetails.linked_orders?.length > 0 && (
+                <div>
+                  <p className="text-sm text-slate-400 mb-2 flex items-center gap-2">
+                    <Map className="w-4 h-4" />
+                    Route Map
+                  </p>
+                  <DeliveryMap
+                    markers={getGigMapMarkers()}
+                    showRoute={true}
+                    height="300px"
+                  />
+                </div>
+              )}
+
+              {/* Sorted Stops List */}
+              {gigDetails.linked_orders?.length > 0 && (
+                <div>
+                  <p className="text-sm text-slate-400 mb-2">
+                    Delivery Stops (Sorted by Route Order)
+                  </p>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {gigDetails.linked_orders.map((order, index) => (
+                      <div
+                        key={order.id}
+                        className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg border border-slate-700"
+                        data-testid={`gig-stop-${order.id}`}
+                      >
+                        {/* Stop Number */}
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-sm">
+                            {order.stop_sequence ?? order.circuit_stop_sequence ?? index + 1}
+                          </span>
+                        </div>
+                        
+                        {/* Order Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-sm text-teal-400">{order.order_number}</span>
+                            <Badge variant="outline" className="border-slate-500 text-slate-300 text-xs">
+                              {order.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-400 truncate">
+                            {order.delivery_address?.street}, {order.delivery_address?.city}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {order.recipient?.name || 'Unknown recipient'}
+                          </p>
+                        </div>
+                        
+                        {/* Time Window if available */}
+                        {order.time_window && (
+                          <div className="flex items-center gap-1 text-xs text-slate-400">
+                            <Clock className="w-3 h-3" />
+                            {order.time_window}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(!gigDetails.linked_orders || gigDetails.linked_orders.length === 0) && (
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No stops in this gig yet</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowGigDetailsModal(false)}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
