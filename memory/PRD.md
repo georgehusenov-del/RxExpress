@@ -166,6 +166,22 @@ Unified status values:
 
 ## Changelog
 
+### Feb 14, 2026 (Session 2 - Continued)
+- **Driver Scan → POD Flow**: After driver scans delivery label, POD modal automatically opens
+- **Cleaned Up Extra Routes**: Deleted 12 test/duplicate routes, only Gig 6-9 with actual orders remain
+- **POD Cloud Storage**:
+  - Signatures saved to `/api/uploads/signatures/{pod_id}_signature.png`
+  - Photos saved to `/api/uploads/photos/{pod_id}_photo.jpg`
+  - Static file serving endpoints added for retrieving stored POD images
+- **Enhanced Reports & Analytics**:
+  - New `/api/reports/dashboard` endpoint with comprehensive stats
+  - New `/api/reports/drivers/performance` endpoint with driver metrics
+  - New `/api/reports/deliveries` endpoint with filtered delivery data
+  - Reports UI with 3 tabs: Overview, Drivers, Boroughs
+  - Date range picker and CSV export functionality
+  - Top Pharmacies list, Order Status Breakdown, Daily Trends chart
+- All tests passed (100% backend, 100% frontend)
+
 ### Feb 14, 2026 (Session 2)
 - **Revamped Driver Portal with 3 Tabs**:
   - **Deliveries tab**: Shows out_for_delivery/in_transit orders with "Scan Delivery" and "Complete POD" buttons
@@ -207,4 +223,5 @@ Unified status values:
 ## Notes
 - Preview URL: https://driver-route-ops.preview.emergentagent.com
 - Circuit API is connected with 4 drivers configured (Usman, George Husenov, Tigran Ayrapetov, Test dd)
+
 
