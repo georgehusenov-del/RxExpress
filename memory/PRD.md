@@ -166,6 +166,29 @@ Unified status values:
 
 ## Changelog
 
+### Feb 14, 2026 (Session 3)
+- **Copay Collection Checkbox**:
+  - Added mandatory "Did you collect copay?" checkbox on each delivery card
+  - POD button stays disabled (grayed out) until checkbox is checked
+  - Shows green "✓ Copay collected" when checked
+  - Helper text "Check the copay box to enable POD" when unchecked
+  - Also added to delivery details modal for consistency
+  - data-testid: `copay-checkbox-{order_id}` and `modal-copay-checkbox`
+
+- **QR Scanner for Pickup Tab**:
+  - "Scan for Pickup" button on each pickup card opens QR Scanner modal
+  - Scanner modal shows "Pickup" action badge
+  - Supports camera scanning and manual QR code entry
+  - On successful pickup scan, order status changes to `picked_up`
+  - Records `actual_pickup_time` timestamp
+
+- **Backend Enhancements**:
+  - Updated `/api/orders/scan` to handle pickup action and change status from `ready_for_pickup` → `picked_up`
+  - Updated `/api/driver-portal/deliveries` to include pickup statuses (`new`, `pending`, `confirmed`, `ready_for_pickup`)
+  - Added `keep_status` parameter to order assignment endpoint for pickup workflow
+
+- All tests passed (100% backend, 100% frontend)
+
 ### Feb 14, 2026 (Session 2 - Continued)
 - **Driver Scan → POD Flow**: After driver scans delivery label, POD modal automatically opens
 - **Cleaned Up Extra Routes**: Deleted 12 test/duplicate routes, only Gig 6-9 with actual orders remain
