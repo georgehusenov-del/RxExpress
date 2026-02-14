@@ -159,7 +159,17 @@ export const DriverPortal = () => {
   const handleScanSuccess = async (scanResult) => {
     toast.success(`Package scanned successfully!`);
     setShowScanner(false);
-    fetchData();
+    
+    // After successful scan, activate POD modal for deliveries
+    if (scanAction === 'delivery' && selectedDelivery) {
+      // Small delay to let scanner close properly
+      setTimeout(() => {
+        setShowPodModal(true);
+      }, 300);
+    } else {
+      // For pickups, just refresh the data
+      fetchData();
+    }
   };
 
   // Handle pickup scan - only changes from new to picked_up
