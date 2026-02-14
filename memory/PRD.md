@@ -173,6 +173,9 @@ Unified status values:
 - Verified bulk order selection with floating action bar
 - Verified POD (Proof of Delivery) with signature and photo capture
 - Verified Stripe integration is working
+- **Simplified Routes page to use "Gig" naming (Gig 1, Gig 2, Gig 3...)**
+- **Added clean card grid layout for gigs with gradient number badges**
+- **Streamlined "New Gig" creation modal**
 - All comprehensive testing passed (100% backend, 100% frontend)
 
 ## Known Issues
