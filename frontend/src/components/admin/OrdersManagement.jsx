@@ -50,6 +50,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { adminAPI } from '@/lib/api';
+import { DeliveryMap } from '@/components/maps/DeliveryMap';
 import { toast } from 'sonner';
 
 // Status System
