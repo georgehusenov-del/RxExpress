@@ -643,6 +643,169 @@ export const OrdersManagement = () => {
     setShowStatusModal(true);
   };
 
+  // Print order label with QR code
+  const handlePrintOrder = (order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow pop-ups to print');
+      return;
+    }
+
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(order.qr_code || order.order_number)}`;
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Order Label - ${order.order_number}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            max-width: 4in;
+          }
+          .label { 
+            border: 2px solid #000; 
+            padding: 15px;
+            border-radius: 8px;
+          }
+          .header { 
+            text-align: center; 
+            border-bottom: 2px dashed #000; 
+            padding-bottom: 10px; 
+            margin-bottom: 15px;
+          }
+          .header h1 { font-size: 18px; font-weight: bold; }
+          .header .order-num { font-size: 24px; font-weight: bold; margin-top: 5px; }
+          .qr-section { 
+            text-align: center; 
+            margin: 15px 0;
+            padding: 10px 0;
+            border-top: 1px dashed #ccc;
+            border-bottom: 1px dashed #ccc;
+          }
+          .qr-section img { width: 150px; height: 150px; }
+          .qr-code { font-family: monospace; font-size: 14px; margin-top: 8px; font-weight: bold; }
+          .info-section { margin: 10px 0; }
+          .info-row { 
+            display: flex; 
+            margin: 8px 0;
+            font-size: 12px;
+          }
+          .info-label { 
+            font-weight: bold; 
+            width: 80px;
+            flex-shrink: 0;
+          }
+          .info-value { flex: 1; }
+          .recipient-section {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+          }
+          .recipient-name { font-size: 16px; font-weight: bold; }
+          .address { font-size: 12px; margin-top: 5px; line-height: 1.4; }
+          .footer { 
+            text-align: center; 
+            font-size: 10px; 
+            color: #666; 
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+          }
+          .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #e0e0e0;
+          }
+          .copay-alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+          }
+          @media print {
+            body { padding: 0; }
+            .label { border: 2px solid #000; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="label">
+          <div class="header">
+            <h1>RX EXPRESSS</h1>
+            <div class="order-num">${order.order_number}</div>
+            <span class="status-badge">${statusLabels[order.status] || order.status}</span>
+          </div>
+          
+          <div class="qr-section">
+            <img src="${qrCodeUrl}" alt="QR Code" />
+            <div class="qr-code">${order.qr_code || 'N/A'}</div>
+          </div>
+          
+          <div class="recipient-section">
+            <div class="recipient-name">${order.recipient?.name || 'Unknown'}</div>
+            <div class="address">
+              ${order.delivery_address?.street || ''}${order.delivery_address?.apt_unit ? ', ' + order.delivery_address.apt_unit : ''}<br>
+              ${order.delivery_address?.city || ''}, ${order.delivery_address?.state || ''} ${order.delivery_address?.postal_code || ''}
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <div class="info-row">
+              <span class="info-label">Phone:</span>
+              <span class="info-value">${order.recipient?.phone || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Delivery:</span>
+              <span class="info-value">${deliveryTypeLabels[order.delivery_type] || order.delivery_type}${order.time_window ? ' (' + order.time_window + ')' : ''}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Packages:</span>
+              <span class="info-value">${order.packages?.length || 1} item(s)</span>
+            </div>
+            ${order.delivery_address?.delivery_instructions ? `
+            <div class="info-row">
+              <span class="info-label">Notes:</span>
+              <span class="info-value">${order.delivery_address.delivery_instructions}</span>
+            </div>
+            ` : ''}
+          </div>
+          
+          ${order.copay_amount > 0 && !order.copay_collected ? `
+          <div class="copay-alert">
+            💵 COLLECT COPAY: $${order.copay_amount.toFixed(2)}
+          </div>
+          ` : ''}
+          
+          <div class="footer">
+            Printed: ${new Date().toLocaleString()}<br>
+            RX Expresss Pharmacy Delivery
+          </div>
+        </div>
+        <script>
+          window.onload = function() { 
+            window.print(); 
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
   const filteredOrders = orders.filter(order =>
     order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
