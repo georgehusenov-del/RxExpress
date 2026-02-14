@@ -164,11 +164,11 @@ export const RouteManagement = () => {
     return () => clearInterval(pollInterval);
   }, [operationId, optimizing, fetchPlans]);
 
-  // Create new plan with auto-generated name
+  // Create new plan with auto-generated Gig name
   const handleCreatePlan = async () => {
     try {
-      const routeNumber = getNextRouteNumber();
-      const autoTitle = `Route ${routeNumber}`;
+      const gigNumber = getNextGigNumber();
+      const autoTitle = `Gig ${gigNumber}`;
       
       const response = await circuitAPI.createPlanForDate({
         title: newPlanTitle || autoTitle,
@@ -176,7 +176,7 @@ export const RouteManagement = () => {
         driver_ids: selectedDrivers
       });
       
-      toast.success(`${newPlanTitle || autoTitle} created successfully`);
+      toast.success(`${newPlanTitle || autoTitle} created!`);
       setShowCreateModal(false);
       setNewPlanTitle('');
       setSelectedDrivers([]);
