@@ -2938,12 +2938,65 @@ async def submit_proof_of_delivery(
     
     # Create POD record
     pod_id = str(uuid.uuid4())
+    
+    # Save signature and photo to file storage (cloud storage simulation)
+    signature_url = None
+    photo_url = None
+    
+    if pod_data.signature_data:
+        try:
+            # Extract base64 data from data URL
+            if pod_data.signature_data.startswith('data:'):
+                base64_data = pod_data.signature_data.split(',')[1]
+            else:
+                base64_data = pod_data.signature_data
+            
+            # Decode and save to file
+            import base64
+            signature_bytes = base64.b64decode(base64_data)
+            signature_filename = f"{pod_id}_signature.png"
+            signature_path = f"/app/backend/uploads/signatures/{signature_filename}"
+            
+            with open(signature_path, 'wb') as f:
+                f.write(signature_bytes)
+            
+            signature_url = f"/api/uploads/signatures/{signature_filename}"
+            logger.info(f"Signature saved to: {signature_path}")
+        except Exception as e:
+            logger.error(f"Failed to save signature: {e}")
+            signature_url = None  # Fall back to storing base64 in DB
+    
+    if pod_data.photo_data:
+        try:
+            # Extract base64 data from data URL
+            if pod_data.photo_data.startswith('data:'):
+                base64_data = pod_data.photo_data.split(',')[1]
+            else:
+                base64_data = pod_data.photo_data
+            
+            # Decode and save to file
+            import base64
+            photo_bytes = base64.b64decode(base64_data)
+            photo_filename = f"{pod_id}_photo.jpg"
+            photo_path = f"/app/backend/uploads/photos/{photo_filename}"
+            
+            with open(photo_path, 'wb') as f:
+                f.write(photo_bytes)
+            
+            photo_url = f"/api/uploads/photos/{photo_filename}"
+            logger.info(f"Photo saved to: {photo_path}")
+        except Exception as e:
+            logger.error(f"Failed to save photo: {e}")
+            photo_url = None  # Fall back to storing base64 in DB
+    
     pod = {
         "id": pod_id,
         "order_id": order_id,
         "driver_id": driver["id"],
-        "signature_data": pod_data.signature_data,
-        "photo_data": pod_data.photo_data,
+        "signature_data": pod_data.signature_data if not signature_url else None,  # Only store base64 if file save failed
+        "signature_url": signature_url,
+        "photo_data": pod_data.photo_data if not photo_url else None,  # Only store base64 if file save failed
+        "photo_url": photo_url,
         "recipient_name": pod_data.recipient_name or order.get("recipient", {}).get("name"),
         "notes": pod_data.notes,
         "location": {"latitude": pod_data.latitude, "longitude": pod_data.longitude} if pod_data.latitude and pod_data.longitude else None,
@@ -2960,6 +3013,8 @@ async def submit_proof_of_delivery(
             "delivered_at": now.isoformat(),
             "pod_id": pod_id,
             "pod_submitted_at": now.isoformat(),
+            "signature_url": signature_url,
+            "photo_url": photo_url,
             "updated_at": now.isoformat()
         }}
     )
