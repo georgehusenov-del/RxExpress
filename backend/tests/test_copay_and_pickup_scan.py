@@ -155,58 +155,41 @@ class TestQRScanAPI:
         headers_admin = {"Authorization": f"Bearer {admin_token}"}
         headers_driver = {"Authorization": f"Bearer {driver_token}"}
         
-        # Step 1: Find or create an order with ready_for_pickup status
-        # First, check existing orders
-        response = requests.get(f"{BASE_URL}/api/orders?status=ready_for_pickup", headers=headers_admin)
+        # Use admin endpoint to get orders
+        response = requests.get(f"{BASE_URL}/api/admin/orders", headers=headers_admin)
         assert response.status_code == 200
-        orders = response.json().get("orders", [])
+        all_orders = response.json().get("orders", [])
         
         test_order = None
         test_qr_code = None
         
-        # Find an order with ready_for_pickup status
-        if orders:
-            for order in orders:
-                if order.get("packages") and len(order["packages"]) > 0:
+        # Find or set up an order for pickup test
+        for order in all_orders:
+            if order.get("status") in ["new", "pending", "confirmed"] and order.get("packages"):
+                # Assign driver first
+                assign_response = requests.put(
+                    f"{BASE_URL}/api/orders/{order['id']}/assign?driver_id={driver_id}&keep_status=true",
+                    headers=headers_admin
+                )
+                
+                # Set status to ready_for_pickup using query parameter
+                status_response = requests.put(
+                    f"{BASE_URL}/api/admin/orders/{order['id']}/status?status=ready_for_pickup&notes=Test%20setup",
+                    headers=headers_admin
+                )
+                
+                if status_response.status_code == 200:
                     test_order = order
+                    test_order["status"] = "ready_for_pickup"
                     test_qr_code = order["packages"][0].get("qr_code")
                     break
-        
-        if not test_order:
-            # If no ready_for_pickup orders, try to set one up
-            # Get any pending/confirmed order
-            response = requests.get(f"{BASE_URL}/api/orders", headers=headers_admin)
-            assert response.status_code == 200
-            all_orders = response.json().get("orders", [])
-            
-            for order in all_orders:
-                if order.get("status") in ["pending", "confirmed", "new"] and order.get("packages"):
-                    # Update this order to ready_for_pickup
-                    update_response = requests.put(
-                        f"{BASE_URL}/api/admin/orders/{order['id']}/status",
-                        headers=headers_admin,
-                        json={"status": "ready_for_pickup", "notes": "Test setup"}
-                    )
-                    if update_response.status_code == 200:
-                        test_order = order
-                        test_order["status"] = "ready_for_pickup"
-                        test_qr_code = order["packages"][0].get("qr_code")
-                        break
         
         if not test_order or not test_qr_code:
             pytest.skip("No suitable test order available for pickup scan test")
         
         print(f"Testing with order: {test_order.get('order_number')}, QR: {test_qr_code}")
         
-        # Step 2: Assign driver to order if not assigned
-        if not test_order.get("driver_id"):
-            assign_response = requests.put(
-                f"{BASE_URL}/api/orders/{test_order['id']}/assign?driver_id={driver_id}&keep_status=true",
-                headers=headers_admin
-            )
-            print(f"Assign driver response: {assign_response.status_code}")
-        
-        # Step 3: Scan for pickup
+        # Scan for pickup
         scan_payload = {
             "qr_code": test_qr_code,
             "scanned_by": "test_driver",
@@ -227,7 +210,7 @@ class TestQRScanAPI:
         assert scan_data.get("status") == "picked_up", f"Expected status 'picked_up', got '{scan_data.get('status')}'"
         print(f"✓ Pickup scan changed status to: {scan_data.get('status')}")
         
-        # Step 4: Verify in database
+        # Verify in database
         order_response = requests.get(f"{BASE_URL}/api/orders/{test_order['id']}", headers=headers_driver)
         assert order_response.status_code == 200
         updated_order = order_response.json()
@@ -251,7 +234,8 @@ class TestCopayFeature:
     def test_copay_field_in_order(self, admin_token):
         """Test that orders have copay_collected field"""
         headers = {"Authorization": f"Bearer {admin_token}"}
-        response = requests.get(f"{BASE_URL}/api/orders?limit=5", headers=headers)
+        # Use admin endpoint which has full access
+        response = requests.get(f"{BASE_URL}/api/admin/orders?limit=5", headers=headers)
         
         assert response.status_code == 200
         orders = response.json().get("orders", [])
