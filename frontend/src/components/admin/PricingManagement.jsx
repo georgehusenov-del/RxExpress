@@ -365,6 +365,19 @@ export const PricingManagement = () => {
                       </div>
                     )}
 
+                    {/* Scheduled Delivery Constraints */}
+                    {item.minimum_packages && (
+                      <div className="flex items-center gap-2 text-sm text-amber-400">
+                        <Truck className="w-4 h-4" />
+                        <span>Min {item.minimum_packages} packages</span>
+                      </div>
+                    )}
+                    {item.local_only && (
+                      <Badge variant="outline" className="border-teal-500 text-teal-400 text-xs">
+                        Local Only
+                      </Badge>
+                    )}
+
                     {/* Status Badge */}
                     <div className="flex items-center gap-2 pt-2">
                       <Badge
