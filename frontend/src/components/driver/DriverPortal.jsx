@@ -595,6 +595,8 @@ export const DriverPortal = () => {
 
 // Delivery Card Component - For orders to deliver
 const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod }) => {
+  const [copayCollected, setCopayCollected] = useState(false);
+  
   return (
     <Card
       className="bg-slate-800 border-slate-700 cursor-pointer hover:bg-slate-750 transition-colors"
@@ -632,8 +634,27 @@ const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod }) => {
           </div>
         </div>
         
+        {/* Copay Collection Checkbox */}
+        <div 
+          className="mt-3 pt-3 border-t border-slate-700"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={copayCollected}
+              onChange={(e) => setCopayCollected(e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-amber-500 bg-slate-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer"
+              data-testid={`copay-checkbox-${delivery.id}`}
+            />
+            <span className={`text-sm font-medium ${copayCollected ? 'text-green-400' : 'text-amber-400'}`}>
+              {copayCollected ? '✓ Copay collected' : 'Did you collect copay?'}
+            </span>
+          </label>
+        </div>
+        
         {/* Action buttons for delivery */}
-        <div className="mt-3 pt-3 border-t border-slate-700 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button
             size="sm"
             variant="outline"
@@ -646,14 +667,22 @@ const DeliveryCard = ({ delivery, onView, onScanDelivery, onCompletePod }) => {
           </Button>
           <Button
             size="sm"
-            className="flex-1 bg-green-600 hover:bg-green-700"
+            className={`flex-1 ${copayCollected ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 cursor-not-allowed'}`}
             onClick={onCompletePod}
+            disabled={!copayCollected}
             data-testid={`complete-pod-${delivery.id}`}
           >
             <CheckCircle className="w-3 h-3 mr-1" />
             Complete POD
           </Button>
         </div>
+        
+        {/* Warning if copay not collected */}
+        {!copayCollected && (
+          <p className="text-xs text-amber-400/70 mt-2 text-center">
+            Check the copay box to enable POD
+          </p>
+        )}
       </CardContent>
     </Card>
   );
