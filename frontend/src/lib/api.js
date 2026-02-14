@@ -123,6 +123,13 @@ export const healthAPI = {
   check: () => api.get('/health'),
 };
 
+// Reports API
+export const reportsAPI = {
+  getDashboard: (params = {}) => api.get('/reports/dashboard', { params }),
+  getDeliveries: (params = {}) => api.get('/reports/deliveries', { params }),
+  getDriverPerformance: (params = {}) => api.get('/reports/drivers/performance', { params }),
+};
+
 // Admin APIs
 export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
