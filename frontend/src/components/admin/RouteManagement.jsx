@@ -606,8 +606,9 @@ export const RouteManagement = () => {
                 return (
                   <div
                     key={plan.id}
-                    className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-teal-500/50 transition-colors"
+                    className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-teal-500/50 transition-colors cursor-pointer"
                     data-testid={`route-plan-${plan.id}`}
+                    onClick={() => handleOpenGigDetails(plan)}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -619,6 +620,19 @@ export const RouteManagement = () => {
                           <p className="text-xs text-slate-400">{plan.date}</p>
                         </div>
                       </div>
+                      {/* View Details Icon */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenGigDetails(plan);
+                        }}
+                        title="View gig details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
                     </div>
                     
                     <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
