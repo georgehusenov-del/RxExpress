@@ -981,20 +981,7 @@ export const OrdersManagement = () => {
     const organized = {};
     
     categoryStatuses.forEach(status => {
-      let ordersInStatus;
-      if (status === 'new') {
-        // Include legacy statuses in the New category
-        ordersInStatus = filteredOrders.filter(order => 
-          ['new', 'pending', 'confirmed', 'ready_for_pickup'].includes(order.status)
-        );
-      } else if (status === 'out_for_delivery') {
-        // Include assigned in Out for Delivery
-        ordersInStatus = filteredOrders.filter(order => 
-          ['out_for_delivery', 'assigned'].includes(order.status)
-        );
-      } else {
-        ordersInStatus = filteredOrders.filter(order => order.status === status);
-      }
+      const ordersInStatus = filteredOrders.filter(order => order.status === status);
       
       organized[status] = {
         orders: ordersInStatus,
