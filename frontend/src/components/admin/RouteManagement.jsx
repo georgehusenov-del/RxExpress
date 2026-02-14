@@ -575,7 +575,22 @@ export const RouteManagement = () => {
                 </Badge>
               )}
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {/* Quick Add to Route dropdown - only show when orders selected */}
+              {selectedOrders.length > 0 && plans.length > 0 && (
+                <Select value="" onValueChange={(planId) => handleQuickAddToRoute(planId)}>
+                  <SelectTrigger className="w-44 bg-teal-600 border-teal-500 text-white text-sm">
+                    <SelectValue placeholder={`Add ${selectedOrders.length} to Route`} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-700 border-slate-600">
+                    {plans.map(plan => (
+                      <SelectItem key={plan.id} value={plan.id} className="text-white">
+                        {plan.title} ({plan.stops_count} stops)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Input
                 type="date"
                 value={filterDate}
@@ -607,32 +622,44 @@ export const RouteManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow className="border-slate-700">
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selectedOrders.length === pendingOrders.length && pendingOrders.length > 0}
+                      onCheckedChange={selectAllOrders}
+                      className="border-slate-500"
+                    />
+                  </TableHead>
                   <TableHead className="text-slate-400">Order #</TableHead>
                   <TableHead className="text-slate-400">Delivery Address</TableHead>
                   <TableHead className="text-slate-400">Type</TableHead>
                   <TableHead className="text-slate-400">Packages</TableHead>
-                  <TableHead className="text-slate-400">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingOrders.slice(0, 10).map((order) => (
-                  <TableRow key={order.id} className="border-slate-700">
+                {pendingOrders.map((order) => (
+                  <TableRow 
+                    key={order.id} 
+                    className={`border-slate-700 cursor-pointer hover:bg-slate-700/50 ${selectedOrders.includes(order.id) ? 'bg-teal-500/10' : ''}`}
+                    onClick={() => toggleOrderSelection(order.id)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedOrders.includes(order.id)}
+                        onCheckedChange={() => toggleOrderSelection(order.id)}
+                        className="border-slate-500"
+                      />
+                    </TableCell>
                     <TableCell className="text-white font-mono">{order.order_number}</TableCell>
                     <TableCell className="text-slate-300">
                       {order.delivery_address?.street}, {order.delivery_address?.city}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="border-slate-500 text-slate-300">
-                        {order.delivery_type}
+                      <Badge variant="outline" className="border-slate-500 text-slate-300 text-xs">
+                        {order.delivery_type?.replace('_', ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-slate-300">
                       {order.packages?.length || 1}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="border-amber-500 text-amber-400">
-                        {order.status}
-                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))}
