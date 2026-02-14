@@ -82,6 +82,15 @@ public class Package
     
     [BsonElement("scanned_at")]
     public string? ScannedAt { get; set; }
+    
+    [BsonElement("admin_verified")]
+    public bool AdminVerified { get; set; } = false;
+    
+    [BsonElement("admin_verified_at")]
+    public string? AdminVerifiedAt { get; set; }
+    
+    [BsonElement("admin_verified_by")]
+    public string? AdminVerifiedBy { get; set; }
 }
 
 [BsonIgnoreExtraElements]
