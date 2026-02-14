@@ -192,6 +192,19 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
   };
 
   const handleSubmit = async () => {
+    // Validate minimum packages for scheduled delivery
+    if (formData.delivery_type === 'scheduled') {
+      const selectedPricing = pricing?.grouped?.scheduled?.find(p => p.id === formData.selected_pricing_id);
+      if (selectedPricing?.minimum_packages && formData.packages.length < selectedPricing.minimum_packages) {
+        toast.error(`Scheduled delivery requires minimum ${selectedPricing.minimum_packages} packages. You have ${formData.packages.length}.`);
+        return;
+      }
+      if (!formData.scheduled_date) {
+        toast.error('Please select a delivery date for scheduled delivery.');
+        return;
+      }
+    }
+    
     setLoading(true);
     try {
       const pharmacyId = localStorage.getItem('pharmacy_id') || 'e4172010-3a02-4635-9a24-f9f566e995a0';
@@ -201,6 +214,7 @@ export const CreateDeliveryModal = ({ onClose, onSuccess }) => {
         delivery_type: formData.delivery_type,
         time_window: formData.time_window,
         pricing_id: formData.selected_pricing_id,
+        scheduled_date: formData.scheduled_date || null,
         recipient: {
           name: formData.recipient_name,
           phone: formData.recipient_phone,
