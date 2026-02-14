@@ -62,6 +62,12 @@ class CreatePlanRequest(PydanticBaseModel):
 class BatchImportOrdersRequest(PydanticBaseModel):
     order_ids: List[str]
 
+class AutoAssignByBoroughRequest(PydanticBaseModel):
+    status: str = "out_for_delivery"  # Default status to auto-assign
+
+class AssignDriverToGigRequest(PydanticBaseModel):
+    driver_id: str
+
 # Create the main app
 app = FastAPI(
     title="RX Expresss API",
