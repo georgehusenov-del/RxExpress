@@ -3697,6 +3697,265 @@ async def list_local_route_plans(
     return {"plans": plans, "count": len(plans)}
 
 
+@circuit_router.post("/auto-assign-by-borough")
+async def auto_assign_orders_by_borough(
+    request: AutoAssignByBoroughRequest = Body(default=AutoAssignByBoroughRequest()),
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Automatically assign orders with specified status to gigs grouped by borough.
+    Creates new gigs for each borough if needed, then assigns orders to them.
+    
+    Borough codes: Q=Queens, B=Brooklyn, M=Manhattan, X=Bronx, S=Staten Island
+    """
+    # Borough mapping for display names
+    borough_names = {
+        "Q": "Queens",
+        "B": "Brooklyn", 
+        "M": "Manhattan",
+        "X": "Bronx",
+        "S": "Staten Island",
+        "N": "Other"
+    }
+    
+    # Get orders with specified status that are not yet assigned to a gig
+    query = {
+        "status": request.status,
+        "$or": [
+            {"circuit_plan_id": {"$exists": False}},
+            {"circuit_plan_id": None},
+            {"circuit_plan_id": ""}
+        ]
+    }
+    
+    orders = await db.orders.find(query, {"_id": 0}).to_list(500)
+    
+    if not orders:
+        return {
+            "message": f"No orders with status '{request.status}' found for auto-assignment",
+            "total_assigned": 0,
+            "gigs_created": 0,
+            "by_borough": {}
+        }
+    
+    # Group orders by borough (extract from QR code first character)
+    orders_by_borough = {}
+    for order in orders:
+        qr_code = order.get("qr_code", "")
+        borough = order.get("borough") or (qr_code[0].upper() if qr_code else "N")
+        if borough not in orders_by_borough:
+            orders_by_borough[borough] = []
+        orders_by_borough[borough].append(order)
+    
+    # Get existing gigs/plans
+    existing_plans = await db.route_plans.find({}, {"_id": 0}).to_list(100)
+    
+    # Helper to get next gig number
+    def get_next_gig_number():
+        gig_numbers = []
+        for p in existing_plans:
+            title = p.get("title", "")
+            import re
+            match = re.match(r"Gig (\d+)", title)
+            if match:
+                gig_numbers.append(int(match.group(1)))
+        return max(gig_numbers, default=0) + 1
+    
+    results = {
+        "total_assigned": 0,
+        "gigs_created": 0,
+        "by_borough": {}
+    }
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # For each borough, create a gig if needed and assign orders
+    for borough_code, borough_orders in orders_by_borough.items():
+        borough_name = borough_names.get(borough_code, "Other")
+        
+        # Check if there's an existing gig for today that we can use
+        # We'll create new gigs for each borough to keep them organized
+        gig_number = get_next_gig_number()
+        gig_title = f"Gig {gig_number}"
+        
+        # Create a new plan/gig
+        try:
+            date_parts = today.split("-")
+            year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
+            starts = {"day": day, "month": month, "year": year}
+            
+            # Create plan in Circuit
+            circuit_result = await circuit_service.create_plan(gig_title, starts, [])
+            
+            if circuit_result and "error" not in circuit_result:
+                # Store in local DB
+                plan_record = {
+                    "id": str(uuid.uuid4()),
+                    "circuit_plan_id": circuit_result.get("id"),
+                    "title": gig_title,
+                    "date": today,
+                    "driver_ids": [],
+                    "status": "created",
+                    "optimization_status": "pending",
+                    "distributed": False,
+                    "stops_count": 0,
+                    "borough": borough_code,
+                    "borough_name": borough_name,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_by": current_user["sub"]
+                }
+                await db.route_plans.insert_one(plan_record)
+                existing_plans.append(plan_record)
+                results["gigs_created"] += 1
+                
+                # Import orders to this plan
+                order_ids = [o["id"] for o in borough_orders]
+                
+                # Batch import to Circuit
+                stops = []
+                for order in borough_orders:
+                    delivery_address = order.get("delivery_address", {})
+                    recipient = order.get("recipient", {})
+                    
+                    stop_data = {
+                        "address": {
+                            "addressLineOne": delivery_address.get("street", ""),
+                            "city": delivery_address.get("city", ""),
+                            "state": delivery_address.get("state", ""),
+                            "country": "US",
+                            "zipCode": delivery_address.get("postal_code", "")
+                        },
+                        "recipient": {
+                            "name": recipient.get("name", "Customer"),
+                            "phone": recipient.get("phone", ""),
+                            "email": recipient.get("email", "")
+                        },
+                        "orderInfo": {
+                            "sellerOrderId": order.get("order_number", order["id"]),
+                            "products": [f"Package {i+1}" for i in range(order.get("total_packages", 1))]
+                        },
+                        "notes": order.get("delivery_notes", "")
+                    }
+                    stops.append(stop_data)
+                
+                # Import stops to Circuit
+                plan_id = circuit_result.get("id", "").replace("plans/", "")
+                import_result = await circuit_service.batch_create_stops(plan_id, stops)
+                
+                # Update orders with plan reference
+                for order in borough_orders:
+                    await db.orders.update_one(
+                        {"id": order["id"]},
+                        {"$set": {
+                            "circuit_plan_id": circuit_result.get("id"),
+                            "gig_title": gig_title,
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }}
+                    )
+                
+                # Update plan stops count
+                await db.route_plans.update_one(
+                    {"id": plan_record["id"]},
+                    {"$set": {"stops_count": len(borough_orders)}}
+                )
+                
+                results["total_assigned"] += len(borough_orders)
+                results["by_borough"][borough_name] = {
+                    "gig": gig_title,
+                    "orders_count": len(borough_orders),
+                    "order_numbers": [o.get("order_number") for o in borough_orders]
+                }
+        except Exception as e:
+            logger.error(f"Error creating gig for borough {borough_name}: {e}")
+            results["by_borough"][borough_name] = {
+                "error": str(e),
+                "orders_count": len(borough_orders)
+            }
+    
+    return {
+        "message": f"Auto-assigned {results['total_assigned']} orders to {results['gigs_created']} new gigs",
+        **results
+    }
+
+
+@circuit_router.post("/plans/{plan_id}/assign-driver")
+async def assign_driver_to_gig(
+    plan_id: str,
+    request: AssignDriverToGigRequest,
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Assign a driver to a gig/plan. This updates both Circuit and local records.
+    """
+    if not request.driver_id:
+        raise HTTPException(status_code=400, detail="Driver ID is required")
+    
+    # Get the plan
+    full_plan_id = plan_id if plan_id.startswith("plans/") else f"plans/{plan_id}"
+    local_plan = await db.route_plans.find_one(
+        {"$or": [
+            {"circuit_plan_id": plan_id},
+            {"circuit_plan_id": full_plan_id}
+        ]},
+        {"_id": 0}
+    )
+    
+    if not local_plan:
+        raise HTTPException(status_code=404, detail="Gig not found")
+    
+    # Get driver info from Circuit
+    drivers_response = await circuit_service.list_drivers()
+    circuit_drivers = drivers_response.get("drivers", []) if drivers_response else []
+    
+    driver_info = None
+    for d in circuit_drivers:
+        if d.get("id") == request.driver_id or d.get("id") == f"drivers/{request.driver_id}":
+            driver_info = d
+            break
+    
+    if not driver_info:
+        raise HTTPException(status_code=404, detail="Driver not found in Circuit")
+    
+    # Update local plan record with driver assignment
+    update_data = {
+        "driver_ids": [request.driver_id],
+        "assigned_driver": {
+            "id": driver_info.get("id"),
+            "name": driver_info.get("name", driver_info.get("email", "Driver")),
+            "email": driver_info.get("email"),
+            "assigned_at": datetime.now(timezone.utc).isoformat()
+        },
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.route_plans.update_one(
+        {"$or": [
+            {"circuit_plan_id": plan_id},
+            {"circuit_plan_id": full_plan_id}
+        ]},
+        {"$set": update_data}
+    )
+    
+    # Update all orders in this plan with driver info
+    await db.orders.update_many(
+        {"circuit_plan_id": {"$in": [plan_id, full_plan_id]}},
+        {"$set": {
+            "assigned_driver_name": driver_info.get("name", driver_info.get("email")),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "message": f"Driver {driver_info.get('name', driver_info.get('email'))} assigned to {local_plan.get('title', 'Gig')}",
+        "plan_id": plan_id,
+        "driver": {
+            "id": driver_info.get("id"),
+            "name": driver_info.get("name"),
+            "email": driver_info.get("email")
+        }
+    }
+
+
 @circuit_router.get("/pending-orders")
 async def get_pending_orders_for_routing(
     date: str = None,
