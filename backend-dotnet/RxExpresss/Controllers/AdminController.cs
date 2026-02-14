@@ -64,7 +64,7 @@ public class AdminController : ControllerBase
         // Borough statistics from QR codes
         var boroughStats = new Dictionary<string, int>();
         var activeOrders = await _db.Orders
-            .Find(o => o.Status != "delivered" && o.Status != "cancelled" && o.QrCode != null)
+            .Find(o => o.Status != "delivered" && o.Status != "canceled" && o.QrCode != null)
             .ToListAsync();
         foreach (var order in activeOrders)
         {
