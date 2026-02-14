@@ -669,25 +669,26 @@ export const RouteManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Create Plan Modal */}
+      {/* Create Plan Modal - Simplified */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">Create Route Plan</DialogTitle>
+            <DialogTitle className="text-white">Create New Route</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Create a new delivery route plan for a specific date
+              Will be named: <span className="text-teal-400 font-medium">Route {getNextRouteNumber()}</span>
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Plan Title (optional)</Label>
+              <Label className="text-slate-300">Custom Name (optional)</Label>
               <Input
                 value={newPlanTitle}
                 onChange={(e) => setNewPlanTitle(e.target.value)}
-                placeholder="e.g., Morning Routes"
+                placeholder={`Route ${getNextRouteNumber()}`}
                 className="bg-slate-700 border-slate-600 text-white"
               />
+              <p className="text-xs text-slate-500">Leave blank for auto-generated name</p>
             </div>
             
             <div className="space-y-2">
@@ -700,24 +701,27 @@ export const RouteManagement = () => {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label className="text-slate-300">Assign Drivers (optional)</Label>
-              <div className="max-h-40 overflow-y-auto space-y-2 p-2 bg-slate-700/50 rounded-lg">
-                {circuitDrivers.length === 0 ? (
-                  <p className="text-sm text-slate-500">No drivers available in Circuit</p>
-                ) : (
-                  circuitDrivers.map((driver) => (
-                    <div key={driver.id} className="flex items-center gap-2">
-                      <Checkbox
-                        checked={selectedDrivers.includes(driver.id)}
-                        onCheckedChange={() => toggleDriverSelection(driver.id)}
-                        className="border-slate-500"
-                      />
-                      <span className="text-sm text-slate-300">{driver.name || driver.email}</span>
-                    </div>
-                  ))
-                )}
+            {circuitDrivers.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-slate-300">Assign Driver (optional)</Label>
+                <Select 
+                  value={selectedDrivers[0] || ""} 
+                  onValueChange={(v) => setSelectedDrivers(v ? [v] : [])}
+                >
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectValue placeholder="Select a driver" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectItem value="" className="text-slate-400">No driver</SelectItem>
+                    {circuitDrivers.map((driver) => (
+                      <SelectItem key={driver.id} value={driver.id} className="text-white">
+                        {driver.name || driver.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            )}
             </div>
           </div>
 
