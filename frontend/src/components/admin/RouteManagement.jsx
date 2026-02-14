@@ -693,7 +693,6 @@ export const RouteManagement = () => {
                 </Select>
               </div>
             )}
-            </div>
           </div>
 
           <DialogFooter className="gap-2">
