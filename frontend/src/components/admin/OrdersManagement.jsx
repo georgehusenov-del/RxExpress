@@ -1487,6 +1487,8 @@ export const OrdersManagement = () => {
                                         drivers={drivers}
                                         statusColors={statusColors}
                                         statusLabels={statusLabels}
+                                        isSelected={selectedOrderIds.has(order.id)}
+                                        onToggleSelect={toggleOrderSelection}
                                       />
                                     ))
                                   )}
