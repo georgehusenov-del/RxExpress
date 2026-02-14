@@ -568,6 +568,44 @@ export const RouteManagement = () => {
         </Card>
       </div>
 
+      {/* Routes Map View - Shows all pending orders for routing */}
+      {showMapView && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-white text-base flex items-center gap-2">
+              <Map className="w-4 h-4 text-blue-400" />
+              Map View - Orders Ready for Routing
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pendingOrders.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className="w-12 h-12 text-green-500/50 mx-auto mb-3" />
+                <p className="text-slate-400">All orders have been assigned to routes</p>
+              </div>
+            ) : (
+              <DeliveryMap
+                markers={pendingOrders
+                  .filter(order => order.delivery_address?.latitude || order.delivery_address?.lat)
+                  .map((order, index) => {
+                    const addr = order.delivery_address;
+                    return {
+                      id: order.id,
+                      lat: parseFloat(addr.latitude || addr.lat),
+                      lng: parseFloat(addr.longitude || addr.lng),
+                      label: order.order_number,
+                      popup: `${addr.street}, ${addr.city}`,
+                      color: '#f59e0b' // Amber for pending
+                    };
+                  })}
+                showRoute={false}
+                height="400px"
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Gigs / Route Plans */}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader className="pb-3">
