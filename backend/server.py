@@ -4281,13 +4281,13 @@ api_router.include_router(driver_portal_router)
 api_router.include_router(public_router)
 api_router.include_router(webhooks_router)
 
-app.include_router(api_router)
+# Note: reports_router defined below
 
 # ============== Static File Serving for POD Uploads ==============
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-@app.get("/api/uploads/signatures/{filename}")
+@api_router.get("/uploads/signatures/{filename}")
 async def get_signature_file(filename: str):
     """Serve signature image files"""
     file_path = Path(f"/app/backend/uploads/signatures/{filename}")
@@ -4295,7 +4295,7 @@ async def get_signature_file(filename: str):
         raise HTTPException(status_code=404, detail="Signature file not found")
     return FileResponse(file_path, media_type="image/png")
 
-@app.get("/api/uploads/photos/{filename}")
+@api_router.get("/uploads/photos/{filename}")
 async def get_photo_file(filename: str):
     """Serve photo image files"""
     file_path = Path(f"/app/backend/uploads/photos/{filename}")
