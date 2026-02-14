@@ -23,18 +23,20 @@ RX Expresss is a full-stack pharmacy delivery service application replicating Dr
 - Copay tracking
 - Time window selection (8am-1pm, 1pm-4pm, 4pm-10pm)
 - Refrigerated package indicators
-- Scheduled bulk delivery option ($9 flat rate, min 15 packages)
+- **Scheduled bulk delivery option ($9 flat rate, min 15 packages, 2+ days in advance)**
 
 ### Driver Portal
 - View assigned deliveries **sorted by stop order** (stop 1, stop 2, stop 3...)
+- **Shows package QR code** (e.g., S79D5-PKG1) instead of order number
 - **Stop number badges** on each delivery card
 - **Navigate icon** next to each delivery to open Google Maps
 - **Navigate Full Route button** to open all stops in Google Maps sequence
 - QR code scanning for pickup/delivery
+- **POD only enabled after scanning package** ("Scan package first to enable POD" message)
 - Proof of Delivery (POD) with signature and photo capture
 - Online/Offline status toggle
 - GPS navigation integration
-- Copay collection confirmation
+- Copay collection confirmation (only shown after scan)
 
 ### Admin Dashboard
 - Overview with statistics (Total Users, Pharmacies, Drivers, Orders)
@@ -48,7 +50,7 @@ RX Expresss is a full-stack pharmacy delivery service application replicating Dr
 - **Map View toggle** on Orders page showing all delivery locations
 - **Color-coded markers** by order status (amber=new, blue=picked_up, etc.)
 
-### Route Management
+### Route Management (Gig Management)
 - **Map View toggle** showing orders ready for routing
 - Active Gigs display with numbered badges
 - **Clickable gig cards** that open details modal
@@ -58,6 +60,10 @@ RX Expresss is a full-stack pharmacy delivery service application replicating Dr
   - Route Map preview (Leaflet)
   - Driver assignment status
   - Optimization status
+- **Full Gig Editing:**
+  - Edit button opens modal to change name, date, driver
+  - Orders button opens modal to remove orders from gig
+  - Delete button removes gig (with confirmation)
 - Driver assignment dropdown
 - Auto-assign by borough feature
 - Route optimization via Circuit API
@@ -89,9 +95,10 @@ Unified status values:
 - `/app/backend/circuit_service.py` - Circuit integration
 
 ### Frontend
-- `/app/frontend/src/components/driver/DriverPortal.jsx` - Driver portal with sorted stops and navigation
+- `/app/frontend/src/components/driver/DriverPortal.jsx` - Driver portal with scan-first POD and QR display
 - `/app/frontend/src/components/admin/OrdersManagement.jsx` - Orders page with Map View
-- `/app/frontend/src/components/admin/RouteManagement.jsx` - Routes page with Map View and Gig Details Modal
+- `/app/frontend/src/components/admin/RouteManagement.jsx` - Routes page with Edit/Delete gig modals
+- `/app/frontend/src/components/pharmacy/CreateDeliveryModal.jsx` - Delivery creation with 2-day scheduled min
 - `/app/frontend/src/components/maps/DeliveryMap.jsx` - Reusable Leaflet map component
 - `/app/frontend/src/components/pod/ProofOfDeliveryModal.jsx` - POD modal
 
@@ -113,47 +120,49 @@ Unified status values:
 - `POST /api/circuit/plans/create-for-date` - Create route plan
 - `POST /api/circuit/plans/{id}/batch-import` - Batch import orders
 - `POST /api/circuit/plans/{id}/optimize-and-distribute` - Optimize routes
-- `GET /api/circuit/route-plans/{id}/full-status` - Get full plan status with linked orders
+- `GET /api/circuit/route-plans/{id}/full-status` - Get full plan status
 - `POST /api/circuit/plans/{id}/assign-driver` - Assign driver to gig
+- **`PUT /api/circuit/route-plans/{plan_id}` - Update gig (name, date)**
+- **`DELETE /api/circuit/order/{order_id}/unlink` - Remove order from gig**
 
 ### Driver Portal
 - `GET /api/driver-portal/profile` - Driver profile
-- `GET /api/driver-portal/deliveries` - Assigned deliveries (includes stop_sequence)
+- `GET /api/driver-portal/deliveries` - Assigned deliveries
 - `POST /api/driver-portal/deliveries/{id}/pod` - Submit POD
 - `PUT /api/driver-portal/status` - Update driver status
 
 ## Changelog
 
+### Feb 14, 2026 (Session 6) - Gig Management & Driver POD Fix
+- **Gig Management:**
+  - Added Edit button on each gig card → opens modal with name, date, driver fields
+  - Added Orders button → opens modal to remove orders from gig
+  - Added Delete button → removes gig with confirmation
+  - New backend endpoints: PUT /api/circuit/route-plans/{id}, DELETE /api/circuit/order/{id}/unlink
+
+- **Driver Portal POD Fix:**
+  - POD button now disabled by default with message "Scan package first to enable POD"
+  - POD only enabled after driver scans the delivery QR code
+  - Scan button changes to "Scanned ✓" after successful scan
+  - Copay collection checkbox only shown after scan
+
+- **Driver Package Display Fix:**
+  - Shows package QR code (e.g., S79D5-PKG1) instead of order number (e.g., RX-34C6D215)
+  - Uses borough prefix format for easy identification
+
+- **Scheduled Delivery Fix:**
+  - Changed minimum from 1 day to 2 days in advance
+  - Date picker min attribute updated
+  - Helper text: "Choose a date at least 2 days in advance"
+
+- All tests passed (100% backend and frontend)
+- Test report: `/app/test_reports/iteration_17.json`
+
 ### Feb 14, 2026 (Session 5) - Navigation & Visualization Features
-- **Driver Portal Enhancements:**
-  - Deliveries now sorted by `stop_sequence` (stop 1, 2, 3...)
-  - Added stop number badges in teal gradient circles
-  - Added navigation icon (blue arrow) next to each delivery
-  - Added "Navigate Full Route (X stops)" button to open all stops in Google Maps
-  
-- **Admin Routes Page Enhancements:**
-  - Added Map View toggle showing orders ready for routing (Leaflet map)
-  - Gig cards are now clickable - open Gig Details Modal
-  - Gig Details Modal shows: sorted stops, status, driver, "Navigate Full Route" button, route map
-  
-- **Admin Orders Page Enhancements:**
-  - Added Map View toggle showing all order locations on Leaflet map
-  - Color-coded markers by status (amber=new, blue=picked_up, purple=in_transit, teal=out_for_delivery, green=delivered)
-  - Status legend below map
-
-- **New Component:**
-  - Created `/app/frontend/src/components/maps/DeliveryMap.jsx` - Reusable Leaflet map component
-  - Helper functions: `buildGoogleMapsRouteUrl()`, `buildSingleAddressUrl()`
-
-- All tests passed (100% frontend)
-- Test report: `/app/test_reports/iteration_16.json`
-
-### Feb 14, 2026 (Session 4)
-- Removed "Smart Organizer" view from Orders page
-- Removed Driver Rating UI
-- Fixed Route Optimization API call (empty body issue)
-- Fixed Gig Assignment API
-- Fixed Order Details Modal crash
+- Driver portal: sorted stops, navigation icons, Navigate Full Route button
+- Admin Routes: Map View toggle, clickable gig cards, Gig Details Modal
+- Admin Orders: Map View toggle with color-coded markers
+- Created DeliveryMap.jsx reusable Leaflet component
 
 ### Previous Sessions
 - Full POD implementation (signature, photo, GPS)
@@ -161,7 +170,7 @@ Unified status values:
 - Stripe backend integration
 - QR scanning for pickup/delivery
 - Auto-assign orders by borough
-- Scheduled bulk delivery type
+- Removed Smart Organizer and Driver Ratings
 
 ## Upcoming Tasks
 
@@ -181,7 +190,6 @@ Unified status values:
 - Implement Figma design (need accessible link)
 
 ## Known Issues
-- Gig Details Modal may show "No stops" if orders are not linked via Circuit API (data-dependent)
 - Figma design link is inaccessible (BLOCKED)
 - Cloud storage for PODs is still local persistent file storage
 
