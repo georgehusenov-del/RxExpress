@@ -168,6 +168,41 @@ Unified status values:
 
 ## Changelog
 
+### Feb 14, 2026 (Session 4)
+- **Fix 1: Assign Driver to Gig**:
+  - Driver assignment API was already working
+  - UI dropdown on Routes page shows 4 available Circuit drivers
+  - One-click assignment updates both local DB and Circuit API
+  - Verified: George Husenov assigned to Gig 10 successfully
+
+- **Fix 2: Route Optimization**:
+  - Fixed `circuit_service.py` - POST requests without body now send empty object `{}` instead of `None`
+  - This resolved the "Body cannot be empty when content-type is set to 'application/json'" error
+  - Route optimization works correctly when driver is assigned (409 error for "no drivers" is expected behavior)
+
+- **Fix 3: Remove Smart Organizer from Orders**:
+  - Completely removed Smart Organizer view button from Orders Management
+  - Removed all related code: DndContext, DraggableOrderCard, DroppableTimeWindow components
+  - Removed unused state variables: expandedBoroughs, expandedTimeWindows, activeId, activeOrder, sensors
+  - Removed unused functions: handleDragStart, handleDragEnd, handleDragCancel, organizedOrders memo
+  - Removed Route Optimization Preview Modal (only used by Smart Organizer)
+  - Cleaned up imports: removed DnD-kit, unused lucide icons (Sun, Sunset, Moon, GripVertical)
+  - Orders page now has only "Categories" and "List" view modes
+
+- **Fix 4: Order Details Modal**:
+  - Fixed missing `Edit` icon import in OrdersManagement.jsx
+  - Order Details modal now opens correctly when clicking Eye icon
+  - Shows: order number, tracking ID, recipient info, delivery details, packages, pricing
+
+- **Fix 5: Remove Driver Rating from Driver Management**:
+  - Removed Rating column from drivers table header
+  - Removed Rating cell from driver table rows
+  - Removed Rating display from driver details modal
+  - Removed unused `Star` icon import
+
+- All tests passed (100% backend: 6/6, 100% frontend: 9/9)
+- Test report: `/app/test_reports/iteration_15.json`
+
 ### Feb 14, 2026 (Session 3)
 - **Copay Collection Checkbox Fix**:
   - Copay checkbox now only shows for orders with `copay_amount > 0`
