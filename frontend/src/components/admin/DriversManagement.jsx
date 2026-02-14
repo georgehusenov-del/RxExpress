@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import {
   Truck, Search, CheckCircle, Eye, MoreVertical,
-  MapPin, Car, FileText, Star, Package, Plus,
+  MapPin, Car, FileText, Package, Plus,
   UserX, UserCheck, Trash2, Edit, RefreshCw
 } from 'lucide-react';
 import {
