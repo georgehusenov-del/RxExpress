@@ -411,7 +411,8 @@ public class CircuitController : ControllerBase
             foreach (var driverId in plan.DriverIds)
             {
                 var driver = await _db.Drivers.Find(d => d.Id == driverId).FirstOrDefaultAsync();
-                var user = await _db.Users.Find(u => u.Id == driver?.UserId).FirstOrDefaultAsync();
+                var driverUserId = driver?.UserId ?? "";
+                var user = await _db.Users.Find(u => u.Id == driverUserId).FirstOrDefaultAsync();
                 var driverName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
                 
                 var assignedOrderIds = plan.OrderIds.Skip(orderIndex).Take(ordersPerDriver).ToList();
