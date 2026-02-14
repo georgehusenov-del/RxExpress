@@ -617,20 +617,13 @@ export const DriversManagement = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700">
+              <div className="pt-4 border-t border-slate-700">
                 <div className="text-center p-3 bg-slate-700/50 rounded-lg">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <Package className="w-4 h-4 text-teal-400" />
                   </div>
                   <p className="text-2xl font-bold text-teal-400">{selectedDriver.total_deliveries || 0}</p>
                   <p className="text-xs text-slate-400">Total Deliveries</p>
-                </div>
-                <div className="text-center p-3 bg-slate-700/50 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-amber-400">{selectedDriver.rating?.toFixed(1) || '0.0'}</p>
-                  <p className="text-xs text-slate-400">Rating</p>
                 </div>
               </div>
             </div>
