@@ -298,7 +298,7 @@ Unified status values:
 - Circuit API batch import has minor issue with 'zipCode' field name (should be 'zip')
 
 ## Notes
-- Preview URL: https://rx-route-optimize.preview.emergentagent.com
+- Preview URL: https://logistics-hub-327.preview.emergentagent.com
 - Circuit API is connected with 4 drivers configured (Usman, George Husenov, Tigran Ayrapetov, Test dd)
 
 
