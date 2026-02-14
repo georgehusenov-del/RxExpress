@@ -616,11 +616,15 @@ class DeliveryPricing(BaseModel):
     is_active: bool = True
     # For time windows (Next-Day)
     time_window_start: Optional[str] = None  # e.g., "08:00"
-    time_window_end: Optional[str] = None  # e.g., "12:00"
+    time_window_end: Optional[str] = None  # e.g., "22:00"
     # For Same-Day
     cutoff_time: Optional[str] = None  # e.g., "14:00" (2pm)
     # Add-on pricing
     is_addon: bool = False  # For refrigerated fee, etc.
+    # Scheduled delivery constraints
+    minimum_packages: Optional[int] = None  # Min packages required (e.g., 15 for scheduled)
+    local_only: bool = False  # Restrict to local deliveries only
+    allow_future_date: bool = False  # Allow scheduling days in advance
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
