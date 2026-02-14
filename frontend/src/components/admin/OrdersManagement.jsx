@@ -452,12 +452,8 @@ export const OrdersManagement = () => {
   const [statusNotes, setStatusNotes] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [pagination, setPagination] = useState({ skip: 0, limit: 100, total: 0 });
-  const [viewMode, setViewMode] = useState('categories'); // 'list', 'smart', or 'categories'
-  const [expandedBoroughs, setExpandedBoroughs] = useState({});
-  const [expandedTimeWindows, setExpandedTimeWindows] = useState({});
+  const [viewMode, setViewMode] = useState('categories'); // 'list' or 'categories'
   const [expandedCategories, setExpandedCategories] = useState({ new: true, picked_up: true, in_transit: true, out_for_delivery: true });
-  const [activeId, setActiveId] = useState(null);
-  const [activeOrder, setActiveOrder] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
@@ -475,14 +471,6 @@ export const OrdersManagement = () => {
   const [routePreviewData, setRoutePreviewData] = useState(null);
   const [optimizingRoute, setOptimizingRoute] = useState(false);
   const [selectedRouteContext, setSelectedRouteContext] = useState({ borough: null, timeWindow: null });
-
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
     useSensor(KeyboardSensor)
   );
 
