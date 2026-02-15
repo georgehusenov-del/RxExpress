@@ -133,6 +133,27 @@ Unified status values:
 
 ## Changelog
 
+### Feb 15, 2026 (Session 7) - PWA & Capacitor App Store Setup
+- **PWA Implementation:**
+  - Created `manifest.json` with app metadata, 9 icons (including maskable), standalone display mode
+  - Created `service-worker.js` with cache-first (static) and network-first (API) strategies
+  - Created `offline.html` fallback page for offline users
+  - Generated app icons in all required sizes (48-512px + maskable + apple-touch-icon + favicon)
+  - Updated `index.html` with PWA meta tags (apple-mobile-web-app-capable, manifest link, theme-color, safe-area viewport)
+  - Registered service worker in `index.js`
+  - Created `InstallPrompt.jsx` component (handles Android beforeinstallprompt and iOS share instructions)
+
+- **Capacitor Native App Setup:**
+  - Installed Capacitor 6 with plugins: App, Haptics, Keyboard, StatusBar, SplashScreen, Browser, Camera, Geolocation, PushNotifications
+  - Created `capacitor.config.json` with app ID `com.rxexpresss.app`, splash screen, status bar config
+  - Created `useCapacitor.js` hook for native platform initialization (StatusBar, Keyboard, back button)
+  - Added safe-area CSS insets for notch/home-indicator support
+  - Added convenience scripts: `cap:sync`, `cap:ios`, `cap:android`, `cap:build`
+  - Created comprehensive `APP_STORE_GUIDE.md` with step-by-step instructions for iOS App Store and Google Play Store submission
+
+- All tests passed (100% backend and frontend)
+- Test report: `/app/test_reports/iteration_18.json`
+
 ### Feb 14, 2026 (Session 6) - Gig Management & Driver POD Fix
 - **Gig Management:**
   - Added Edit button on each gig card → opens modal with name, date, driver fields
@@ -173,6 +194,11 @@ Unified status values:
 - Removed Smart Organizer and Driver Ratings
 
 ## Upcoming Tasks
+
+### P0 - Completed
+- PWA (Progressive Web App) implementation - DONE
+- Capacitor native app configuration - DONE
+- App Store submission guide created - DONE
 
 ### P1 - Immediate
 - Twilio SMS notifications for order updates
