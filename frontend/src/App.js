@@ -10,6 +10,7 @@ import { DriverPortal } from "@/components/driver/DriverPortal";
 import { PublicTrackingPage } from "@/components/tracking/PublicTrackingPage";
 import { Activity, Truck } from "lucide-react";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { useCapacitor } from "@/hooks/useCapacitor";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -233,6 +234,8 @@ function AppRoutes() {
 }
 
 function App() {
+  useCapacitor();
+
   return (
     <AuthProvider>
       <BrowserRouter>
