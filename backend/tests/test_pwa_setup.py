@@ -114,10 +114,10 @@ class TestAuthFlow:
         assert response.status_code == 200, f"Admin login failed: {response.status_code}"
         
         data = response.json()
-        assert "token" in data, "Login response should include token"
+        assert "access_token" in data, "Login response should include access_token"
         assert data.get("user", {}).get("role") == "admin", "User should have admin role"
         print(f"✅ Admin login successful - role: {data.get('user', {}).get('role')}")
-        return data.get("token")
+        return data.get("access_token")
 
     def test_pharmacy_login_success(self):
         """Pharmacy login should work with correct credentials"""
@@ -131,7 +131,7 @@ class TestAuthFlow:
         assert response.status_code == 200, f"Pharmacy login failed: {response.status_code}"
         
         data = response.json()
-        assert "token" in data, "Login response should include token"
+        assert "access_token" in data, "Login response should include access_token"
         assert data.get("user", {}).get("role") == "pharmacy", "User should have pharmacy role"
         print(f"✅ Pharmacy login successful - role: {data.get('user', {}).get('role')}")
 
@@ -147,7 +147,7 @@ class TestAuthFlow:
         assert response.status_code == 200, f"Driver login failed: {response.status_code}"
         
         data = response.json()
-        assert "token" in data, "Login response should include token"
+        assert "access_token" in data, "Login response should include access_token"
         assert data.get("user", {}).get("role") == "driver", "User should have driver role"
         print(f"✅ Driver login successful - role: {data.get('user', {}).get('role')}")
 
