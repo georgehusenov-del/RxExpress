@@ -139,7 +139,7 @@ class CircuitService:
         """Get a specific plan by ID"""
         return await self._make_request("GET", f"/plans/{plan_id}")
     
-    async def list_plans(self, starts_gte: str = None, max_page_size: int = 20) -> Optional[Dict]:
+    async def list_plans(self, starts_gte: str = None, max_page_size: int = 10) -> Optional[Dict]:
         """List all plans with optional date filter"""
         params = {"maxPageSize": max_page_size}
         if starts_gte:
