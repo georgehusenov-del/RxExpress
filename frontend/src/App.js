@@ -9,6 +9,7 @@ import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { DriverPortal } from "@/components/driver/DriverPortal";
 import { PublicTrackingPage } from "@/components/tracking/PublicTrackingPage";
 import { Activity, Truck } from "lucide-react";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -236,6 +237,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <AppRoutes />
+        <InstallPrompt />
         <Toaster position="top-right" richColors />
       </BrowserRouter>
     </AuthProvider>
