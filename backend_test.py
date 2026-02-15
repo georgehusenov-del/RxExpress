@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 class RXExpressAPITester:
-    def __init__(self, base_url: str = "https://logistics-hub-327.preview.emergentagent.com"):
+    def __init__(self, base_url: str = "https://pharmacy-gig-hub.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tokens = {}  # Store tokens for different user types

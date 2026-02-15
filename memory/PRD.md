@@ -194,6 +194,6 @@ Unified status values:
 - Cloud storage for PODs is still local persistent file storage
 
 ## Notes
-- Preview URL: https://logistics-hub-327.preview.emergentagent.com
+- Preview URL: https://pharmacy-gig-hub.preview.emergentagent.com
 - Circuit API connected with 4 drivers configured
 - Leaflet library used for map visualization (free, no API key required)
