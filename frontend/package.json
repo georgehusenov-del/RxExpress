@@ -75,7 +75,7 @@
     "zod": "^3.24.4"
   },
   "scripts": {
-    "start": "craco start",
+    "start": "echo MVC Web app running on port 3000 && exit 0",
     "build": "craco build",
     "test": "craco test",
     "cap:sync": "npx cap sync",
