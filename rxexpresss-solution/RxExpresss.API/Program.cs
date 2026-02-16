@@ -90,8 +90,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Serve static frontend files
-app.UseDefaultFiles();
+// Serve static frontend files (if any)
 app.UseStaticFiles();
 
 app.UseCors();
