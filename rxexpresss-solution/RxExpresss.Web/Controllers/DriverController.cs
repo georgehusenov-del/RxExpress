@@ -16,7 +16,7 @@ public class DriverController : Controller
         ViewData["PageTitle"] = pageTitle;
         ViewData["PortalName"] = "Driver Portal";
         ViewData["Role"] = "Driver";
-        ViewData["ApiBaseUrl"] = "/api";
+        ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? "/api";
     }
 
     public IActionResult Index() { SetNav("deliveries", "My Deliveries"); return View(); }

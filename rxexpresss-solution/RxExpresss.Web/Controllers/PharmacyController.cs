@@ -17,7 +17,7 @@ public class PharmacyController : Controller
         ViewData["PageTitle"] = pageTitle;
         ViewData["PortalName"] = "Pharmacy Portal";
         ViewData["Role"] = "Pharmacy";
-        ViewData["ApiBaseUrl"] = "/api";
+        ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? "/api";
     }
 
     public IActionResult Index() { SetNav("dashboard", "Dashboard"); return View(); }

@@ -25,7 +25,7 @@ public class AdminController : Controller
         ViewData["PageTitle"] = pageTitle;
         ViewData["PortalName"] = "Admin Panel";
         ViewData["Role"] = "Admin";
-        ViewData["ApiBaseUrl"] = "/api";
+        ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? "/api";
     }
 
     public IActionResult Index() { SetNav("overview", "Dashboard Overview"); return View(); }
