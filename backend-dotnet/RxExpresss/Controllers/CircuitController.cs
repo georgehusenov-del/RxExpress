@@ -630,11 +630,27 @@ public class BatchImportDto
     public List<string> OrderIds { get; set; } = new();
 }
 
+public class UpdatePlanDto
+{
+    public string? Title { get; set; }
+    public string? Date { get; set; }
+    public List<string>? DriverIds { get; set; }
+}
+
+public class AssignDriverDto
+{
+    public string DriverId { get; set; } = string.Empty;
+}
+
+public class AutoAssignDto
+{
+    public string? Status { get; set; }
+}
+
 public static class MongoDbServiceExtensions
 {
     public static IMongoDatabase GetDatabase(this MongoDbService db)
     {
-        // Access the database through the Users collection
         return db.Users.Database;
     }
 }
