@@ -1,41 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pharmacy Dashboard - RX Expresss</title><link rel="stylesheet" href="/css/style.css"></head>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pharmacy - RX Expresss</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav class="navbar"><a href="/pharmacy/index.html" class="brand">RX Expresss</a>
-    <div class="nav-links"><a href="/pharmacy/index.html" class="active">Dashboard</a><a href="/pharmacy/create-order.html">New Order</a></div>
-    <div class="user-info" id="nav-user"></div>
-</nav>
-<div class="container">
-    <div class="page-header"><h1>Pharmacy Dashboard</h1><a href="/pharmacy/create-order.html" class="btn btn-primary">+ New Delivery</a></div>
-    <div id="alert-area"></div>
-    <div id="pharmacy-info" class="mb-3"></div>
-    <div class="card">
-        <div class="card-header">My Orders</div>
-        <div class="card-body table-responsive">
-            <table><thead><tr><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th><th>Status</th><th>Copay</th><th>Date</th></tr></thead>
-            <tbody id="orders-table"><tr><td colspan="8" class="text-center"><span class="spinner"></span></td></tr></tbody></table>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand"><h2>RX Expresss</h2><small>Pharmacy Portal</small></div>
+        <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        <div class="sidebar-footer" id="sidebar-footer"></div>
+    </aside>
+    <main class="main-content">
+        <div class="topbar"><h1>Dashboard</h1></div>
+        <div class="page-body">
+            <div id="alert-area"></div>
+            <div id="pharmacy-info" class="mb-2"></div>
+            <div class="card">
+                <div class="card-header">My Orders <a href="/pharmacy/create-order.html" class="btn btn-sm btn-primary">+ New Order</a></div>
+                <div class="card-body table-wrap"><table><thead><tr><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th><th>Status</th><th>Copay</th><th>Date</th></tr></thead><tbody id="tbl"><tr><td colspan="8" class="text-center"><span class="spinner"></span></td></tr></tbody></table></div>
+            </div>
         </div>
-    </div>
+    </main>
 </div>
 <script src="/js/api-service.js"></script>
 <script>
-    if (!ApiService.requireAuth('Pharmacy')) throw '';
-    setupNav();
-    (async () => {
-        try {
-            const pharmacy = await ApiService.get('/pharmacies/my');
-            document.getElementById('pharmacy-info').innerHTML = `<div class="card"><div class="card-body"><strong>${pharmacy.name}</strong> | License: ${pharmacy.licenseNumber} | ${pharmacy.city}, ${pharmacy.state}</div></div>`;
-            const data = await ApiService.get(`/orders?pharmacyId=${pharmacy.id}`);
-            const tbody = document.getElementById('orders-table');
-            if (!data.orders.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray">No orders yet. Create your first delivery!</td></tr>'; return; }
-            tbody.innerHTML = data.orders.map(o => `<tr>
-                <td><strong>${o.orderNumber}</strong></td><td>${o.qrCode || '-'}</td>
-                <td>${o.recipientName}</td><td>${o.city}</td><td>${o.deliveryType}</td>
-                <td>${statusBadge(o.status)}</td><td>$${o.copayAmount.toFixed(2)}</td><td>${formatDate(o.createdAt)}</td>
-            </tr>`).join('');
-        } catch (err) { showAlert('alert-area', 'danger', err.message); }
-    })();
+if(!ApiService.requireAuth('Pharmacy'))throw'';
+setupSidebar([
+    {id:'dashboard',label:'Dashboard',href:'/pharmacy/index.html',icon:Icons.dashboard},
+    {id:'create',label:'New Order',href:'/pharmacy/create-order.html',icon:Icons.plus},
+], 'dashboard');
+(async()=>{
+    try{
+        const p=await ApiService.get('/pharmacies/my');
+        document.getElementById('pharmacy-info').innerHTML=`<div class="card"><div class="card-body d-flex items-center justify-between"><div><strong>${p.name}</strong> <span class="text-gray text-sm">| License: ${p.licenseNumber} | ${p.city}, ${p.state}</span></div><span class="badge badge-available">${p.isVerified?'Verified':'Pending'}</span></div></div>`;
+        const d=await ApiService.get(`/orders?pharmacyId=${p.id}`);
+        document.getElementById('tbl').innerHTML=d.orders.length?d.orders.map(o=>`<tr><td><strong>${o.orderNumber}</strong></td><td>${o.qrCode||'-'}</td><td>${o.recipientName}</td><td>${o.city}</td><td>${o.deliveryType}</td><td>${statusBadge(o.status)}</td><td>$${(o.copayAmount||0).toFixed(2)}</td><td>${formatDate(o.createdAt)}</td></tr>`).join(''):'<tr><td colspan="8" class="text-center text-gray">No orders yet. Create your first delivery!</td></tr>';
+    }catch(e){showAlert('alert-area','danger',e.message);}
+})();
 </script>
-</body>
-</html>
+</body></html>

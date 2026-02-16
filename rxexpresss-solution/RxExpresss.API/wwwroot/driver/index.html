@@ -1,114 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Driver Portal - RX Expresss</title><link rel="stylesheet" href="/css/style.css">
-<style>
-    .delivery-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; background: white; transition: box-shadow .2s; }
-    .delivery-card:hover { box-shadow: var(--shadow-lg); }
-    .delivery-card .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .delivery-card .qr { font-size: 20px; font-weight: 700; color: var(--primary); }
-    .delivery-card .detail { display: flex; gap: 20px; flex-wrap: wrap; font-size: 14px; color: var(--gray); }
-    .delivery-card .detail strong { color: var(--dark); }
-    .delivery-card .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .status-toggle { display: flex; gap: 8px; align-items: center; }
-    .toggle-btn { padding: 8px 20px; border-radius: 20px; border: 2px solid var(--border); background: white; cursor: pointer; font-weight: 600; transition: all .2s; }
-    .toggle-btn.active { background: var(--success); color: white; border-color: var(--success); }
-</style>
-</head>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Driver Portal - RX Expresss</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav class="navbar"><a href="/driver/index.html" class="brand">RX Expresss</a>
-    <div class="nav-links"><a href="/driver/index.html" class="active">My Deliveries</a></div>
-    <div class="user-info" id="nav-user"></div>
-</nav>
-<div class="container">
-    <div class="page-header">
-        <h1>My Deliveries</h1>
-        <div class="status-toggle">
-            <span class="text-sm text-gray">Status:</span>
-            <button class="toggle-btn" id="toggle-online" onclick="toggleStatus('available')">Online</button>
-            <button class="toggle-btn" id="toggle-offline" onclick="toggleStatus('offline')">Offline</button>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand"><h2>RX Expresss</h2><small>Driver Portal</small></div>
+        <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        <div class="sidebar-footer" id="sidebar-footer"></div>
+    </aside>
+    <main class="main-content">
+        <div class="topbar">
+            <h1>My Deliveries</h1>
+            <div class="toggle-group">
+                <button class="toggle-btn" id="t-on" onclick="setStatus('available')">Online</button>
+                <button class="toggle-btn" id="t-off" onclick="setStatus('offline')">Offline</button>
+            </div>
         </div>
-    </div>
-    <div id="alert-area"></div>
-    <div id="deliveries-list">
-        <div class="text-center mt-3"><span class="spinner"></span> Loading deliveries...</div>
-    </div>
+        <div class="page-body">
+            <div id="alert-area"></div>
+            <div id="deliveries"><div class="text-center mt-3"><span class="spinner"></span> Loading...</div></div>
+        </div>
+    </main>
 </div>
 <script src="/js/api-service.js"></script>
 <script>
-    if (!ApiService.requireAuth('Driver')) throw '';
-    setupNav();
-    let driverStatus = 'offline';
+if(!ApiService.requireAuth('Driver'))throw'';
+setupSidebar([
+    {id:'deliveries',label:'My Deliveries',href:'/driver/index.html',icon:Icons.list},
+],'deliveries');
 
-    async function loadProfile() {
-        try {
-            const profile = await ApiService.get('/driver-portal/profile');
-            driverStatus = profile.status;
-            updateToggle();
-        } catch {}
-    }
+let myStatus='offline';
+async function loadProfile(){try{const p=await ApiService.get('/driver-portal/profile');myStatus=p.status;updateToggle();}catch{}}
+function updateToggle(){document.getElementById('t-on').className='toggle-btn'+(myStatus==='available'?' active':'');document.getElementById('t-off').className='toggle-btn'+(myStatus==='offline'?' off':'');}
+async function setStatus(s){await ApiService.put(`/driver-portal/status?status=${s}`);myStatus=s;updateToggle();}
 
-    function updateToggle() {
-        document.getElementById('toggle-online').classList.toggle('active', driverStatus === 'available');
-        document.getElementById('toggle-offline').classList.toggle('active', driverStatus === 'offline');
-    }
-
-    async function toggleStatus(status) {
-        await ApiService.put(`/driver-portal/status?status=${status}`);
-        driverStatus = status;
-        updateToggle();
-    }
-
-    async function loadDeliveries() {
-        try {
-            const data = await ApiService.get('/driver-portal/deliveries');
-            const el = document.getElementById('deliveries-list');
-            if (!data.deliveries.length) { el.innerHTML = '<div class="empty-state"><h3>No active deliveries</h3><p>You have no assigned deliveries right now.</p></div>'; return; }
-            el.innerHTML = data.deliveries.map(d => `
-                <div class="delivery-card">
-                    <div class="header">
-                        <span class="qr">${d.qrCode || d.orderNumber}</span>
-                        ${statusBadge(d.status)}
-                    </div>
-                    <div class="detail">
-                        <div><strong>Recipient:</strong> ${d.recipientName}</div>
-                        <div><strong>Phone:</strong> ${d.recipientPhone}</div>
-                        <div><strong>Address:</strong> ${d.street}, ${d.city}, ${d.state} ${d.postalCode}</div>
-                        ${d.copayAmount > 0 ? `<div><strong>Copay:</strong> $${d.copayAmount.toFixed(2)} ${d.copayCollected ? '(Collected)' : '(Pending)'}</div>` : ''}
-                    </div>
-                    ${d.deliveryNotes ? `<div class="mt-1 text-sm text-gray">Notes: ${d.deliveryNotes}</div>` : ''}
-                    <div class="actions">
-                        ${d.status === 'assigned' ? `<button class="btn btn-sm btn-warning" onclick="updateDelivery(${d.id}, 'picked_up')">Mark Picked Up</button>` : ''}
-                        ${d.status === 'picked_up' ? `<button class="btn btn-sm btn-info" onclick="updateDelivery(${d.id}, 'in_transit')">Start Transit</button>` : ''}
-                        ${d.status === 'in_transit' ? `<button class="btn btn-sm btn-primary" onclick="updateDelivery(${d.id}, 'out_for_delivery')">Out for Delivery</button>` : ''}
-                        ${d.status === 'out_for_delivery' ? `<button class="btn btn-sm btn-success" onclick="completePod(${d.id})">Complete Delivery</button>` : ''}
-                        ${d.copayAmount > 0 && !d.copayCollected ? `<button class="btn btn-sm btn-outline" onclick="collectCopay(${d.id})">Collect Copay</button>` : ''}
-                    </div>
+async function loadDeliveries(){
+    try{
+        const d=await ApiService.get('/driver-portal/deliveries');
+        const el=document.getElementById('deliveries');
+        if(!d.deliveries.length){el.innerHTML='<div class="empty-state"><h3>No Active Deliveries</h3><p>No deliveries assigned to you right now.</p></div>';return;}
+        el.innerHTML=d.deliveries.map(o=>`
+            <div class="delivery-card">
+                <div class="dc-header"><span class="dc-qr">${o.qrCode||o.orderNumber}</span>${statusBadge(o.status)}</div>
+                <div class="dc-details">
+                    <div><strong>To:</strong> ${o.recipientName}</div>
+                    <div><strong>Phone:</strong> ${o.recipientPhone}</div>
+                    <div><strong>Address:</strong> ${o.street}, ${o.city}, ${o.state} ${o.postalCode}</div>
+                    ${o.copayAmount>0?`<div><strong>Copay:</strong> $${o.copayAmount.toFixed(2)} ${o.copayCollected?'(Collected)':'(Pending)'}</div>`:''}
                 </div>
-            `).join('');
-        } catch (err) { showAlert('alert-area', 'danger', err.message); }
-    }
+                ${o.deliveryNotes?`<div class="mt-1 text-sm text-gray">Notes: ${o.deliveryNotes}</div>`:''}
+                <div class="dc-actions">
+                    ${o.status==='assigned'?`<button class="btn btn-sm btn-warning" onclick="upd(${o.id},'picked_up')">Pick Up</button>`:''}
+                    ${o.status==='picked_up'?`<button class="btn btn-sm btn-info" onclick="upd(${o.id},'in_transit')">Start Transit</button>`:''}
+                    ${o.status==='in_transit'?`<button class="btn btn-sm btn-primary" onclick="upd(${o.id},'out_for_delivery')">Out for Delivery</button>`:''}
+                    ${o.status==='out_for_delivery'?`<button class="btn btn-sm btn-success" onclick="complete(${o.id})">Complete Delivery</button>`:''}
+                    ${o.copayAmount>0&&!o.copayCollected?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">Collect Copay</button>`:''}
+                </div>
+            </div>`).join('');
+    }catch(e){showAlert('alert-area','danger',e.message);}
+}
+async function upd(id,s){await ApiService.put(`/driver-portal/deliveries/${id}/status?status=${s}`);showAlert('alert-area','success',`Status: ${s}`);loadDeliveries();}
+async function complete(id){if(!confirm('Confirm delivery completed?'))return;await ApiService.post(`/driver-portal/deliveries/${id}/pod`,{recipientName:'Recipient'});showAlert('alert-area','success','Delivered!');loadDeliveries();}
+async function copay(id){await ApiService.post(`/driver-portal/deliveries/${id}/collect-copay`);showAlert('alert-area','success','Copay collected!');loadDeliveries();}
 
-    async function updateDelivery(id, status) {
-        await ApiService.put(`/driver-portal/deliveries/${id}/status?status=${status}`);
-        showAlert('alert-area', 'success', `Status updated to ${status}`);
-        loadDeliveries();
-    }
-
-    async function completePod(id) {
-        if (!confirm('Confirm delivery completed?')) return;
-        await ApiService.post(`/driver-portal/deliveries/${id}/pod`, { recipientName: 'Recipient' });
-        showAlert('alert-area', 'success', 'Delivery completed!');
-        loadDeliveries();
-    }
-
-    async function collectCopay(id) {
-        await ApiService.post(`/driver-portal/deliveries/${id}/collect-copay`);
-        showAlert('alert-area', 'success', 'Copay collected!');
-        loadDeliveries();
-    }
-
-    loadProfile();
-    loadDeliveries();
+loadProfile();
+loadDeliveries();
 </script>
-</body>
-</html>
+</body></html>
