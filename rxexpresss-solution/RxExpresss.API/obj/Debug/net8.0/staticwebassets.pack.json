@@ -1,68 +1,8 @@
 {
   "Files": [
     {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/drivers.html",
-      "PackagePath": "staticwebassets/admin/drivers.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/index.html",
-      "PackagePath": "staticwebassets/admin/index.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/orders.html",
-      "PackagePath": "staticwebassets/admin/orders.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/pharmacies.html",
-      "PackagePath": "staticwebassets/admin/pharmacies.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/pricing.html",
-      "PackagePath": "staticwebassets/admin/pricing.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/reports.html",
-      "PackagePath": "staticwebassets/admin/reports.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/routes.html",
-      "PackagePath": "staticwebassets/admin/routes.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/scanning.html",
-      "PackagePath": "staticwebassets/admin/scanning.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/users.html",
-      "PackagePath": "staticwebassets/admin/users.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/zones.html",
-      "PackagePath": "staticwebassets/admin/zones.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/css/style.css",
-      "PackagePath": "staticwebassets/css/style.css"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/driver/index.html",
-      "PackagePath": "staticwebassets/driver/index.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/index.html",
-      "PackagePath": "staticwebassets/index.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/js/api-service.js",
-      "PackagePath": "staticwebassets/js/api-service.js"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pharmacy/create-order.html",
-      "PackagePath": "staticwebassets/pharmacy/create-order.html"
-    },
-    {
-      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pharmacy/index.html",
-      "PackagePath": "staticwebassets/pharmacy/index.html"
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/.gitkeep",
+      "PackagePath": "staticwebassets/.gitkeep"
     },
     {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.RxExpresss.API.Microsoft.AspNetCore.StaticWebAssets.props",
