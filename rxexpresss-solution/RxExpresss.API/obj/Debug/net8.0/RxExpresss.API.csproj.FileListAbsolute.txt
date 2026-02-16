@@ -168,3 +168,4 @@
 /app/rxexpresss-solution/RxExpresss.API/obj/Debug/net8.0/RxExpresss.API.pdb
 /app/rxexpresss-solution/RxExpresss.API/obj/Debug/net8.0/RxExpresss.API.genruntimeconfig.cache
 /app/rxexpresss-solution/RxExpresss.API/obj/Debug/net8.0/ref/RxExpresss.API.dll
+/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/RxExpresss.API.staticwebassets.runtime.json

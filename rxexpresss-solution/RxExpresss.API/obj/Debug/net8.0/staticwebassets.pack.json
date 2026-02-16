@@ -1,0 +1,61 @@
+{
+  "Files": [
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/drivers.html",
+      "PackagePath": "staticwebassets/admin/drivers.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/index.html",
+      "PackagePath": "staticwebassets/admin/index.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/orders.html",
+      "PackagePath": "staticwebassets/admin/orders.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/users.html",
+      "PackagePath": "staticwebassets/admin/users.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/css/style.css",
+      "PackagePath": "staticwebassets/css/style.css"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/driver/index.html",
+      "PackagePath": "staticwebassets/driver/index.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/index.html",
+      "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/js/api-service.js",
+      "PackagePath": "staticwebassets/js/api-service.js"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pharmacy/create-order.html",
+      "PackagePath": "staticwebassets/pharmacy/create-order.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pharmacy/index.html",
+      "PackagePath": "staticwebassets/pharmacy/index.html"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.RxExpresss.API.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.RxExpresss.API.props",
+      "PackagePath": "build\\RxExpresss.API.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.RxExpresss.API.props",
+      "PackagePath": "buildMultiTargeting\\RxExpresss.API.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.RxExpresss.API.props",
+      "PackagePath": "buildTransitive\\RxExpresss.API.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
