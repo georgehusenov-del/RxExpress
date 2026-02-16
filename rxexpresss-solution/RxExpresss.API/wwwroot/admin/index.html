@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - RX Expresss</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/admin/index.html" class="brand">RX Expresss</a>
+    <div class="nav-links">
+        <a href="/admin/index.html" class="active">Dashboard</a>
+        <a href="/admin/orders.html">Orders</a>
+        <a href="/admin/drivers.html">Drivers</a>
+        <a href="/admin/users.html">Users</a>
+    </div>
+    <div class="user-info" id="nav-user"></div>
+</nav>
+<div class="container">
+    <div class="page-header"><h1>Dashboard Overview</h1></div>
+    <div id="alert-area"></div>
+    <div class="row mb-3" id="stats-row">
+        <div class="col"><div class="stat-card accent"><div class="stat-value" id="stat-users">-</div><div class="stat-label">Total Users</div></div></div>
+        <div class="col"><div class="stat-card success"><div class="stat-value" id="stat-pharmacies">-</div><div class="stat-label">Pharmacies</div></div></div>
+        <div class="col"><div class="stat-card warning"><div class="stat-value" id="stat-drivers">-</div><div class="stat-label">Drivers</div></div></div>
+        <div class="col"><div class="stat-card"><div class="stat-value" id="stat-orders">-</div><div class="stat-label">Total Orders</div></div></div>
+    </div>
+    <div class="card">
+        <div class="card-header">Orders by Status</div>
+        <div class="card-body" id="status-breakdown"></div>
+    </div>
+</div>
+<script src="/js/api-service.js"></script>
+<script>
+    if (!ApiService.requireAuth('Admin')) throw '';
+    setupNav();
+    (async () => {
+        try {
+            const data = await ApiService.get('/admin/dashboard');
+            const s = data.stats;
+            document.getElementById('stat-users').textContent = s.total_users;
+            document.getElementById('stat-pharmacies').textContent = s.total_pharmacies;
+            document.getElementById('stat-drivers').textContent = s.total_drivers;
+            document.getElementById('stat-orders').textContent = s.total_orders;
+            const statuses = s.orders_by_status || {};
+            let html = '<div class="d-flex flex-wrap gap-2">';
+            for (const [k,v] of Object.entries(statuses)) {
+                html += `<div class="stat-card" style="min-width:120px"><div class="stat-value">${v}</div><div class="stat-label">${statusBadge(k)}</div></div>`;
+            }
+            html += '</div>';
+            document.getElementById('status-breakdown').innerHTML = html || '<p class="text-gray">No orders yet</p>';
+        } catch (err) { showAlert('alert-area', 'danger', err.message); }
+    })();
+</script>
+</body>
+</html>

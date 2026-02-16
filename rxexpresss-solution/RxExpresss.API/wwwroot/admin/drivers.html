@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Drivers - RX Expresss</title><link rel="stylesheet" href="/css/style.css"></head>
+<body>
+<nav class="navbar">
+    <a href="/admin/index.html" class="brand">RX Expresss</a>
+    <div class="nav-links"><a href="/admin/index.html">Dashboard</a><a href="/admin/orders.html">Orders</a><a href="/admin/drivers.html" class="active">Drivers</a><a href="/admin/users.html">Users</a></div>
+    <div class="user-info" id="nav-user"></div>
+</nav>
+<div class="container">
+    <div class="page-header"><h1>Drivers Management</h1><button class="btn btn-primary" onclick="document.getElementById('add-modal').classList.add('active')">+ Add Driver</button></div>
+    <div id="alert-area"></div>
+    <div class="card"><div class="card-body table-responsive">
+        <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Vehicle</th><th>Status</th><th>Deliveries</th><th>Verified</th></tr></thead>
+        <tbody id="drivers-table"><tr><td colspan="7" class="text-center"><span class="spinner"></span></td></tr></tbody></table>
+    </div></div>
+</div>
+<div class="modal-overlay" id="add-modal"><div class="modal">
+    <div class="modal-header"><h3>Add Driver</h3><button class="close-btn" onclick="document.getElementById('add-modal').classList.remove('active')">&times;</button></div>
+    <div class="modal-body">
+        <div class="row"><div class="col"><div class="form-group"><label>First Name</label><input class="form-control" id="d-first"></div></div><div class="col"><div class="form-group"><label>Last Name</label><input class="form-control" id="d-last"></div></div></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" id="d-email"></div>
+        <div class="form-group"><label>Password</label><input type="password" class="form-control" id="d-pass" value="Driver@123"></div>
+        <div class="form-group"><label>Phone</label><input class="form-control" id="d-phone"></div>
+        <div class="row"><div class="col"><div class="form-group"><label>Vehicle Type</label><input class="form-control" id="d-vehicle" value="car"></div></div><div class="col"><div class="form-group"><label>Vehicle Number</label><input class="form-control" id="d-vnum"></div></div></div>
+        <div class="form-group"><label>License Number</label><input class="form-control" id="d-lic"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('add-modal').classList.remove('active')">Cancel</button><button class="btn btn-primary" onclick="addDriver()">Create Driver</button></div>
+</div></div>
+<script src="/js/api-service.js"></script>
+<script>
+    if (!ApiService.requireAuth('Admin')) throw '';
+    setupNav();
+    async function loadDrivers() {
+        const data = await ApiService.get('/admin/drivers');
+        const tbody = document.getElementById('drivers-table');
+        if (!data.drivers.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray">No drivers</td></tr>'; return; }
+        tbody.innerHTML = data.drivers.map(d => `<tr>
+            <td><strong>${d.user?.firstName || ''} ${d.user?.lastName || ''}</strong></td>
+            <td>${d.user?.email || '-'}</td><td>${d.user?.phone || '-'}</td>
+            <td>${d.vehicleType} - ${d.vehicleNumber}</td>
+            <td>${statusBadge(d.status)}</td><td>${d.totalDeliveries}</td>
+            <td>${d.isVerified ? '<span class="text-success">Yes</span>' : '<span class="text-gray">No</span>'}</td>
+        </tr>`).join('');
+    }
+    async function addDriver() {
+        try {
+            await ApiService.post('/admin/drivers', {
+                firstName: document.getElementById('d-first').value, lastName: document.getElementById('d-last').value,
+                email: document.getElementById('d-email').value, password: document.getElementById('d-pass').value,
+                phone: document.getElementById('d-phone').value, vehicleType: document.getElementById('d-vehicle').value,
+                vehicleNumber: document.getElementById('d-vnum').value, licenseNumber: document.getElementById('d-lic').value
+            });
+            document.getElementById('add-modal').classList.remove('active');
+            showAlert('alert-area', 'success', 'Driver created!');
+            loadDrivers();
+        } catch (err) { showAlert('alert-area', 'danger', err.message); }
+    }
+    loadDrivers();
+</script>
+</body>
+</html>

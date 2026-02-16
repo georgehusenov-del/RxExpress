@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Management - RX Expresss</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/admin/index.html" class="brand">RX Expresss</a>
+    <div class="nav-links">
+        <a href="/admin/index.html">Dashboard</a>
+        <a href="/admin/orders.html" class="active">Orders</a>
+        <a href="/admin/drivers.html">Drivers</a>
+        <a href="/admin/users.html">Users</a>
+    </div>
+    <div class="user-info" id="nav-user"></div>
+</nav>
+<div class="container">
+    <div class="page-header">
+        <h1>Orders Management</h1>
+        <select class="form-control" style="width:180px" id="status-filter" onchange="loadOrders()">
+            <option value="">All Statuses</option>
+            <option value="new">New</option><option value="assigned">Assigned</option>
+            <option value="picked_up">Picked Up</option><option value="in_transit">In Transit</option>
+            <option value="delivered">Delivered</option><option value="failed">Failed</option>
+        </select>
+    </div>
+    <div id="alert-area"></div>
+    <div class="card">
+        <div class="card-body table-responsive">
+            <table>
+                <thead><tr><th>Order #</th><th>QR Code</th><th>Pharmacy</th><th>Recipient</th><th>City</th><th>Status</th><th>Driver</th><th>Date</th><th>Actions</th></tr></thead>
+                <tbody id="orders-table"><tr><td colspan="9" class="text-center"><span class="spinner"></span> Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- Status Update Modal -->
+<div class="modal-overlay" id="status-modal">
+    <div class="modal">
+        <div class="modal-header"><h3>Update Status</h3><button class="close-btn" onclick="document.getElementById('status-modal').classList.remove('active')">&times;</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="modal-order-id">
+            <div class="form-group"><label>New Status</label>
+                <select class="form-control" id="modal-status">
+                    <option value="new">New</option><option value="assigned">Assigned</option>
+                    <option value="picked_up">Picked Up</option><option value="in_transit">In Transit</option>
+                    <option value="out_for_delivery">Out for Delivery</option><option value="delivered">Delivered</option>
+                    <option value="failed">Failed</option><option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('status-modal').classList.remove('active')">Cancel</button><button class="btn btn-primary" onclick="updateStatus()">Update</button></div>
+    </div>
+</div>
+<script src="/js/api-service.js"></script>
+<script>
+    if (!ApiService.requireAuth('Admin')) throw '';
+    setupNav();
+    async function loadOrders() {
+        const status = document.getElementById('status-filter').value;
+        const url = status ? `/admin/orders?status=${status}` : '/admin/orders';
+        const data = await ApiService.get(url);
+        const tbody = document.getElementById('orders-table');
+        if (!data.orders.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray">No orders found</td></tr>'; return; }
+        tbody.innerHTML = data.orders.map(o => `<tr>
+            <td><strong>${o.orderNumber}</strong></td><td>${o.qrCode || '-'}</td><td>${o.pharmacyName || '-'}</td>
+            <td>${o.recipientName}</td><td>${o.city}</td><td>${statusBadge(o.status)}</td>
+            <td>${o.driverName || '-'}</td><td>${formatDate(o.createdAt)}</td>
+            <td><button class="btn btn-sm btn-outline" onclick="openStatusModal(${o.id},'${o.status}')">Update</button></td>
+        </tr>`).join('');
+    }
+    function openStatusModal(id, current) {
+        document.getElementById('modal-order-id').value = id;
+        document.getElementById('modal-status').value = current;
+        document.getElementById('status-modal').classList.add('active');
+    }
+    async function updateStatus() {
+        const id = document.getElementById('modal-order-id').value;
+        const status = document.getElementById('modal-status').value;
+        await ApiService.put(`/admin/orders/${id}/status`, { status });
+        document.getElementById('status-modal').classList.remove('active');
+        showAlert('alert-area', 'success', 'Status updated!');
+        loadOrders();
+    }
+    loadOrders();
+</script>
+</body>
+</html>
