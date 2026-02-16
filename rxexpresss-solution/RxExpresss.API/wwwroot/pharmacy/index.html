@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pharmacy Dashboard - RX Expresss</title><link rel="stylesheet" href="/css/style.css"></head>
+<body>
+<nav class="navbar"><a href="/pharmacy/index.html" class="brand">RX Expresss</a>
+    <div class="nav-links"><a href="/pharmacy/index.html" class="active">Dashboard</a><a href="/pharmacy/create-order.html">New Order</a></div>
+    <div class="user-info" id="nav-user"></div>
+</nav>
+<div class="container">
+    <div class="page-header"><h1>Pharmacy Dashboard</h1><a href="/pharmacy/create-order.html" class="btn btn-primary">+ New Delivery</a></div>
+    <div id="alert-area"></div>
+    <div id="pharmacy-info" class="mb-3"></div>
+    <div class="card">
+        <div class="card-header">My Orders</div>
+        <div class="card-body table-responsive">
+            <table><thead><tr><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th><th>Status</th><th>Copay</th><th>Date</th></tr></thead>
+            <tbody id="orders-table"><tr><td colspan="8" class="text-center"><span class="spinner"></span></td></tr></tbody></table>
+        </div>
+    </div>
+</div>
+<script src="/js/api-service.js"></script>
+<script>
+    if (!ApiService.requireAuth('Pharmacy')) throw '';
+    setupNav();
+    (async () => {
+        try {
+            const pharmacy = await ApiService.get('/pharmacies/my');
+            document.getElementById('pharmacy-info').innerHTML = `<div class="card"><div class="card-body"><strong>${pharmacy.name}</strong> | License: ${pharmacy.licenseNumber} | ${pharmacy.city}, ${pharmacy.state}</div></div>`;
+            const data = await ApiService.get(`/orders?pharmacyId=${pharmacy.id}`);
+            const tbody = document.getElementById('orders-table');
+            if (!data.orders.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray">No orders yet. Create your first delivery!</td></tr>'; return; }
+            tbody.innerHTML = data.orders.map(o => `<tr>
+                <td><strong>${o.orderNumber}</strong></td><td>${o.qrCode || '-'}</td>
+                <td>${o.recipientName}</td><td>${o.city}</td><td>${o.deliveryType}</td>
+                <td>${statusBadge(o.status)}</td><td>$${o.copayAmount.toFixed(2)}</td><td>${formatDate(o.createdAt)}</td>
+            </tr>`).join('');
+        } catch (err) { showAlert('alert-area', 'danger', err.message); }
+    })();
+</script>
+</body>
+</html>
