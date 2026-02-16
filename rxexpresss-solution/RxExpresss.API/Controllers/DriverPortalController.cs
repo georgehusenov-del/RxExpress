@@ -33,7 +33,7 @@ public class DriverPortalController : ControllerBase
     {
         var driver = await GetMyDriver();
         if (driver == null) return NotFound(new { detail = "Driver profile not found" });
-        return Ok(driver);
+        return Ok(new { driver.Id, driver.UserId, driver.VehicleType, driver.VehicleNumber, driver.LicenseNumber, driver.Status, driver.Rating, driver.TotalDeliveries, driver.IsVerified });
     }
 
     [HttpGet("deliveries")]
@@ -43,7 +43,9 @@ public class DriverPortalController : ControllerBase
         if (driver == null) return NotFound(new { detail = "Driver profile not found" });
         var orders = await _orders.Query()
             .Where(o => o.DriverId == driver.Id && (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "in_transit" || o.Status == "out_for_delivery"))
-            .OrderBy(o => o.CreatedAt).ToListAsync();
+            .OrderBy(o => o.CreatedAt)
+            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.Status, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.CreatedAt })
+            .ToListAsync();
         return Ok(new { deliveries = orders, count = orders.Count });
     }
 
