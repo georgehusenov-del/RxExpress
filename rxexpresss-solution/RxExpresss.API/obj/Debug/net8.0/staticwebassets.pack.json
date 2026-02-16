@@ -13,8 +13,32 @@
       "PackagePath": "staticwebassets/admin/orders.html"
     },
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/pharmacies.html",
+      "PackagePath": "staticwebassets/admin/pharmacies.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/pricing.html",
+      "PackagePath": "staticwebassets/admin/pricing.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/reports.html",
+      "PackagePath": "staticwebassets/admin/reports.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/routes.html",
+      "PackagePath": "staticwebassets/admin/routes.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/scanning.html",
+      "PackagePath": "staticwebassets/admin/scanning.html"
+    },
+    {
       "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/users.html",
       "PackagePath": "staticwebassets/admin/users.html"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/admin/zones.html",
+      "PackagePath": "staticwebassets/admin/zones.html"
     },
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/css/style.css",
