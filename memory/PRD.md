@@ -4,7 +4,7 @@
 RX Expresss is a full-stack pharmacy delivery service application replicating DrugLift functionality, with routing and delivery management integrated with Circuit Spoke.
 
 ## Tech Stack
-- **Backend:** Python/FastAPI
+- **Backend:** ASP.NET Core 8 (C#) - Migrated from Python/FastAPI
 - **Frontend:** React.js, Tailwind CSS, Shadcn/UI, Lucide React, date-fns
 - **Database:** MongoDB
 - **External Services:** Circuit Spoke, Google Maps, Stripe
@@ -88,11 +88,16 @@ Unified status values:
 
 ## Key Files
 
-### Backend
-- `/app/backend/server.py` - Main FastAPI application
-- `/app/backend/models.py` - Data models
-- `/app/backend/auth.py` - Authentication
-- `/app/backend/circuit_service.py` - Circuit integration
+### Backend (ASP.NET Core 8)
+- `/app/backend-dotnet/RxExpresss/Program.cs` - App configuration, JWT, CORS, Swagger
+- `/app/backend-dotnet/RxExpresss/Controllers/` - All API controllers
+- `/app/backend-dotnet/RxExpresss/Models/` - MongoDB document models
+- `/app/backend-dotnet/RxExpresss/DTOs/` - Request/Response DTOs
+- `/app/backend-dotnet/RxExpresss/Services/` - MongoDbService, AuthService
+- `/app/backend-dotnet/RxExpresss/Extensions/` - ClaimsPrincipal extensions
+
+### Backend (Legacy Python - No longer running)
+- `/app/backend/server.py` - Original Python/FastAPI backend (reference only)
 
 ### Frontend
 - `/app/frontend/src/components/driver/DriverPortal.jsx` - Driver portal with scan-first POD and QR display
@@ -132,6 +137,25 @@ Unified status values:
 - `PUT /api/driver-portal/status` - Update driver status
 
 ## Changelog
+
+### Feb 16, 2026 (Session 8) - Backend Migration to ASP.NET Core 8
+- **Complete Backend Rewrite:**
+  - Migrated entire Python/FastAPI backend to ASP.NET Core 8 (C#)
+  - 13 controllers: Auth, Admin, Orders, DriverPortal, Drivers, Pharmacies, Circuit, Pricing, Tracking, PublicTracking, Delivery, Maps, Zones, Notifications, Payments, Webhooks, Reports
+  - All endpoints match Python backend API surface for frontend compatibility
+  - JWT authentication with BCrypt password hashing
+  - MongoDB integration using MongoDB.Driver v3.6.0
+  - Snake_case JSON serialization for frontend compatibility
+  - Static file serving for POD signatures and photos
+  - Swagger/OpenAPI documentation in development mode
+
+- **Project Structure:**
+  - `/app/backend-dotnet/RxExpresss/` - Main ASP.NET Core 8 project
+  - Controllers/, Models/, DTOs/, Services/, Extensions/
+  - Built and running on port 8001 (replacing Python backend)
+
+- All tests passed (100% - 16/16 backend, 3/3 frontend)
+- Test report: `/app/test_reports/iteration_19.json`
 
 ### Feb 15, 2026 (Session 7) - PWA & Capacitor App Store Setup
 - **PWA Implementation:**
