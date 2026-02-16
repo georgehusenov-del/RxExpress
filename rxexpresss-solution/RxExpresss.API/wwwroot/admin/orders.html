@@ -1,90 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orders Management - RX Expresss</title>
-    <link rel="stylesheet" href="/css/style.css">
-</head>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Orders - RX Expresss Admin</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav class="navbar">
-    <a href="/admin/index.html" class="brand">RX Expresss</a>
-    <div class="nav-links">
-        <a href="/admin/index.html">Dashboard</a>
-        <a href="/admin/orders.html" class="active">Orders</a>
-        <a href="/admin/drivers.html">Drivers</a>
-        <a href="/admin/users.html">Users</a>
-    </div>
-    <div class="user-info" id="nav-user"></div>
-</nav>
-<div class="container">
-    <div class="page-header">
-        <h1>Orders Management</h1>
-        <select class="form-control" style="width:180px" id="status-filter" onchange="loadOrders()">
-            <option value="">All Statuses</option>
-            <option value="new">New</option><option value="assigned">Assigned</option>
-            <option value="picked_up">Picked Up</option><option value="in_transit">In Transit</option>
-            <option value="delivered">Delivered</option><option value="failed">Failed</option>
-        </select>
-    </div>
-    <div id="alert-area"></div>
-    <div class="card">
-        <div class="card-body table-responsive">
-            <table>
-                <thead><tr><th>Order #</th><th>QR Code</th><th>Pharmacy</th><th>Recipient</th><th>City</th><th>Status</th><th>Driver</th><th>Date</th><th>Actions</th></tr></thead>
-                <tbody id="orders-table"><tr><td colspan="9" class="text-center"><span class="spinner"></span> Loading...</td></tr></tbody>
-            </table>
+<div class="app-layout">
+    <aside class="sidebar"><div class="sidebar-brand"><h2>RX Expresss</h2><small>Admin Panel</small></div><nav class="sidebar-nav" id="sidebar-nav"></nav><div class="sidebar-footer" id="sidebar-footer"></div></aside>
+    <main class="main-content">
+        <div class="topbar"><h1>Orders Management</h1>
+            <select class="form-control" style="width:170px" id="status-filter" onchange="loadOrders()"><option value="">All Statuses</option><option value="new">New</option><option value="assigned">Assigned</option><option value="picked_up">Picked Up</option><option value="in_transit">In Transit</option><option value="out_for_delivery">Out for Delivery</option><option value="delivered">Delivered</option><option value="failed">Failed</option></select>
         </div>
-    </div>
-</div>
-<!-- Status Update Modal -->
-<div class="modal-overlay" id="status-modal">
-    <div class="modal">
-        <div class="modal-header"><h3>Update Status</h3><button class="close-btn" onclick="document.getElementById('status-modal').classList.remove('active')">&times;</button></div>
-        <div class="modal-body">
-            <input type="hidden" id="modal-order-id">
-            <div class="form-group"><label>New Status</label>
-                <select class="form-control" id="modal-status">
-                    <option value="new">New</option><option value="assigned">Assigned</option>
-                    <option value="picked_up">Picked Up</option><option value="in_transit">In Transit</option>
-                    <option value="out_for_delivery">Out for Delivery</option><option value="delivered">Delivered</option>
-                    <option value="failed">Failed</option><option value="cancelled">Cancelled</option>
-                </select>
-            </div>
+        <div class="page-body"><div id="alert-area"></div>
+            <div class="card"><div class="card-body table-wrap"><table><thead><tr><th>Order #</th><th>QR</th><th>Pharmacy</th><th>Recipient</th><th>City</th><th>Type</th><th>Status</th><th>Driver</th><th>Actions</th></tr></thead><tbody id="tbl"></tbody></table></div></div>
         </div>
-        <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('status-modal').classList.remove('active')">Cancel</button><button class="btn btn-primary" onclick="updateStatus()">Update</button></div>
-    </div>
+    </main>
 </div>
+<div class="modal-overlay" id="modal"><div class="modal"><div class="modal-header"><h3>Update Status</h3><button class="close-btn" onclick="document.getElementById('modal').classList.remove('active')">&times;</button></div><div class="modal-body"><input type="hidden" id="m-id"><div class="form-group"><label>Status</label><select class="form-control" id="m-status"><option value="new">New</option><option value="assigned">Assigned</option><option value="picked_up">Picked Up</option><option value="in_transit">In Transit</option><option value="out_for_delivery">Out for Delivery</option><option value="delivered">Delivered</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modal').classList.remove('active')">Cancel</button><button class="btn btn-primary" onclick="doUpdate()">Update</button></div></div></div>
 <script src="/js/api-service.js"></script>
 <script>
-    if (!ApiService.requireAuth('Admin')) throw '';
-    setupNav();
-    async function loadOrders() {
-        const status = document.getElementById('status-filter').value;
-        const url = status ? `/admin/orders?status=${status}` : '/admin/orders';
-        const data = await ApiService.get(url);
-        const tbody = document.getElementById('orders-table');
-        if (!data.orders.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray">No orders found</td></tr>'; return; }
-        tbody.innerHTML = data.orders.map(o => `<tr>
-            <td><strong>${o.orderNumber}</strong></td><td>${o.qrCode || '-'}</td><td>${o.pharmacyName || '-'}</td>
-            <td>${o.recipientName}</td><td>${o.city}</td><td>${statusBadge(o.status)}</td>
-            <td>${o.driverName || '-'}</td><td>${formatDate(o.createdAt)}</td>
-            <td><button class="btn btn-sm btn-outline" onclick="openStatusModal(${o.id},'${o.status}')">Update</button></td>
-        </tr>`).join('');
-    }
-    function openStatusModal(id, current) {
-        document.getElementById('modal-order-id').value = id;
-        document.getElementById('modal-status').value = current;
-        document.getElementById('status-modal').classList.add('active');
-    }
-    async function updateStatus() {
-        const id = document.getElementById('modal-order-id').value;
-        const status = document.getElementById('modal-status').value;
-        await ApiService.put(`/admin/orders/${id}/status`, { status });
-        document.getElementById('status-modal').classList.remove('active');
-        showAlert('alert-area', 'success', 'Status updated!');
-        loadOrders();
-    }
-    loadOrders();
+if(!ApiService.requireAuth('Admin'))throw'';
+const nav=[{id:'overview',label:'Overview',href:'/admin/index.html',icon:Icons.dashboard},{id:'users',label:'Users',href:'/admin/users.html',icon:Icons.users},{id:'pharmacies',label:'Pharmacies',href:'/admin/pharmacies.html',icon:Icons.pharmacy},{id:'drivers',label:'Drivers',href:'/admin/drivers.html',icon:Icons.truck},{id:'orders',label:'Orders',href:'/admin/orders.html',icon:Icons.package},{id:'routes',label:'Routes',href:'/admin/routes.html',icon:Icons.route},{id:'pricing',label:'Pricing',href:'/admin/pricing.html',icon:Icons.dollar},{id:'scanning',label:'QR Scanning',href:'/admin/scanning.html',icon:Icons.qrcode},{id:'zones',label:'Service Zones',href:'/admin/zones.html',icon:Icons.mapPin},{id:'reports',label:'Reports',href:'/admin/reports.html',icon:Icons.barChart}];
+setupSidebar(nav,'orders');
+async function loadOrders(){const s=document.getElementById('status-filter').value;const d=await ApiService.get(s?`/admin/orders?status=${s}`:'/admin/orders');const t=document.getElementById('tbl');t.innerHTML=d.orders.length?d.orders.map(o=>`<tr><td><strong>${o.orderNumber}</strong></td><td>${o.qrCode||'-'}</td><td>${o.pharmacyName||'-'}</td><td>${o.recipientName}</td><td>${o.city}</td><td>${o.deliveryType}</td><td>${statusBadge(o.status)}</td><td>${o.driverName||'-'}</td><td><button class="btn btn-sm btn-outline" onclick="openModal(${o.id},'${o.status}')">Edit</button></td></tr>`).join(''):'<tr><td colspan="9" class="text-center text-gray">No orders</td></tr>';}
+function openModal(id,s){document.getElementById('m-id').value=id;document.getElementById('m-status').value=s;document.getElementById('modal').classList.add('active');}
+async function doUpdate(){const id=document.getElementById('m-id').value;await ApiService.put(`/admin/orders/${id}/status`,{status:document.getElementById('m-status').value});document.getElementById('modal').classList.remove('active');showAlert('alert-area','success','Updated!');loadOrders();}
+loadOrders();
 </script>
-</body>
-</html>
+</body></html>

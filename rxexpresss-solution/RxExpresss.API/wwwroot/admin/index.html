@@ -1,56 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - RX Expresss</title>
-    <link rel="stylesheet" href="/css/style.css">
-</head>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - RX Expresss</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav class="navbar">
-    <a href="/admin/index.html" class="brand">RX Expresss</a>
-    <div class="nav-links">
-        <a href="/admin/index.html" class="active">Dashboard</a>
-        <a href="/admin/orders.html">Orders</a>
-        <a href="/admin/drivers.html">Drivers</a>
-        <a href="/admin/users.html">Users</a>
-    </div>
-    <div class="user-info" id="nav-user"></div>
-</nav>
-<div class="container">
-    <div class="page-header"><h1>Dashboard Overview</h1></div>
-    <div id="alert-area"></div>
-    <div class="row mb-3" id="stats-row">
-        <div class="col"><div class="stat-card accent"><div class="stat-value" id="stat-users">-</div><div class="stat-label">Total Users</div></div></div>
-        <div class="col"><div class="stat-card success"><div class="stat-value" id="stat-pharmacies">-</div><div class="stat-label">Pharmacies</div></div></div>
-        <div class="col"><div class="stat-card warning"><div class="stat-value" id="stat-drivers">-</div><div class="stat-label">Drivers</div></div></div>
-        <div class="col"><div class="stat-card"><div class="stat-value" id="stat-orders">-</div><div class="stat-label">Total Orders</div></div></div>
-    </div>
-    <div class="card">
-        <div class="card-header">Orders by Status</div>
-        <div class="card-body" id="status-breakdown"></div>
-    </div>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand"><h2>RX Expresss</h2><small>Admin Panel</small></div>
+        <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        <div class="sidebar-footer" id="sidebar-footer"></div>
+    </aside>
+    <main class="main-content">
+        <div class="topbar"><h1 id="page-title">Dashboard Overview</h1></div>
+        <div class="page-body">
+            <div id="alert-area"></div>
+            <div class="row mb-3" id="stats-row"></div>
+            <div class="row">
+                <div class="col"><div class="card"><div class="card-header">Recent Orders</div><div class="card-body table-wrap"><table><thead><tr><th>Order #</th><th>QR</th><th>Recipient</th><th>Status</th><th>Date</th></tr></thead><tbody id="recent-orders"><tr><td colspan="5" class="text-center"><span class="spinner"></span></td></tr></tbody></table></div></div></div>
+            </div>
+        </div>
+    </main>
 </div>
 <script src="/js/api-service.js"></script>
 <script>
-    if (!ApiService.requireAuth('Admin')) throw '';
-    setupNav();
-    (async () => {
-        try {
-            const data = await ApiService.get('/admin/dashboard');
-            const s = data.stats;
-            document.getElementById('stat-users').textContent = s.total_users;
-            document.getElementById('stat-pharmacies').textContent = s.total_pharmacies;
-            document.getElementById('stat-drivers').textContent = s.total_drivers;
-            document.getElementById('stat-orders').textContent = s.total_orders;
-            const statuses = s.orders_by_status || {};
-            let html = '<div class="d-flex flex-wrap gap-2">';
-            for (const [k,v] of Object.entries(statuses)) {
-                html += `<div class="stat-card" style="min-width:120px"><div class="stat-value">${v}</div><div class="stat-label">${statusBadge(k)}</div></div>`;
-            }
-            html += '</div>';
-            document.getElementById('status-breakdown').innerHTML = html || '<p class="text-gray">No orders yet</p>';
-        } catch (err) { showAlert('alert-area', 'danger', err.message); }
-    })();
+if (!ApiService.requireAuth('Admin')) throw '';
+const adminNav = [
+    { id:'overview', label:'Overview', href:'/admin/index.html', icon:Icons.dashboard },
+    { id:'users', label:'Users', href:'/admin/users.html', icon:Icons.users },
+    { id:'pharmacies', label:'Pharmacies', href:'/admin/pharmacies.html', icon:Icons.pharmacy },
+    { id:'drivers', label:'Drivers', href:'/admin/drivers.html', icon:Icons.truck },
+    { id:'orders', label:'Orders', href:'/admin/orders.html', icon:Icons.package },
+    { id:'routes', label:'Routes', href:'/admin/routes.html', icon:Icons.route },
+    { id:'pricing', label:'Pricing', href:'/admin/pricing.html', icon:Icons.dollar },
+    { id:'scanning', label:'QR Scanning', href:'/admin/scanning.html', icon:Icons.qrcode },
+    { id:'zones', label:'Service Zones', href:'/admin/zones.html', icon:Icons.mapPin },
+    { id:'reports', label:'Reports', href:'/admin/reports.html', icon:Icons.barChart },
+];
+setupSidebar(adminNav, 'overview');
+
+(async () => {
+    try {
+        const d = await ApiService.get('/admin/dashboard');
+        const s = d.stats;
+        document.getElementById('stats-row').innerHTML = `
+            <div class="col"><div class="stat-card"><div class="stat-icon teal">${Icons.users}</div><div class="stat-value">${s.total_users}</div><div class="stat-label">Total Users</div></div></div>
+            <div class="col"><div class="stat-card"><div class="stat-icon blue">${Icons.pharmacy}</div><div class="stat-value">${s.total_pharmacies}</div><div class="stat-label">Pharmacies</div></div></div>
+            <div class="col"><div class="stat-card"><div class="stat-icon green">${Icons.truck}</div><div class="stat-value">${s.active_drivers}</div><div class="stat-label">Active Drivers</div></div></div>
+            <div class="col"><div class="stat-card"><div class="stat-icon amber">${Icons.package}</div><div class="stat-value">${s.total_orders}</div><div class="stat-label">Total Orders</div></div></div>`;
+        const orders = await ApiService.get('/admin/orders?limit=10');
+        const tbody = document.getElementById('recent-orders');
+        tbody.innerHTML = orders.orders.length ? orders.orders.map(o => `<tr><td><strong>${o.orderNumber}</strong></td><td>${o.qrCode||'-'}</td><td>${o.recipientName}</td><td>${statusBadge(o.status)}</td><td>${formatDate(o.createdAt)}</td></tr>`).join('') : '<tr><td colspan="5" class="text-center text-gray">No orders yet</td></tr>';
+    } catch(e) { showAlert('alert-area','danger',e.message); }
+})();
 </script>
-</body>
-</html>
+</body></html>
