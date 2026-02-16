@@ -1,0 +1,12 @@
+/app/rxexpresss-solution/RxExpresss.Core/bin/Debug/net8.0/RxExpresss.Core.deps.json
+/app/rxexpresss-solution/RxExpresss.Core/bin/Debug/net8.0/RxExpresss.Core.dll
+/app/rxexpresss-solution/RxExpresss.Core/bin/Debug/net8.0/RxExpresss.Core.pdb
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/RxExpresss.Core.csproj.AssemblyReference.cache
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/RxExpresss.Core.GeneratedMSBuildEditorConfig.editorconfig
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/RxExpresss.Core.AssemblyInfoInputs.cache
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/RxExpresss.Core.AssemblyInfo.cs
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/RxExpresss.Core.csproj.CoreCompileInputs.cache
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/RxExpresss.Core.dll
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/refint/RxExpresss.Core.dll
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/RxExpresss.Core.pdb
+/app/rxexpresss-solution/RxExpresss.Core/obj/Debug/net8.0/ref/RxExpresss.Core.dll
