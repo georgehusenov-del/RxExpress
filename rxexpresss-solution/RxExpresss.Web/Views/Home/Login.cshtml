@@ -19,16 +19,29 @@
 </div>
 @section Scripts {
 <script>
-    if (ApiService.isLoggedIn()) { const u = ApiService.getUser(); if (u) window.location.href = `/${u.role}/`; }
+    if (ApiService.isLoggedIn()) {
+        const u = ApiService.getUser();
+        if (u) window.location.replace('/' + u.role + '/Index');
+    }
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('login-btn');
         btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Signing in...';
         try {
-            const d = await ApiService.login(document.getElementById('email').value, document.getElementById('password').value);
-            if (d) window.location.href = `/${d.user.role}/`;
-        } catch (err) { showAlert('alert-area', 'danger', err.message); }
-        btn.disabled = false; btn.textContent = 'Sign In';
+            const d = await ApiService.login(
+                document.getElementById('email').value,
+                document.getElementById('password').value
+            );
+            if (d && d.user) {
+                window.location.replace('/' + d.user.role + '/Index');
+            } else {
+                showAlert('alert-area', 'danger', 'Login failed - no response');
+                btn.disabled = false; btn.textContent = 'Sign In';
+            }
+        } catch (err) {
+            showAlert('alert-area', 'danger', err.message);
+            btn.disabled = false; btn.textContent = 'Sign In';
+        }
     });
 </script>
 }
