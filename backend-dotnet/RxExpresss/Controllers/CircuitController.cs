@@ -463,14 +463,130 @@ public class CircuitController : ControllerBase
             return NotFound(new { detail = "Plan not found" });
         }
         
-        // Remove plan reference from orders
         var orderUpdate = Builders<Order>.Update.Set(o => o.CircuitPlanId, (string?)null);
         await _db.Orders.UpdateManyAsync(o => plan.OrderIds.Contains(o.Id), orderUpdate);
         
-        // Delete the plan
         await RoutePlans.DeleteOneAsync(p => p.Id == planId);
         
         return Ok(new { message = "Plan deleted successfully" });
+    }
+    
+    [HttpPut("route-plans/{planId}")]
+    public async Task<ActionResult> UpdateRoutePlan(string planId, [FromBody] UpdatePlanDto dto)
+    {
+        var plan = await RoutePlans.Find(p => p.Id == planId).FirstOrDefaultAsync();
+        if (plan == null) return NotFound(new { detail = "Plan not found" });
+        
+        var updateDefs = new List<UpdateDefinition<RoutePlan>>();
+        if (!string.IsNullOrEmpty(dto.Title))
+            updateDefs.Add(Builders<RoutePlan>.Update.Set(p => p.Title, dto.Title));
+        if (!string.IsNullOrEmpty(dto.Date))
+            updateDefs.Add(Builders<RoutePlan>.Update.Set(p => p.Date, dto.Date));
+        if (dto.DriverIds != null)
+            updateDefs.Add(Builders<RoutePlan>.Update.Set(p => p.DriverIds, dto.DriverIds));
+        updateDefs.Add(Builders<RoutePlan>.Update.Set(p => p.UpdatedAt, DateTime.UtcNow.ToString("o")));
+        
+        await RoutePlans.UpdateOneAsync(p => p.Id == planId, Builders<RoutePlan>.Update.Combine(updateDefs));
+        return Ok(new { message = "Plan updated" });
+    }
+    
+    [HttpDelete("order/{orderId}/unlink")]
+    public async Task<ActionResult> UnlinkOrderFromPlan(string orderId)
+    {
+        var order = await _db.Orders.Find(o => o.Id == orderId).FirstOrDefaultAsync();
+        if (order == null) return NotFound(new { detail = "Order not found" });
+        
+        if (!string.IsNullOrEmpty(order.CircuitPlanId))
+        {
+            var planUpdate = Builders<RoutePlan>.Update.Pull(p => p.OrderIds, orderId);
+            await RoutePlans.UpdateOneAsync(p => p.Id == order.CircuitPlanId, planUpdate);
+        }
+        
+        var orderUpdate = Builders<Order>.Update
+            .Set(o => o.CircuitPlanId, (string?)null)
+            .Set(o => o.CircuitStopId, (string?)null)
+            .Set(o => o.UpdatedAt, DateTime.UtcNow.ToString("o"));
+        await _db.Orders.UpdateOneAsync(o => o.Id == orderId, orderUpdate);
+        
+        return Ok(new { message = "Order unlinked from plan" });
+    }
+    
+    [HttpPost("plans/{planId}/assign-driver")]
+    public async Task<ActionResult> AssignDriverToPlan(string planId, [FromBody] AssignDriverDto dto)
+    {
+        var plan = await RoutePlans.Find(p => p.Id == planId).FirstOrDefaultAsync();
+        if (plan == null) return NotFound(new { detail = "Plan not found" });
+        
+        var driver = await _db.Drivers.Find(d => d.Id == dto.DriverId).FirstOrDefaultAsync();
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+        
+        if (!plan.DriverIds.Contains(dto.DriverId))
+        {
+            var planUpdate = Builders<RoutePlan>.Update
+                .Push(p => p.DriverIds, dto.DriverId)
+                .Set(p => p.UpdatedAt, DateTime.UtcNow.ToString("o"));
+            await RoutePlans.UpdateOneAsync(p => p.Id == planId, planUpdate);
+        }
+        
+        var user = await _db.Users.Find(u => u.Id == driver.UserId).FirstOrDefaultAsync();
+        var driverName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
+        
+        var orderUpdate = Builders<Order>.Update
+            .Set(o => o.DriverId, dto.DriverId)
+            .Set(o => o.DriverName, driverName)
+            .Set(o => o.Status, "assigned")
+            .Set(o => o.UpdatedAt, DateTime.UtcNow.ToString("o"));
+        await _db.Orders.UpdateManyAsync(o => plan.OrderIds.Contains(o.Id), orderUpdate);
+        
+        return Ok(new { message = $"Driver {driverName} assigned to plan", driver_name = driverName });
+    }
+    
+    [HttpPost("auto-assign-by-borough")]
+    public async Task<ActionResult> AutoAssignByBorough([FromBody] AutoAssignDto? dto = null)
+    {
+        var status = dto?.Status ?? "out_for_delivery";
+        var orders = await _db.Orders.Find(o => o.Status == "new" || o.Status == "pending").ToListAsync();
+        
+        if (orders.Count == 0)
+            return Ok(new { message = "No orders to assign", assigned = 0 });
+        
+        var boroughGroups = new Dictionary<string, List<Order>>();
+        foreach (var order in orders)
+        {
+            var borough = "X";
+            if (!string.IsNullOrEmpty(order.QrCode) && order.QrCode.Length > 0)
+                borough = order.QrCode[0].ToString();
+            if (!boroughGroups.ContainsKey(borough))
+                boroughGroups[borough] = new List<Order>();
+            boroughGroups[borough].Add(order);
+        }
+        
+        var assigned = 0;
+        var drivers = await _db.Drivers.Find(d => d.Status != "offline").ToListAsync();
+        
+        if (drivers.Count == 0)
+            return Ok(new { message = "No available drivers", assigned = 0 });
+        
+        var driverIndex = 0;
+        foreach (var group in boroughGroups)
+        {
+            var driver = drivers[driverIndex % drivers.Count];
+            var user = await _db.Users.Find(u => u.Id == driver.UserId).FirstOrDefaultAsync();
+            var driverName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
+            
+            var orderIds = group.Value.Select(o => o.Id).ToList();
+            var update = Builders<Order>.Update
+                .Set(o => o.DriverId, driver.Id)
+                .Set(o => o.DriverName, driverName)
+                .Set(o => o.Status, status)
+                .Set(o => o.UpdatedAt, DateTime.UtcNow.ToString("o"));
+            await _db.Orders.UpdateManyAsync(o => orderIds.Contains(o.Id), update);
+            
+            assigned += orderIds.Count;
+            driverIndex++;
+        }
+        
+        return Ok(new { message = $"Auto-assigned {assigned} orders", assigned, boroughs = boroughGroups.Keys.ToList() });
     }
     
     [HttpGet("plans/{planId}/stops")]
