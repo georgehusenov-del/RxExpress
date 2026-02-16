@@ -6,5 +6,5 @@ public class HomeController : Controller
 {
     [HttpGet("/")]
     [HttpGet("/login")]
-    public IActionResult Login() => View();
+    public IActionResult Index() => View("Login");
 }
