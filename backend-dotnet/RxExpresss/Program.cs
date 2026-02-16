@@ -95,20 +95,6 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.MapControllers();
 
-// Active pricing public endpoint
-app.MapGet("/api/pricing/active", async (RxExpresss.Services.MongoDbService db) =>
-{
-    var pricing = await db.Pricing.Find(p => p.IsActive).ToListAsync();
-    var pricingList = pricing.Select(p => new
-    {
-        id = p.Id, delivery_type = p.DeliveryType, name = p.Name,
-        description = p.Description, base_price = p.BasePrice, is_active = p.IsActive,
-        time_window_start = p.TimeWindowStart, time_window_end = p.TimeWindowEnd,
-        cutoff_time = p.CutoffTime, is_addon = p.IsAddon
-    }).ToList();
-    return Results.Ok(new { pricing = pricingList, count = pricingList.Count });
-});
-
 // Health check endpoint
 app.MapGet("/", () => Results.Ok(new { status = "healthy", service = "RX Expresss API", version = "1.0.0" }));
 app.MapGet("/api", () => Results.Ok(new { status = "healthy", service = "RX Expresss API", version = "1.0.0" }));
