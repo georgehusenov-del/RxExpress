@@ -68,7 +68,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<JwtService>();
 
-// CORS
+// CORS - allow Web project to call API
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
@@ -78,24 +78,21 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Ensure wwwroot exists
+var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+if (!Directory.Exists(wwwrootPath))
+    Directory.CreateDirectory(wwwrootPath);
+
 // Seed DB
 using (var scope = app.Services.CreateScope())
 {
     await DbSeeder.SeedAsync(scope.ServiceProvider);
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
-// Serve static files only if wwwroot exists
-var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
-if (!Directory.Exists(wwwrootPath))
-    Directory.CreateDirectory(wwwrootPath);
 app.UseStaticFiles();
-
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -103,11 +100,5 @@ app.MapControllers();
 
 // Health
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy" }));
-
-// Use port 8001 only if not already configured by launchSettings
-if (!app.Urls.Any())
-{
-    app.Urls.Add("http://0.0.0.0:8001");
-}
 
 app.Run();
