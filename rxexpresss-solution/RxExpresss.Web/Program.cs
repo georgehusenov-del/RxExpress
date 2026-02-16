@@ -13,7 +13,10 @@ app.MapGet("/Admin", () => Results.Redirect("/Admin/Index"));
 app.MapGet("/Pharmacy", () => Results.Redirect("/Pharmacy/Index"));
 app.MapGet("/Driver", () => Results.Redirect("/Driver/Index"));
 
-app.Urls.Clear();
-app.Urls.Add("http://0.0.0.0:3000");
+// Use port 3000 only if not already configured by launchSettings
+if (!app.Urls.Any())
+{
+    app.Urls.Add("http://0.0.0.0:3000");
+}
 
 app.Run();
