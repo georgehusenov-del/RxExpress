@@ -1,0 +1,6 @@
+@RxExpresss.API_HostAddress = http://localhost:5282
+
+GET {{RxExpresss.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
