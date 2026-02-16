@@ -1,0 +1,55 @@
+@{
+    var role = ViewData["Role"]?.ToString() ?? "Admin";
+    var portalName = ViewData["PortalName"]?.ToString() ?? "Admin Panel";
+    var navItems = ViewData["NavItems"] as List<(string Id, string Label, string Href, string Icon)> 
+        ?? new List<(string, string, string, string)>();
+    var activeId = ViewData["ActiveNav"]?.ToString() ?? "";
+    var apiBaseUrl = ViewData["ApiBaseUrl"]?.ToString() ?? "/api";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RX Expresss</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>RX Expresss</h2>
+            <small>@portalName</small>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav">
+            @foreach (var item in navItems)
+            {
+                <a href="@item.Href" class="@(item.Id == activeId ? "active" : "")">@Html.Raw(item.Icon)@item.Label</a>
+            }
+        </nav>
+        <div class="sidebar-footer" id="sidebar-footer"></div>
+    </aside>
+    <main class="main-content">
+        <div class="topbar">
+            <h1>@ViewData["PageTitle"]</h1>
+            @await RenderSectionAsync("TopbarRight", required: false)
+        </div>
+        <div class="page-body">
+            <div id="alert-area"></div>
+            @RenderBody()
+        </div>
+    </main>
+</div>
+<script>const API_BASE_URL = '@apiBaseUrl';</script>
+<script src="~/js/api-service.js"></script>
+<script>
+    // Setup sidebar footer with user info
+    const user = ApiService.getUser();
+    const sf = document.getElementById('sidebar-footer');
+    if (sf && user) {
+        sf.innerHTML = `<div class="user-name">${user.firstName} ${user.lastName}</div><div class="user-role">${user.role}</div><button class="logout-btn" onclick="ApiService.logout()">Sign Out</button>`;
+    }
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
