@@ -33,12 +33,26 @@ public class AdminController : ControllerBase
         var totalPharmacies = await _pharmacies.Query().CountAsync();
         var totalDrivers = await _drivers.Query().CountAsync();
         var activeDrivers = await _drivers.Query().CountAsync(d => d.Status != "offline");
-        var totalOrders = await _orders.Query().CountAsync();
+        var allOrders = await _orders.Query().ToListAsync();
+        var totalOrders = allOrders.Count;
 
-        var ordersByStatus = await _orders.Query()
-            .GroupBy(o => o.Status)
-            .Select(g => new { status = g.Key, count = g.Count() })
-            .ToDictionaryAsync(x => x.status, x => x.count);
+        var ordersByStatus = allOrders.GroupBy(o => o.Status).ToDictionary(g => g.Key, g => g.Count());
+
+        // Copay stats
+        var copayPending = allOrders.Where(o => o.CopayAmount > 0 && !o.CopayCollected && o.Status != "cancelled").ToList();
+        var copayCollected = allOrders.Where(o => o.CopayCollected).ToList();
+
+        // Borough stats from QR codes
+        var boroughStats = new Dictionary<string, int>();
+        foreach (var o in allOrders.Where(o => !string.IsNullOrEmpty(o.QrCode) && o.Status != "delivered" && o.Status != "cancelled"))
+        {
+            var b = o.QrCode![0].ToString();
+            boroughStats[b] = boroughStats.GetValueOrDefault(b, 0) + 1;
+        }
+
+        // Today's delivered
+        var today = DateTime.UtcNow.Date;
+        var deliveredToday = allOrders.Count(o => o.Status == "delivered" && o.ActualDeliveryTime?.Date == today);
 
         return Ok(new
         {
@@ -46,8 +60,20 @@ public class AdminController : ControllerBase
             {
                 total_users = totalUsers, total_pharmacies = totalPharmacies,
                 total_drivers = totalDrivers, active_drivers = activeDrivers,
-                total_orders = totalOrders, orders_by_status = ordersByStatus
-            }
+                total_orders = totalOrders, orders_by_status = ordersByStatus,
+                copay_to_collect = copayPending.Sum(o => o.CopayAmount),
+                copay_collected = copayCollected.Sum(o => o.CopayAmount),
+                orders_copay_pending = copayPending.Count,
+                orders_copay_collected = copayCollected.Count,
+                borough_stats = boroughStats,
+                delivered_today = deliveredToday,
+                new_orders = ordersByStatus.GetValueOrDefault("new", 0),
+                out_for_delivery = ordersByStatus.GetValueOrDefault("out_for_delivery", 0)
+            },
+            recent_orders = allOrders.OrderByDescending(o => o.CreatedAt).Take(10).Select(o => new {
+                o.Id, o.OrderNumber, o.QrCode, o.PharmacyName, o.RecipientName, o.City,
+                o.Status, o.DeliveryType, o.CopayAmount, o.CopayCollected, o.DriverName, o.CreatedAt
+            })
         });
     }
 
