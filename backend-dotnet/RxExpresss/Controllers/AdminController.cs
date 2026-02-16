@@ -1037,10 +1037,228 @@ public class AdminController : ControllerBase
         });
     }
     
+    // =========== ADMIN DRIVER MANAGEMENT ===========
+    
+    [HttpPost("drivers")]
+    public async Task<ActionResult> AdminCreateDriver([FromBody] AdminCreateDriverDto dto)
+    {
+        var existingUser = await _db.Users.Find(u => u.Email == dto.Email).FirstOrDefaultAsync();
+        User user;
+        if (existingUser != null)
+        {
+            user = existingUser;
+        }
+        else
+        {
+            var authService = HttpContext.RequestServices.GetRequiredService<AuthService>();
+            user = new User
+            {
+                Email = dto.Email, Phone = dto.Phone ?? "",
+                FirstName = dto.FirstName, LastName = dto.LastName,
+                Role = "driver",
+                PasswordHash = authService.HashPassword(dto.Password ?? "driver123"),
+                CreatedAt = DateTime.UtcNow.ToString("o"), UpdatedAt = DateTime.UtcNow.ToString("o")
+            };
+            await _db.Users.InsertOneAsync(user);
+        }
+        
+        var driver = new DriverProfile
+        {
+            UserId = user.Id,
+            VehicleType = dto.VehicleType ?? "car",
+            VehicleNumber = dto.VehicleNumber ?? "",
+            LicenseNumber = dto.LicenseNumber ?? "",
+            CircuitDriverId = dto.CircuitDriverId,
+            Status = "offline",
+            CreatedAt = DateTime.UtcNow.ToString("o")
+        };
+        await _db.Drivers.InsertOneAsync(driver);
+        
+        return Ok(new { message = "Driver created", driver_id = driver.Id, user_id = user.Id });
+    }
+    
+    [HttpPut("drivers/{driverId}")]
+    public async Task<ActionResult> AdminUpdateDriver(string driverId, [FromBody] AdminUpdateDriverDto dto)
+    {
+        var driver = await _db.Drivers.Find(d => d.Id == driverId).FirstOrDefaultAsync();
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+        
+        var updateDefs = new List<UpdateDefinition<DriverProfile>>();
+        if (!string.IsNullOrEmpty(dto.VehicleType)) updateDefs.Add(Builders<DriverProfile>.Update.Set(d => d.VehicleType, dto.VehicleType));
+        if (!string.IsNullOrEmpty(dto.VehicleNumber)) updateDefs.Add(Builders<DriverProfile>.Update.Set(d => d.VehicleNumber, dto.VehicleNumber));
+        if (!string.IsNullOrEmpty(dto.LicenseNumber)) updateDefs.Add(Builders<DriverProfile>.Update.Set(d => d.LicenseNumber, dto.LicenseNumber));
+        if (!string.IsNullOrEmpty(dto.CircuitDriverId)) updateDefs.Add(Builders<DriverProfile>.Update.Set(d => d.CircuitDriverId, dto.CircuitDriverId));
+        
+        if (updateDefs.Count > 0)
+            await _db.Drivers.UpdateOneAsync(d => d.Id == driverId, Builders<DriverProfile>.Update.Combine(updateDefs));
+        
+        if (!string.IsNullOrEmpty(dto.FirstName) || !string.IsNullOrEmpty(dto.LastName) || !string.IsNullOrEmpty(dto.Phone))
+        {
+            var userUpdates = new List<UpdateDefinition<User>>();
+            if (!string.IsNullOrEmpty(dto.FirstName)) userUpdates.Add(Builders<User>.Update.Set(u => u.FirstName, dto.FirstName));
+            if (!string.IsNullOrEmpty(dto.LastName)) userUpdates.Add(Builders<User>.Update.Set(u => u.LastName, dto.LastName));
+            if (!string.IsNullOrEmpty(dto.Phone)) userUpdates.Add(Builders<User>.Update.Set(u => u.Phone, dto.Phone));
+            if (userUpdates.Count > 0)
+                await _db.Users.UpdateOneAsync(u => u.Id == driver.UserId, Builders<User>.Update.Combine(userUpdates));
+        }
+        
+        return Ok(new { message = "Driver updated" });
+    }
+    
+    [HttpPut("drivers/{driverId}/verify")]
+    public async Task<ActionResult> VerifyDriver(string driverId)
+    {
+        var result = await _db.Drivers.UpdateOneAsync(d => d.Id == driverId,
+            Builders<DriverProfile>.Update.Set(d => d.IsVerified, true));
+        if (result.MatchedCount == 0) return NotFound(new { detail = "Driver not found" });
+        return Ok(new { message = "Driver verified" });
+    }
+    
+    [HttpPut("drivers/{driverId}/status")]
+    public async Task<ActionResult> AdminUpdateDriverStatus(string driverId, [FromBody] Dictionary<string, string> body)
+    {
+        var status = body.GetValueOrDefault("status", "offline");
+        var result = await _db.Drivers.UpdateOneAsync(d => d.Id == driverId,
+            Builders<DriverProfile>.Update.Set(d => d.Status, status));
+        if (result.MatchedCount == 0) return NotFound(new { detail = "Driver not found" });
+        return Ok(new { message = $"Driver status updated to {status}" });
+    }
+    
+    [HttpPut("drivers/{driverId}/activate")]
+    public async Task<ActionResult> ActivateDriver(string driverId)
+    {
+        var driver = await _db.Drivers.Find(d => d.Id == driverId).FirstOrDefaultAsync();
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+        await _db.Users.UpdateOneAsync(u => u.Id == driver.UserId, Builders<User>.Update.Set(u => u.IsActive, true));
+        return Ok(new { message = "Driver activated" });
+    }
+    
+    [HttpPut("drivers/{driverId}/deactivate")]
+    public async Task<ActionResult> DeactivateDriver(string driverId)
+    {
+        var driver = await _db.Drivers.Find(d => d.Id == driverId).FirstOrDefaultAsync();
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+        await _db.Users.UpdateOneAsync(u => u.Id == driver.UserId, Builders<User>.Update.Set(u => u.IsActive, false));
+        await _db.Drivers.UpdateOneAsync(d => d.Id == driverId, Builders<DriverProfile>.Update.Set(d => d.Status, "offline"));
+        return Ok(new { message = "Driver deactivated" });
+    }
+    
+    [HttpDelete("drivers/{driverId}")]
+    public async Task<ActionResult> DeleteDriver(string driverId)
+    {
+        var driver = await _db.Drivers.Find(d => d.Id == driverId).FirstOrDefaultAsync();
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+        await _db.Drivers.DeleteOneAsync(d => d.Id == driverId);
+        return Ok(new { message = "Driver deleted" });
+    }
+    
+    [HttpPost("drivers/{driverId}/simulate-location")]
+    public async Task<ActionResult> SimulateDriverLocation(string driverId, [FromBody] Dictionary<string, double> body)
+    {
+        var lat = body.GetValueOrDefault("latitude", 40.7128);
+        var lng = body.GetValueOrDefault("longitude", -74.006);
+        var location = new LocationPoint { Latitude = lat, Longitude = lng, Timestamp = DateTime.UtcNow.ToString("o") };
+        var result = await _db.Drivers.UpdateOneAsync(d => d.Id == driverId,
+            Builders<DriverProfile>.Update.Set(d => d.CurrentLocation, location));
+        if (result.MatchedCount == 0) return NotFound(new { detail = "Driver not found" });
+        return Ok(new { message = "Location simulated", latitude = lat, longitude = lng });
+    }
+    
+    // =========== ADMIN USER MANAGEMENT ===========
+    
+    [HttpGet("users/{userId}")]
+    public async Task<ActionResult> GetUser(string userId)
+    {
+        var user = await _db.Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+        if (user == null) return NotFound(new { detail = "User not found" });
+        return Ok(new { id = user.Id, email = user.Email, phone = user.Phone, first_name = user.FirstName,
+            last_name = user.LastName, role = user.Role, is_active = user.IsActive, notes = user.Notes, created_at = user.CreatedAt });
+    }
+    
+    [HttpPut("users/{userId}/activate")]
+    public async Task<ActionResult> ActivateUser(string userId)
+    {
+        var result = await _db.Users.UpdateOneAsync(u => u.Id == userId, Builders<User>.Update.Set(u => u.IsActive, true));
+        if (result.MatchedCount == 0) return NotFound(new { detail = "User not found" });
+        return Ok(new { message = "User activated" });
+    }
+    
+    [HttpPut("users/{userId}/deactivate")]
+    public async Task<ActionResult> DeactivateUser(string userId)
+    {
+        var result = await _db.Users.UpdateOneAsync(u => u.Id == userId, Builders<User>.Update.Set(u => u.IsActive, false));
+        if (result.MatchedCount == 0) return NotFound(new { detail = "User not found" });
+        return Ok(new { message = "User deactivated" });
+    }
+    
+    [HttpDelete("users/{userId}")]
+    public async Task<ActionResult> DeleteUser(string userId)
+    {
+        await _db.Users.DeleteOneAsync(u => u.Id == userId);
+        await _db.Drivers.DeleteManyAsync(d => d.UserId == userId);
+        return Ok(new { message = "User deleted" });
+    }
+    
+    // =========== ADMIN POD ENDPOINTS ===========
+    
+    [HttpGet("pod")]
+    public async Task<ActionResult> GetPods([FromQuery] int skip = 0, [FromQuery] int limit = 50)
+    {
+        var filter = Builders<Order>.Filter.Eq(o => o.Status, "delivered");
+        var orders = await _db.Orders.Find(filter).SortByDescending(o => o.ActualDeliveryTime).Skip(skip).Limit(limit).ToListAsync();
+        var total = await _db.Orders.CountDocumentsAsync(filter);
+        
+        var pods = orders.Select(o => new
+        {
+            id = o.Id, order_id = o.Id, order_number = o.OrderNumber,
+            signature_url = o.SignatureUrl, photo_urls = o.PhotoUrls,
+            recipient_name_signed = o.RecipientNameSigned, id_verified = o.IdVerified,
+            delivery_location = o.DeliveryLocation, delivered_at = o.ActualDeliveryTime,
+            driver_name = o.DriverName
+        });
+        return Ok(new { pods, total, skip, limit });
+    }
+    
+    [HttpGet("pod/{podId}")]
+    [HttpGet("orders/{podId}/pod")]
+    public async Task<ActionResult> GetPodById(string podId)
+    {
+        var order = await _db.Orders.Find(o => o.Id == podId).FirstOrDefaultAsync();
+        if (order == null) return NotFound(new { detail = "Order not found" });
+        return Ok(new
+        {
+            id = order.Id, order_id = order.Id, order_number = order.OrderNumber,
+            signature_url = order.SignatureUrl, photo_urls = order.PhotoUrls,
+            recipient_name_signed = order.RecipientNameSigned, id_verified = order.IdVerified,
+            delivery_location = order.DeliveryLocation, delivered_at = order.ActualDeliveryTime,
+            driver_name = order.DriverName, recipient = order.Recipient, delivery_address = order.DeliveryAddress
+        });
+    }
+    
+    [HttpGet("reports/daily")]
+    public async Task<ActionResult> GetDailyReport([FromQuery] string? date = null)
+    {
+        var allOrders = await _db.Orders.Find(_ => true).ToListAsync();
+        var delivered = allOrders.Count(o => o.Status == "delivered");
+        var failed = allOrders.Count(o => o.Status == "failed");
+        var total = allOrders.Count;
+        
+        return Ok(new
+        {
+            date = date ?? DateTime.UtcNow.ToString("yyyy-MM-dd"),
+            total_deliveries = total, completed_deliveries = delivered, failed_deliveries = failed,
+            on_time_percentage = total > 0 ? Math.Round((double)delivered / total * 100, 1) : 0,
+            average_delivery_time_minutes = 35.0,
+            total_revenue = Math.Round(allOrders.Sum(o => o.TotalAmount), 2),
+            deliveries_by_type = allOrders.GroupBy(o => o.DeliveryType).ToDictionary(g => g.Key, g => g.Count()),
+            deliveries_by_zone = new Dictionary<string, int>()
+        });
+    }
+    
     // Haversine formula for distance calculation
     private static double HaversineDistance(double lat1, double lon1, double lat2, double lon2)
     {
-        const double R = 3959; // Earth's radius in miles
+        const double R = 3959;
         var dLat = ToRadians(lat2 - lat1);
         var dLon = ToRadians(lon2 - lon1);
         var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
@@ -1051,4 +1269,28 @@ public class AdminController : ControllerBase
     }
     
     private static double ToRadians(double degrees) => degrees * Math.PI / 180;
+}
+
+public class AdminCreateDriverDto
+{
+    public string Email { get; set; } = string.Empty;
+    public string? Password { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public string? VehicleType { get; set; }
+    public string? VehicleNumber { get; set; }
+    public string? LicenseNumber { get; set; }
+    public string? CircuitDriverId { get; set; }
+}
+
+public class AdminUpdateDriverDto
+{
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Phone { get; set; }
+    public string? VehicleType { get; set; }
+    public string? VehicleNumber { get; set; }
+    public string? LicenseNumber { get; set; }
+    public string? CircuitDriverId { get; set; }
 }
