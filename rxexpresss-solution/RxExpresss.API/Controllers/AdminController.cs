@@ -100,6 +100,35 @@ public class AdminController : ControllerBase
         return Ok(new { message = $"Status updated to {dto.Status}" });
     }
 
+    [HttpPut("orders/{id}/assign")]
+    public async Task<IActionResult> AssignDriver(int id, [FromBody] Dictionary<string, int> body)
+    {
+        var order = await _orders.GetByIdAsync(id);
+        if (order == null) return NotFound();
+        var driverId = body.GetValueOrDefault("driverId", 0);
+        var driver = await _drivers.GetByIdAsync(driverId);
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+        var user = await _userManager.FindByIdAsync(driver.UserId);
+        order.DriverId = driverId;
+        order.DriverName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
+        order.Status = "assigned";
+        order.UpdatedAt = DateTime.UtcNow;
+        await _orders.UpdateAsync(order);
+        return Ok(new { message = "Driver assigned", driverName = order.DriverName });
+    }
+
+    [HttpPost("scan/{qrCode}")]
+    public async Task<IActionResult> ScanQr(string qrCode)
+    {
+        var order = await _orders.Query().FirstOrDefaultAsync(o => o.QrCode == qrCode);
+        if (order == null) return NotFound(new { detail = "No package found with this QR code", verified = false });
+        return Ok(new {
+            verified = true, message = "Package verified!",
+            package = new { order.Id, order.OrderNumber, order.QrCode, order.PharmacyName, order.RecipientName,
+                address = $"{order.Street}, {order.City}", order.Status, order.CopayAmount, order.CopayCollected, order.DriverName }
+        });
+    }
+
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers([FromQuery] string? role)
     {
