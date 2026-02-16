@@ -1,11 +1,19 @@
 {
   "Version": 1,
-  "Hash": "by1Ul7Ggpsfd+w2yo9d6BbyouX0V5kNm7Sw8vAOiZKk=",
+  "Hash": "IAwMUS04HSnBez0LH6c23xfC5kb7jrT4Odhl6gr5O5Q=",
   "Source": "RxExpresss.API",
   "BasePath": "_content/RxExpresss.API",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "RxExpresss.API/wwwroot",
+      "Source": "RxExpresss.API",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/",
+      "BasePath": "_content/RxExpresss.API",
+      "Pattern": "**"
+    }
+  ],
   "Assets": []
 }
