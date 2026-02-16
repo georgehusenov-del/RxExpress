@@ -4,6 +4,8 @@ using System.Text.Json.Serialization;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver;
+using RxExpresss.Models;
 using RxExpresss.Services;
 
 var builder = WebApplication.CreateBuilder(args);
