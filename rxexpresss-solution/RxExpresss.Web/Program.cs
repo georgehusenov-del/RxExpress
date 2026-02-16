@@ -1,7 +1,17 @@
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
+// Store API base URL in configuration for views
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "/api";
+
 var app = builder.Build();
+
+// Make ApiBaseUrl available to all controllers/views
+app.Use(async (context, next) =>
+{
+    context.Items["ApiBaseUrl"] = apiBaseUrl;
+    await next();
+});
 
 app.UseStaticFiles();
 app.UseRouting();
