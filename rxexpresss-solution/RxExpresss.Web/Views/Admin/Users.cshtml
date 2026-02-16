@@ -1,0 +1,10 @@
+@{ Layout = "_SidebarLayout"; }
+@section TopbarRight { <select class="form-control" style="width:160px" id="rf" onchange="load()"><option value="">All Roles</option><option value="Admin">Admin</option><option value="Pharmacy">Pharmacy</option><option value="Driver">Driver</option><option value="Patient">Patient</option></select> }
+<div class="card"><div class="card-body table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Active</th><th>Joined</th></tr></thead><tbody id="tbl"></tbody></table></div></div>
+@section Scripts {
+<script>
+if(!ApiService.requireAuth('Admin'))throw'';
+async function load(){const r=document.getElementById('rf').value;const d=await ApiService.get(r?`/admin/users?role=${r}`:'/admin/users');document.getElementById('tbl').innerHTML=d.users.length?d.users.map(u=>`<tr><td><strong>${u.firstName} ${u.lastName}</strong></td><td>${u.email}</td><td>${u.phone||'-'}</td><td><span class="badge badge-available">${u.role}</span></td><td>${u.isActive?'<span class="text-success">Active</span>':'<span class="text-danger">Inactive</span>'}</td><td>${formatDate(u.createdAt)}</td></tr>`).join(''):'<tr><td colspan="6" class="text-center text-gray">No users</td></tr>';}
+load();
+</script>
+}
