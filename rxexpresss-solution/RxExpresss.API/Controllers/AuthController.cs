@@ -81,7 +81,9 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Me()
     {
-        var user = await _userManager.FindByIdAsync(User.FindFirst("sub")?.Value ?? "");
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+            ?? User.FindFirst("sub")?.Value ?? "";
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null) return Unauthorized();
         var roles = await _userManager.GetRolesAsync(user);
 

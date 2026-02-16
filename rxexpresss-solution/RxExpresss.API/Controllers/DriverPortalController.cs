@@ -23,7 +23,8 @@ public class DriverPortalController : ControllerBase
 
     private async Task<DriverProfile?> GetMyDriver()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+            ?? User.FindFirst("sub")?.Value;
         return await _drivers.Query().FirstOrDefaultAsync(d => d.UserId == userId);
     }
 

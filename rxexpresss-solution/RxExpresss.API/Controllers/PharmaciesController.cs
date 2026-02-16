@@ -34,7 +34,8 @@ public class PharmaciesController : ControllerBase
     [Authorize(Roles = AppRoles.Pharmacy)]
     public async Task<IActionResult> My()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+            ?? User.FindFirst("sub")?.Value;
         var pharmacy = await _pharmacies.Query().FirstOrDefaultAsync(p => p.UserId == userId);
         return pharmacy == null ? NotFound(new { detail = "Pharmacy not found" }) : Ok(pharmacy);
     }
@@ -43,7 +44,8 @@ public class PharmaciesController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Register([FromBody] CreatePharmacyDto dto)
     {
-        var userId = User.FindFirst("sub")?.Value ?? "";
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+            ?? User.FindFirst("sub")?.Value ?? "";
         var pharmacy = new Pharmacy
         {
             UserId = userId, Name = dto.Name, LicenseNumber = dto.LicenseNumber,
