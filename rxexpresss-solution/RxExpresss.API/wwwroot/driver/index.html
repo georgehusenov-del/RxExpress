@@ -1,21 +1,29 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Driver Portal - RX Expresss</title><link rel="stylesheet" href="/css/style.css"></head>
-<body>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Driver Portal - RX Expresss</title><link rel="stylesheet" href="/css/style.css">
+<style>
+.stop-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--primary);color:white;font-weight:700;font-size:13px;margin-right:8px}
+.nav-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius);border:1px solid var(--border);background:white;cursor:pointer;font-size:12px;color:var(--info);text-decoration:none}
+.nav-btn:hover{background:#dbeafe}
+.scan-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#dcfce7;color:#15803d}
+</style>
+</head><body>
 <div class="app-layout">
-    <aside class="sidebar">
-        <div class="sidebar-brand"><h2>RX Expresss</h2><small>Driver Portal</small></div>
-        <nav class="sidebar-nav" id="sidebar-nav"></nav>
-        <div class="sidebar-footer" id="sidebar-footer"></div>
-    </aside>
+    <aside class="sidebar"><div class="sidebar-brand"><h2>RX Expresss</h2><small>Driver Portal</small></div><nav class="sidebar-nav" id="sidebar-nav"></nav><div class="sidebar-footer" id="sidebar-footer"></div></aside>
     <main class="main-content">
         <div class="topbar">
             <h1>My Deliveries</h1>
-            <div class="toggle-group">
-                <button class="toggle-btn" id="t-on" onclick="setStatus('available')">Online</button>
-                <button class="toggle-btn" id="t-off" onclick="setStatus('offline')">Offline</button>
+            <div class="d-flex gap-2 items-center">
+                <span class="text-sm text-gray">Status:</span>
+                <div class="toggle-group">
+                    <button class="toggle-btn" id="t-on" onclick="setStatus('available')">Online</button>
+                    <button class="toggle-btn" id="t-off" onclick="setStatus('offline')">Offline</button>
+                </div>
             </div>
         </div>
         <div class="page-body">
             <div id="alert-area"></div>
+            <div id="route-nav" class="mb-2" style="display:none">
+                <a href="#" id="full-route-btn" class="btn btn-info" target="_blank">${Icons.route} Navigate Full Route</a>
+            </div>
             <div id="deliveries"><div class="text-center mt-3"><span class="spinner"></span> Loading...</div></div>
         </div>
     </main>
@@ -23,45 +31,90 @@
 <script src="/js/api-service.js"></script>
 <script>
 if(!ApiService.requireAuth('Driver'))throw'';
-setupSidebar([
-    {id:'deliveries',label:'My Deliveries',href:'/driver/index.html',icon:Icons.list},
-],'deliveries');
+setupSidebar([{id:'deliveries',label:'My Deliveries',href:'/driver/index.html',icon:Icons.list}],'deliveries');
 
 let myStatus='offline';
+const scannedSet=new Set();
+
 async function loadProfile(){try{const p=await ApiService.get('/driver-portal/profile');myStatus=p.status;updateToggle();}catch{}}
 function updateToggle(){document.getElementById('t-on').className='toggle-btn'+(myStatus==='available'?' active':'');document.getElementById('t-off').className='toggle-btn'+(myStatus==='offline'?' off':'');}
 async function setStatus(s){await ApiService.put(`/driver-portal/status?status=${s}`);myStatus=s;updateToggle();}
+
+function mapsUrl(addr){return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;}
 
 async function loadDeliveries(){
     try{
         const d=await ApiService.get('/driver-portal/deliveries');
         const el=document.getElementById('deliveries');
-        if(!d.deliveries.length){el.innerHTML='<div class="empty-state"><h3>No Active Deliveries</h3><p>No deliveries assigned to you right now.</p></div>';return;}
-        el.innerHTML=d.deliveries.map(o=>`
-            <div class="delivery-card">
-                <div class="dc-header"><span class="dc-qr">${o.qrCode||o.orderNumber}</span>${statusBadge(o.status)}</div>
+        if(!d.deliveries.length){el.innerHTML='<div class="empty-state"><h3>No Active Deliveries</h3><p>You have no assigned deliveries right now.</p></div>';document.getElementById('route-nav').style.display='none';return;}
+
+        // Build full route URL
+        const addresses=d.deliveries.map(o=>`${o.street}, ${o.city}, ${o.state} ${o.postalCode}`);
+        if(addresses.length>1){
+            const routeUrl=`https://www.google.com/maps/dir/${addresses.map(a=>encodeURIComponent(a)).join('/')}`;
+            document.getElementById('full-route-btn').href=routeUrl;
+            document.getElementById('route-nav').style.display='block';
+        }
+
+        el.innerHTML=d.deliveries.map((o,i)=>{
+            const addr=`${o.street}, ${o.city}, ${o.state} ${o.postalCode}`;
+            const isScanned=scannedSet.has(o.id);
+            return `<div class="delivery-card">
+                <div class="dc-header">
+                    <div><span class="stop-badge">${i+1}</span><span class="dc-qr">${o.qrCode||o.orderNumber}</span></div>
+                    <div class="d-flex gap-2 items-center">
+                        ${isScanned?'<span class="scan-badge">Scanned</span>':''}
+                        ${statusBadge(o.status)}
+                        <a href="${mapsUrl(addr)}" target="_blank" class="nav-btn">${Icons.mapPin} Navigate</a>
+                    </div>
+                </div>
                 <div class="dc-details">
                     <div><strong>To:</strong> ${o.recipientName}</div>
-                    <div><strong>Phone:</strong> ${o.recipientPhone}</div>
-                    <div><strong>Address:</strong> ${o.street}, ${o.city}, ${o.state} ${o.postalCode}</div>
-                    ${o.copayAmount>0?`<div><strong>Copay:</strong> $${o.copayAmount.toFixed(2)} ${o.copayCollected?'(Collected)':'(Pending)'}</div>`:''}
+                    <div><strong>Phone:</strong> <a href="tel:${o.recipientPhone}">${o.recipientPhone}</a></div>
+                    <div><strong>Address:</strong> ${addr}</div>
+                    ${o.copayAmount>0?`<div><strong>Copay:</strong> $${o.copayAmount.toFixed(2)} ${o.copayCollected?'<span class="text-success">(Collected)</span>':'<span class="text-warning">(Pending)</span>'}</div>`:''}
                 </div>
                 ${o.deliveryNotes?`<div class="mt-1 text-sm text-gray">Notes: ${o.deliveryNotes}</div>`:''}
                 <div class="dc-actions">
+                    ${!isScanned?`<button class="btn btn-sm btn-outline" onclick="scanPkg(${o.id},'${o.qrCode||''}')">Scan Package</button>`:''}
                     ${o.status==='assigned'?`<button class="btn btn-sm btn-warning" onclick="upd(${o.id},'picked_up')">Pick Up</button>`:''}
                     ${o.status==='picked_up'?`<button class="btn btn-sm btn-info" onclick="upd(${o.id},'in_transit')">Start Transit</button>`:''}
                     ${o.status==='in_transit'?`<button class="btn btn-sm btn-primary" onclick="upd(${o.id},'out_for_delivery')">Out for Delivery</button>`:''}
-                    ${o.status==='out_for_delivery'?`<button class="btn btn-sm btn-success" onclick="complete(${o.id})">Complete Delivery</button>`:''}
-                    ${o.copayAmount>0&&!o.copayCollected?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">Collect Copay</button>`:''}
+                    ${o.status==='out_for_delivery'&&isScanned?`<button class="btn btn-sm btn-success" onclick="completePod(${o.id})">Complete POD</button>`:`${o.status==='out_for_delivery'?'<span class="text-sm text-gray">Scan package first to enable POD</span>':''}`}
+                    ${o.copayAmount>0&&!o.copayCollected&&isScanned?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">Collect Copay ($${o.copayAmount.toFixed(2)})</button>`:''}
                 </div>
-            </div>`).join('');
+            </div>`}).join('');
     }catch(e){showAlert('alert-area','danger',e.message);}
 }
-async function upd(id,s){await ApiService.put(`/driver-portal/deliveries/${id}/status?status=${s}`);showAlert('alert-area','success',`Status: ${s}`);loadDeliveries();}
-async function complete(id){if(!confirm('Confirm delivery completed?'))return;await ApiService.post(`/driver-portal/deliveries/${id}/pod`,{recipientName:'Recipient'});showAlert('alert-area','success','Delivered!');loadDeliveries();}
-async function copay(id){await ApiService.post(`/driver-portal/deliveries/${id}/collect-copay`);showAlert('alert-area','success','Copay collected!');loadDeliveries();}
 
-loadProfile();
-loadDeliveries();
+function scanPkg(id,expectedQr){
+    const code=prompt('Enter or scan QR code:');
+    if(!code)return;
+    if(code.toUpperCase()===expectedQr.toUpperCase()){
+        scannedSet.add(id);
+        showAlert('alert-area','success','Package scanned successfully! POD is now enabled.');
+        loadDeliveries();
+    }else{
+        showAlert('alert-area','danger',`QR code mismatch! Expected: ${expectedQr}, Got: ${code}`);
+    }
+}
+
+async function upd(id,s){await ApiService.put(`/driver-portal/deliveries/${id}/status?status=${s}`);showAlert('alert-area','success',`Status: ${s.replace(/_/g,' ')}`);loadDeliveries();}
+async function completePod(id){
+    const name=prompt('Recipient name who received the package:');
+    if(!name)return;
+    await ApiService.post(`/driver-portal/deliveries/${id}/pod`,{recipientName:name});
+    scannedSet.delete(id);
+    showAlert('alert-area','success','Delivery completed with POD!');
+    loadDeliveries();
+}
+async function copay(id){
+    if(!confirm('Confirm copay collected from patient?'))return;
+    await ApiService.post(`/driver-portal/deliveries/${id}/collect-copay`);
+    showAlert('alert-area','success','Copay collected!');
+    loadDeliveries();
+}
+
+loadProfile();loadDeliveries();
 </script>
 </body></html>
