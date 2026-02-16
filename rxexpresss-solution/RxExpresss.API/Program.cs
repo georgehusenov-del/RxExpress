@@ -104,7 +104,10 @@ app.MapControllers();
 // Health
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy" }));
 
-app.Urls.Clear();
-app.Urls.Add("http://0.0.0.0:8001");
+// Use port 8001 only if not already configured by launchSettings
+if (!app.Urls.Any())
+{
+    app.Urls.Add("http://0.0.0.0:8001");
+}
 
 app.Run();
