@@ -1,0 +1,145 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RxExpresss.Core.DTOs;
+using RxExpresss.Core.Entities;
+using RxExpresss.Core.Interfaces;
+using RxExpresss.Core.Utilities;
+
+namespace RxExpresss.API.Controllers;
+
+[ApiController]
+[Route("api/admin")]
+[Authorize(Roles = AppRoles.Admin)]
+public class AdminController : ControllerBase
+{
+    private readonly IRepository<Order> _orders;
+    private readonly IRepository<Pharmacy> _pharmacies;
+    private readonly IRepository<DriverProfile> _drivers;
+    private readonly UserManager<ApplicationUser> _userManager;
+
+    public AdminController(IRepository<Order> orders, IRepository<Pharmacy> pharmacies,
+        IRepository<DriverProfile> drivers, UserManager<ApplicationUser> userManager)
+    {
+        _orders = orders; _pharmacies = pharmacies;
+        _drivers = drivers; _userManager = userManager;
+    }
+
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> Dashboard()
+    {
+        var totalUsers = _userManager.Users.Count();
+        var totalPharmacies = await _pharmacies.Query().CountAsync();
+        var totalDrivers = await _drivers.Query().CountAsync();
+        var activeDrivers = await _drivers.Query().CountAsync(d => d.Status != "offline");
+        var totalOrders = await _orders.Query().CountAsync();
+
+        var ordersByStatus = await _orders.Query()
+            .GroupBy(o => o.Status)
+            .Select(g => new { status = g.Key, count = g.Count() })
+            .ToDictionaryAsync(x => x.status, x => x.count);
+
+        return Ok(new
+        {
+            stats = new
+            {
+                total_users = totalUsers, total_pharmacies = totalPharmacies,
+                total_drivers = totalDrivers, active_drivers = activeDrivers,
+                total_orders = totalOrders, orders_by_status = ordersByStatus
+            }
+        });
+    }
+
+    [HttpGet("orders")]
+    public async Task<IActionResult> GetOrders([FromQuery] string? status, [FromQuery] int skip = 0, [FromQuery] int limit = 100)
+    {
+        var query = _orders.Query();
+        if (!string.IsNullOrEmpty(status)) query = query.Where(o => o.Status == status);
+        var total = await query.CountAsync();
+        var orders = await query.OrderByDescending(o => o.CreatedAt).Skip(skip).Take(limit).ToListAsync();
+        return Ok(new { orders, total });
+    }
+
+    [HttpPut("orders/{id}/status")]
+    public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] UpdateOrderStatusDto dto)
+    {
+        var order = await _orders.GetByIdAsync(id);
+        if (order == null) return NotFound(new { detail = "Order not found" });
+        order.Status = dto.Status;
+        order.UpdatedAt = DateTime.UtcNow;
+        if (dto.Status == "picked_up") order.ActualPickupTime = DateTime.UtcNow;
+        if (dto.Status == "delivered") order.ActualDeliveryTime = DateTime.UtcNow;
+        await _orders.UpdateAsync(order);
+        return Ok(new { message = $"Status updated to {dto.Status}" });
+    }
+
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers([FromQuery] string? role)
+    {
+        var users = _userManager.Users.ToList();
+        var result = new List<object>();
+        foreach (var u in users)
+        {
+            var roles = await _userManager.GetRolesAsync(u);
+            if (!string.IsNullOrEmpty(role) && !roles.Contains(role, StringComparer.OrdinalIgnoreCase)) continue;
+            result.Add(new { u.Id, u.Email, u.FirstName, u.LastName, Phone = u.PhoneNumber, Role = roles.FirstOrDefault(), u.IsActive, u.CreatedAt });
+        }
+        return Ok(new { users = result, total = result.Count });
+    }
+
+    [HttpGet("drivers")]
+    public async Task<IActionResult> GetDrivers()
+    {
+        var drivers = await _drivers.Query().ToListAsync();
+        var result = new List<object>();
+        foreach (var d in drivers)
+        {
+            var user = await _userManager.FindByIdAsync(d.UserId);
+            result.Add(new
+            {
+                d.Id, d.UserId, d.VehicleType, d.VehicleNumber, d.LicenseNumber,
+                d.Status, d.Rating, d.TotalDeliveries, d.IsVerified, d.CreatedAt,
+                user = user == null ? null : new { user.Id, user.FirstName, user.LastName, user.Email, Phone = user.PhoneNumber, user.IsActive }
+            });
+        }
+        return Ok(new { drivers = result, count = result.Count });
+    }
+
+    [HttpPost("drivers")]
+    public async Task<IActionResult> CreateDriver([FromBody] CreateDriverDto dto)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = dto.Email, Email = dto.Email, FirstName = dto.FirstName,
+            LastName = dto.LastName, PhoneNumber = dto.Phone, EmailConfirmed = true
+        };
+        var result = await _userManager.CreateAsync(user, dto.Password);
+        if (!result.Succeeded) return BadRequest(new { detail = string.Join(", ", result.Errors.Select(e => e.Description)) });
+        await _userManager.AddToRoleAsync(user, AppRoles.Driver);
+
+        var driver = new DriverProfile
+        {
+            UserId = user.Id, VehicleType = dto.VehicleType,
+            VehicleNumber = dto.VehicleNumber, LicenseNumber = dto.LicenseNumber
+        };
+        await _drivers.AddAsync(driver);
+        return Ok(new { message = "Driver created", driver_id = driver.Id });
+    }
+
+    [HttpDelete("orders/{id}")]
+    public async Task<IActionResult> DeleteOrder(int id)
+    {
+        var order = await _orders.GetByIdAsync(id);
+        if (order == null) return NotFound();
+        await _orders.DeleteAsync(order);
+        return Ok(new { message = "Order deleted" });
+    }
+
+    [HttpGet("pharmacies")]
+    public async Task<IActionResult> GetPharmacies()
+    {
+        var pharmacies = await _pharmacies.Query().ToListAsync();
+        return Ok(new { pharmacies, total = pharmacies.Count });
+    }
+}
