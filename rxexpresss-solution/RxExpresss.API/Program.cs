@@ -90,7 +90,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Serve static frontend files (if any)
+// Serve static files only if wwwroot exists
+var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+if (!Directory.Exists(wwwrootPath))
+    Directory.CreateDirectory(wwwrootPath);
 app.UseStaticFiles();
 
 app.UseCors();
