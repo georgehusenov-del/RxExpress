@@ -1,0 +1,77 @@
+{
+  "Version": 1,
+  "Hash": "6I4p7tzPo6JKbSdqoa6b8XAgzEiwEpzBYxRIXa1SoTE=",
+  "Source": "RxExpresss.Web",
+  "BasePath": "_content/RxExpresss.Web",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "RxExpresss.Web/wwwroot",
+      "Source": "RxExpresss.Web",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/css/site.css",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "css/site.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/css/site.css"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/favicon.ico",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "favicon.ico",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/favicon.ico"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/js/api-service.js",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "js/api-service.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/js/api-service.js"
+    }
+  ]
+}
