@@ -109,9 +109,26 @@ public static class DbSeeder
         if (!await context.DeliveryPricing.AnyAsync())
         {
             context.DeliveryPricing.AddRange(
-                new DeliveryPricing { DeliveryType = "next_day", Name = "Next-Day Delivery", BasePrice = 5.99m, IsActive = true, TimeWindowStart = "08:00", TimeWindowEnd = "22:00" },
+                new DeliveryPricing { DeliveryType = "next_day", Name = "Next-Day 8am-1pm", BasePrice = 5.99m, IsActive = true, TimeWindowStart = "08:00", TimeWindowEnd = "13:00" },
+                new DeliveryPricing { DeliveryType = "next_day", Name = "Next-Day 1pm-4pm", BasePrice = 5.99m, IsActive = true, TimeWindowStart = "13:00", TimeWindowEnd = "16:00" },
+                new DeliveryPricing { DeliveryType = "next_day", Name = "Next-Day 4pm-10pm", BasePrice = 5.99m, IsActive = true, TimeWindowStart = "16:00", TimeWindowEnd = "22:00" },
                 new DeliveryPricing { DeliveryType = "same_day", Name = "Same-Day Delivery", BasePrice = 9.99m, IsActive = true, CutoffTime = "14:00" },
-                new DeliveryPricing { DeliveryType = "priority", Name = "Priority Delivery", BasePrice = 14.99m, IsActive = true }
+                new DeliveryPricing { DeliveryType = "priority", Name = "Priority Delivery", BasePrice = 14.99m, IsActive = true },
+                new DeliveryPricing { DeliveryType = "scheduled", Name = "Scheduled Bulk ($9 flat)", BasePrice = 9.00m, IsActive = true },
+                new DeliveryPricing { DeliveryType = "addon", Name = "Refrigerated Fee", BasePrice = 3.00m, IsActive = true, IsAddon = true }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // Seed Service Zones
+        if (!await context.ServiceZones.AnyAsync())
+        {
+            context.ServiceZones.AddRange(
+                new ServiceZone { Name = "Manhattan", Code = "M", ZipCodes = "10001,10002,10003,10004,10005,10006,10007,10010,10011,10012,10013,10014,10016,10017,10018,10019,10020,10021,10022,10023,10024,10025,10026,10027,10028,10029,10030,10031,10032,10033,10034,10035,10036,10037,10038,10039,10040", DeliveryFee = 5.99 },
+                new ServiceZone { Name = "Brooklyn", Code = "B", ZipCodes = "11201,11203,11204,11205,11206,11207,11208,11209,11210,11211,11212,11213,11214,11215,11216,11217,11218,11219,11220,11221,11222,11223,11224,11225,11226,11228,11229,11230,11231,11232,11233,11234,11235,11236,11237,11238,11239", DeliveryFee = 5.99 },
+                new ServiceZone { Name = "Queens", Code = "Q", ZipCodes = "11101,11102,11103,11104,11105,11106,11354,11355,11356,11357,11358,11360,11361,11362,11363,11364,11365,11366,11367,11368,11369,11370,11371,11372,11373,11374,11375,11377,11378,11379,11385,11411,11412,11413,11414,11415,11416,11417,11418,11419,11420,11421,11422,11423,11426,11427,11428,11429,11430,11432,11433,11434,11435,11436", DeliveryFee = 5.99 },
+                new ServiceZone { Name = "Bronx", Code = "X", ZipCodes = "10451,10452,10453,10454,10455,10456,10457,10458,10459,10460,10461,10462,10463,10464,10465,10466,10467,10468,10469,10470,10471,10472,10473,10474,10475", DeliveryFee = 6.99 },
+                new ServiceZone { Name = "Staten Island", Code = "S", ZipCodes = "10301,10302,10303,10304,10305,10306,10307,10308,10309,10310,10311,10312,10314", DeliveryFee = 7.99 }
             );
             await context.SaveChangesAsync();
         }
