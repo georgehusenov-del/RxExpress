@@ -83,12 +83,35 @@
             const code = document.getElementById('track-input').value.trim();
             if (!code) return;
             
+            // Show loading state
+            document.getElementById('track-result').innerHTML = `
+                <div class="no-order">
+                    <p>Looking up order...</p>
+                </div>`;
+            
             try {
-                const resp = await fetch(`${API_BASE}/orders/track/${code}`);
-                if (!resp.ok) throw new Error('Order not found');
+                const url = `${API_BASE}/orders/track/${encodeURIComponent(code)}`;
+                console.log('Fetching tracking info from:', url);
+                
+                const resp = await fetch(url);
+                console.log('Response status:', resp.status);
+                
+                if (!resp.ok) {
+                    const errorText = await resp.text();
+                    console.error('API Error:', errorText);
+                    throw new Error('Order not found');
+                }
+                
                 const order = await resp.json();
+                console.log('Order data:', order);
+                
+                if (!order || !order.orderNumber) {
+                    throw new Error('Invalid order data');
+                }
+                
                 renderOrder(order);
             } catch (err) {
+                console.error('Track order error:', err);
                 document.getElementById('track-result').innerHTML = `
                     <div class="no-order">
                         <h3>Order Not Found</h3>
