@@ -240,13 +240,13 @@ function verifyManualQr(){
     if(code)verifyQrCode(code);
 }
 
-function verifyQrCode(code){
+async function verifyQrCode(code){
     const orderId=parseInt(document.getElementById('scan-order-id').value);
     const expected=document.getElementById('scan-expected-qr').value;
     
     if(code.toUpperCase()===expected.toUpperCase()){
         scannedSet.add(orderId);
-        closeScanModal();
+        await closeScanModal();
         showAlert('alert-area','success','✓ Package verified! You can now complete delivery.');
         loadDeliveries();
     }else{
