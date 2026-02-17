@@ -45,12 +45,12 @@ public class CircuitService
         try
         {
             var response = await MakeRequestAsync("POST", "/drivers", payload);
-            if (response != null)
+            if (response.HasValue)
             {
                 return new CircuitDriverResult
                 {
                     Success = true,
-                    DriverId = response.GetProperty("id").GetString(),
+                    DriverId = response.Value.GetProperty("id").GetString(),
                     Message = "Driver created in Circuit"
                 };
             }
