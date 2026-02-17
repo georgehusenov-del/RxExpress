@@ -134,7 +134,10 @@ async function loadOrders(){
             <td>${o.city}</td>
             <td>${o.deliveryType}</td>
             <td>${statusBadge(o.status)}</td>
-            <td><a href="${trackUrl}" class="track-link" title="Copy tracking link" onclick="copyTrack(event,'${trackUrl}')">Track</a></td>
+            <td>
+                <a href="${trackUrl}" class="track-link">View</a>
+                <button class="btn btn-sm btn-outline" style="margin-left:4px;padding:2px 6px;font-size:11px" onclick="copyTrack('${trackUrl}')">Copy</button>
+            </td>
             <td>$${(o.copayAmount||0).toFixed(2)}</td>
             <td>$${(o.deliveryFee||0).toFixed(2)}</td>
             <td>${formatDate(o.createdAt)}</td>
@@ -142,7 +145,7 @@ async function loadOrders(){
     }).join(''):'<tr><td colspan="10" class="text-center text-gray">No orders yet</td></tr>';
 }
 
-function copyTrack(e,url){
+function copyTrack(url){
     e.preventDefault();
     navigator.clipboard.writeText(url);
     showAlert('alert-area','success','Tracking URL copied to clipboard!');
