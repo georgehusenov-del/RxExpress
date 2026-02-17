@@ -219,13 +219,13 @@ async function startQrScanner(){
     }catch(e){console.log('Camera not available');}
 }
 
-function stopQrScanner(){
+async function stopQrScanner(){
     if(html5QrCode){
         try{
-            // Try to stop - wrap in catch to ignore if not running
-            html5QrCode.stop().catch(()=>{});
+            await html5QrCode.stop();
         }catch(e){
-            // Ignore errors
+            // Ignore errors if scanner wasn't running
+            console.log('Scanner stop (not running):', e.message);
         }
         html5QrCode=null;
     }
