@@ -1,47 +1,75 @@
 @{ Layout = "_SidebarLayout"; }
+<style>
+.track-link{color:var(--info);text-decoration:none;font-size:12px}
+.track-link:hover{text-decoration:underline}
+</style>
+
+@section TopbarRight { <button class="btn btn-primary" onclick="openOrderModal()">+ Create Order</button> }
+
 <div class="card mb-3"><div class="card-header">Pharmacy Profile</div><div class="card-body" id="profile"></div></div>
-<ul class="d-flex gap-2 mb-2" style="list-style:none;padding:0">
-    <li><button class="btn btn-outline active" onclick="setTab('next_day',this)">Next-Day</button></li>
-    <li><button class="btn btn-outline" onclick="setTab('same_day',this)">Same-Day</button></li>
-    <li><button class="btn btn-outline" onclick="setTab('priority',this)">Priority</button></li>
-    <li><button class="btn btn-outline" onclick="setTab('scheduled',this)">Scheduled Bulk</button></li>
-</ul>
-<div class="card"><div class="card-body">
-    <form id="order-form">
-        <div class="row">
-            <div class="col-2">
-                <h3 class="mb-2">Recipient</h3>
-                <div class="row"><div class="col"><div class="form-group"><label>Name *</label><input class="form-control" id="r-name" required/></div></div><div class="col"><div class="form-group"><label>Phone *</label><input class="form-control" id="r-phone" required/></div></div></div>
-                <div class="form-group"><label>Email</label><input type="email" class="form-control" id="r-email"/></div>
-                <h3 class="mb-2 mt-2">Delivery Address</h3>
-                <div class="form-group"><label>Street *</label><input class="form-control" id="a-st" required/></div>
-                <div class="row"><div class="col"><div class="form-group"><label>Apt/Unit</label><input class="form-control" id="a-apt"/></div></div><div class="col"><div class="form-group"><label>City *</label><input class="form-control" id="a-city" value="New York" required/></div></div></div>
-                <div class="row"><div class="col"><div class="form-group"><label>State</label><input class="form-control" id="a-state" value="NY"/></div></div><div class="col"><div class="form-group"><label>Zip *</label><input class="form-control" id="a-zip" required/></div></div></div>
-                <div class="form-group"><label>Delivery Notes</label><textarea class="form-control" id="d-notes" rows="2"></textarea></div>
-            </div>
-            <div class="col">
-                <h3 class="mb-2">Delivery Options</h3>
-                <div class="form-group"><label>Pricing Option</label><select class="form-control" id="d-pricing"></select></div>
-                <div class="form-group"><label>Copay Amount ($)</label><input type="number" step="0.01" class="form-control" id="d-copay" value="0"/></div>
-                <div class="form-group"><label>Scheduled Date</label><input type="date" class="form-control" id="d-date" style="display:none"/></div>
-                <div class="form-group"><label><input type="checkbox" id="d-refrig"/> Requires Refrigeration (+$3.00)</label></div>
-                <div class="card" style="background:#f8fafc;margin-top:16px;padding:16px">
-                    <strong>Price Summary</strong>
-                    <div id="price-summary" class="mt-1"></div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-lg w-full mt-2" id="sub-btn">Create Order</button>
-            </div>
+
+<div class="card"><div class="card-header">My Orders <span class="text-sm text-gray" id="order-count"></span></div>
+    <div class="card-body table-wrap">
+        <table>
+            <thead><tr><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th><th>Status</th><th>Tracking</th><th>Copay</th><th>Fee</th><th>Date</th></tr></thead>
+            <tbody id="tbl"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Order Modal -->
+<div class="modal-overlay" id="order-modal">
+    <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+            <h3>Create New Order</h3>
+            <button class="close-btn" onclick="closeOrderModal()">&times;</button>
         </div>
-    </form>
-</div></div>
-<div class="card mt-3"><div class="card-header">My Orders <span class="text-sm text-gray" id="order-count"></span></div>
-    <div class="card-body table-wrap"><table><thead><tr><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th><th>Status</th><th>Copay</th><th>Fee</th><th>Date</th></tr></thead><tbody id="tbl"></tbody></table></div>
+        <div class="modal-body">
+            <ul class="d-flex gap-2 mb-2" style="list-style:none;padding:0">
+                <li><button class="btn btn-outline active" onclick="setTab('next_day',this)">Next-Day</button></li>
+                <li><button class="btn btn-outline" onclick="setTab('same_day',this)">Same-Day</button></li>
+                <li><button class="btn btn-outline" onclick="setTab('priority',this)">Priority</button></li>
+                <li><button class="btn btn-outline" onclick="setTab('scheduled',this)">Scheduled</button></li>
+            </ul>
+            <form id="order-form">
+                <div class="row">
+                    <div class="col">
+                        <h4 class="mb-1">Recipient</h4>
+                        <div class="row"><div class="col"><div class="form-group"><label>Name *</label><input class="form-control" id="r-name" required/></div></div><div class="col"><div class="form-group"><label>Phone *</label><input class="form-control" id="r-phone" required/></div></div></div>
+                        <div class="form-group"><label>Email</label><input type="email" class="form-control" id="r-email"/></div>
+                        <h4 class="mb-1 mt-2">Delivery Address</h4>
+                        <div class="form-group"><label>Street *</label><input class="form-control" id="a-st" required/></div>
+                        <div class="row"><div class="col"><div class="form-group"><label>Apt/Unit</label><input class="form-control" id="a-apt"/></div></div><div class="col"><div class="form-group"><label>City *</label><input class="form-control" id="a-city" value="New York" required/></div></div></div>
+                        <div class="row"><div class="col"><div class="form-group"><label>State</label><input class="form-control" id="a-state" value="NY"/></div></div><div class="col"><div class="form-group"><label>Zip *</label><input class="form-control" id="a-zip" required/></div></div></div>
+                    </div>
+                    <div class="col">
+                        <h4 class="mb-1">Delivery Options</h4>
+                        <div class="form-group"><label>Pricing Option</label><select class="form-control" id="d-pricing"></select></div>
+                        <div class="form-group"><label>Copay Amount ($)</label><input type="number" step="0.01" class="form-control" id="d-copay" value="0"/></div>
+                        <div class="form-group" id="date-group" style="display:none"><label>Scheduled Date</label><input type="date" class="form-control" id="d-date"/></div>
+                        <div class="form-group"><label><input type="checkbox" id="d-refrig"/> Requires Refrigeration (+$3.00)</label></div>
+                        <div class="form-group"><label>Delivery Notes</label><textarea class="form-control" id="d-notes" rows="2"></textarea></div>
+                        <div class="card" style="background:#f8fafc;padding:12px">
+                            <strong>Price Summary</strong>
+                            <div id="price-summary" class="mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeOrderModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitOrder()" id="sub-btn">Create Order</button>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
 <script>
 if(!ApiService.requireAuth('Pharmacy'))throw'';
 let pid=null,pricing=null,currentTab='next_day';
+
+const PREVIEW_URL = window.location.origin;
 
 (async()=>{
     const p=await ApiService.get('/pharmacies/my');
@@ -52,11 +80,26 @@ let pid=null,pricing=null,currentTab='next_day';
     loadOrders();
 })();
 
+function openOrderModal(){
+    document.getElementById('order-form').reset();
+    document.getElementById('a-city').value='New York';
+    document.getElementById('a-state').value='NY';
+    currentTab='next_day';
+    document.querySelectorAll('#order-modal .d-flex.gap-2 button').forEach((b,i)=>b.classList.toggle('active',i===0));
+    document.getElementById('date-group').style.display='none';
+    updatePricingOptions();
+    document.getElementById('order-modal').classList.add('active');
+}
+
+function closeOrderModal(){
+    document.getElementById('order-modal').classList.remove('active');
+}
+
 function setTab(tab,el){
     currentTab=tab;
-    document.querySelectorAll('.d-flex.gap-2 button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#order-modal .d-flex.gap-2 button').forEach(b=>b.classList.remove('active'));
     el.classList.add('active');
-    document.getElementById('d-date').style.display=tab==='scheduled'?'block':'none';
+    document.getElementById('date-group').style.display=tab==='scheduled'?'block':'none';
     updatePricingOptions();
 }
 
@@ -82,28 +125,56 @@ document.getElementById('d-refrig').addEventListener('change',updatePrice);
 async function loadOrders(){
     const d=await ApiService.get(`/orders?pharmacyId=${pid}`);
     document.getElementById('order-count').textContent=`(${d.total} orders)`;
-    document.getElementById('tbl').innerHTML=d.orders.length?d.orders.map(o=>`<tr><td><strong>${o.orderNumber}</strong></td><td>${o.qrCode||'-'}</td><td>${o.recipientName}</td><td>${o.city}</td><td>${o.deliveryType}</td><td>${statusBadge(o.status)}</td><td>$${(o.copayAmount||0).toFixed(2)}</td><td>$${(o.deliveryFee||0).toFixed(2)}</td><td>${formatDate(o.createdAt)}</td></tr>`).join(''):'<tr><td colspan="9" class="text-center text-gray">No orders yet</td></tr>';
+    document.getElementById('tbl').innerHTML=d.orders.length?d.orders.map(o=>{
+        const trackUrl=`${PREVIEW_URL}/Track/${o.trackingNumber||o.orderNumber}`;
+        return `<tr>
+            <td><strong>${o.orderNumber}</strong></td>
+            <td>${o.qrCode||'-'}</td>
+            <td>${o.recipientName}</td>
+            <td>${o.city}</td>
+            <td>${o.deliveryType}</td>
+            <td>${statusBadge(o.status)}</td>
+            <td><a href="${trackUrl}" class="track-link" title="Copy tracking link" onclick="copyTrack(event,'${trackUrl}')">Track</a></td>
+            <td>$${(o.copayAmount||0).toFixed(2)}</td>
+            <td>$${(o.deliveryFee||0).toFixed(2)}</td>
+            <td>${formatDate(o.createdAt)}</td>
+        </tr>`;
+    }).join(''):'<tr><td colspan="10" class="text-center text-gray">No orders yet</td></tr>';
 }
 
-document.getElementById('order-form').addEventListener('submit',async(e)=>{
-    e.preventDefault();if(!pid)return;
-    const btn=document.getElementById('sub-btn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Creating...';
+function copyTrack(e,url){
+    e.preventDefault();
+    navigator.clipboard.writeText(url);
+    showAlert('alert-area','success','Tracking URL copied to clipboard!');
+}
+
+async function submitOrder(){
+    if(!pid)return;
+    const btn=document.getElementById('sub-btn');
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Creating...';
     const sel=document.getElementById('d-pricing');const opt=sel.options[sel.selectedIndex];
     try{
-        const d=await ApiService.post('/orders',{pharmacyId:pid,deliveryType:opt?.dataset?.type||currentTab,
+        const d=await ApiService.post('/orders',{
+            pharmacyId:pid,
+            deliveryType:opt?.dataset?.type||currentTab,
             timeWindow:opt?.dataset?.tw!=='-'?opt?.dataset?.tw:null,
             scheduledDate:document.getElementById('d-date').value||null,
-            recipientName:document.getElementById('r-name').value,recipientPhone:document.getElementById('r-phone').value,
+            recipientName:document.getElementById('r-name').value,
+            recipientPhone:document.getElementById('r-phone').value,
             recipientEmail:document.getElementById('r-email').value||null,
-            street:document.getElementById('a-st').value,aptUnit:document.getElementById('a-apt').value||null,
-            city:document.getElementById('a-city').value,state:document.getElementById('a-state').value,
+            street:document.getElementById('a-st').value,
+            aptUnit:document.getElementById('a-apt').value||null,
+            city:document.getElementById('a-city').value,
+            state:document.getElementById('a-state').value,
             postalCode:document.getElementById('a-zip').value,
             copayAmount:parseFloat(document.getElementById('d-copay').value)||0,
-            deliveryNotes:document.getElementById('d-notes').value||null});
+            deliveryNotes:document.getElementById('d-notes').value||null
+        });
+        closeOrderModal();
         showAlert('alert-area','success',`Order created! #${d.order_number} | QR: ${d.qr_code}`);
-        document.getElementById('order-form').reset();updatePricingOptions();loadOrders();
+        loadOrders();
     }catch(err){showAlert('alert-area','danger',err.message);}
     btn.disabled=false;btn.textContent='Create Order';
-});
+}
 </script>
 }
