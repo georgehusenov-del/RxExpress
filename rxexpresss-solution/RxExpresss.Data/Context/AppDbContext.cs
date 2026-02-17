@@ -53,6 +53,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Pharmacy>(e =>
         {
             e.HasKey(p => p.Id);
+            e.Property(p => p.UserId).HasMaxLength(128);
             e.HasOne(p => p.User).WithOne(u => u.Pharmacy).HasForeignKey<Pharmacy>(p => p.UserId);
             e.Property(p => p.Name).HasMaxLength(200);
             e.HasIndex(p => p.UserId).IsUnique();
@@ -61,6 +62,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<DriverProfile>(e =>
         {
             e.HasKey(d => d.Id);
+            e.Property(d => d.UserId).HasMaxLength(128);
             e.HasOne(d => d.User).WithOne(u => u.DriverProfile).HasForeignKey<DriverProfile>(d => d.UserId);
             e.HasIndex(d => d.UserId).IsUnique();
         });
