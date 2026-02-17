@@ -78,6 +78,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSG9tZS9SZWdpc3RlclBoYXJtYWN5LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[/app/rxexpresss-solution/RxExpresss.Web/Views/Home/Track.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSG9tZS9UcmFjay5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/app/rxexpresss-solution/RxExpresss.Web/Views/Pharmacy/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUGhhcm1hY3kvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
