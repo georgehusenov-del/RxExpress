@@ -49,6 +49,20 @@ public class DriverPortalController : ControllerBase
         return Ok(new { deliveries = orders, count = orders.Count });
     }
 
+    [HttpGet("history")]
+    public async Task<IActionResult> DeliveryHistory()
+    {
+        var driver = await GetMyDriver();
+        if (driver == null) return NotFound(new { detail = "Driver profile not found" });
+        var orders = await _orders.Query()
+            .Where(o => o.DriverId == driver.Id && (o.Status == "delivered" || o.Status == "failed" || o.Status == "cancelled"))
+            .OrderByDescending(o => o.ActualDeliveryTime ?? o.UpdatedAt)
+            .Take(50) // Last 50 deliveries
+            .Select(o => new { o.Id, o.OrderNumber, o.QrCode, o.RecipientName, o.Street, o.City, o.Status, o.ActualDeliveryTime, o.CopayAmount, o.CopayCollected })
+            .ToListAsync();
+        return Ok(new { deliveries = orders, count = orders.Count });
+    }
+
     [HttpPut("deliveries/{id}/status")]
     public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromQuery] string status)
     {
