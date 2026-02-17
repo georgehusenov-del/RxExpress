@@ -155,6 +155,33 @@ RX Expresss is a full-stack pharmacy delivery service application serving NYC bo
 └── RxExpresss.Identity/   # JWT Service
 ```
 
+## Database Migrations
+
+### Current State
+- **SQLite Development Database:** `/app/rxexpresss-solution/RxExpresss.API/RxExpresss.db`
+- **Migrations Applied:**
+  1. `20260217085512_Init` - Initial schema with all core tables
+  2. `20260217142736_AddCircuitFields` - Added Circuit integration fields
+
+### Circuit Integration Fields (Added Feb 17, 2026)
+- `DriverProfile.CircuitDriverId` (NVARCHAR) - Driver ID in Circuit system
+- `RoutePlan.CircuitPlanId` (NVARCHAR) - Route plan ID in Circuit system
+- `Order.CircuitStopId` (NVARCHAR) - Stop ID in Circuit system for tracking
+
+### SQL Server Production Script
+Location: `/app/sql_scripts/sqlserver_migrations.sql`
+
+This script:
+- Creates all tables with SQL Server data types
+- Includes both Init and AddCircuitFields migrations
+- Adds seed data for roles (Admin, Pharmacy, Driver)
+- Idempotent - can be run multiple times safely
+
+**To deploy to SQL Server:**
+1. Update `appsettings.json` with SQL Server connection string
+2. Run `/app/sql_scripts/sqlserver_migrations.sql` on target database
+3. Change connection string in production from SQLite to SQL Server
+
 ## Known Notes
 1. Circuit API is configured but requires API key
 2. POD photos save locally (not cloud)
