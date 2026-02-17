@@ -151,3 +151,13 @@ public class UpdateUserDto
     public string? Role { get; set; }
     public bool? IsActive { get; set; }
 }
+
+// Route Plan Update
+public class UpdatePlanDto
+{
+    public string? Title { get; set; }
+    public string? Date { get; set; }
+    public string? Status { get; set; }
+    public string? OptimizationStatus { get; set; }
+    public bool? Distributed { get; set; }
+}
