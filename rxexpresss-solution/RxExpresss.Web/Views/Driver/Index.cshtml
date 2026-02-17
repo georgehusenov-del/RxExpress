@@ -217,7 +217,12 @@ async function startQrScanner(){
             onQrScanned,
             ()=>{}
         );
-    }catch(e){console.log('Camera not available');}
+        scannerRunning=true;
+    }catch(e){
+        console.log('Camera not available');
+        scannerRunning=false;
+    }
+}
 }
 
 async function stopQrScanner(){
