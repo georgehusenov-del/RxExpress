@@ -11,6 +11,12 @@ var app = builder.Build();
 app.Use(async (context, next) =>
 {
     context.Items["ApiBaseUrl"] = apiBaseUrl;
+    
+    // Add no-cache headers to prevent CDN caching of dynamic pages
+    context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
+    context.Response.Headers["Pragma"] = "no-cache";
+    context.Response.Headers["Expires"] = "0";
+    
     await next();
 });
 
