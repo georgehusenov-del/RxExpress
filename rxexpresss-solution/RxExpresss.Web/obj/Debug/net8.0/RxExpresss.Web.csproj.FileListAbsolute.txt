@@ -1,7 +1,7 @@
 /app/rxexpresss-solution/RxExpresss.Web/bin/Debug/net8.0/appsettings.Development.json
-/app/rxexpresss-solution/RxExpresss.Web/bin/Debug/net8.0/appsettings.json
 /app/rxexpresss-solution/RxExpresss.Web/bin/Debug/net8.0/RxExpresss.Web.staticwebassets.runtime.json
 /app/rxexpresss-solution/RxExpresss.Web/bin/Debug/net8.0/RxExpresss.Web
+/app/rxexpresss-solution/RxExpresss.Web/bin/Debug/net8.0/appsettings.json
 /app/rxexpresss-solution/RxExpresss.Web/bin/Debug/net8.0/RxExpresss.Web.deps.json
 /app/rxexpresss-solution/RxExpresss.Web/bin/Debug/net8.0/RxExpresss.Web.runtimeconfig.json
 /app/rxexpresss-solution/RxExpresss.Web/bin/Debug/net8.0/RxExpresss.Web.dll
