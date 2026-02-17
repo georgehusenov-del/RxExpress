@@ -222,13 +222,10 @@ async function startQrScanner(){
 function stopQrScanner(){
     if(html5QrCode){
         try{
-            // Check if scanner is actually running before stopping
-            const state = html5QrCode.getState();
-            if(state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED){
-                html5QrCode.stop().catch(()=>{});
-            }
+            // Try to stop - wrap in catch to ignore if not running
+            html5QrCode.stop().catch(()=>{});
         }catch(e){
-            // Ignore errors if scanner wasn't properly initialized
+            // Ignore errors
         }
         html5QrCode=null;
     }
