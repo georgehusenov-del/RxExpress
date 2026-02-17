@@ -1,16 +1,130 @@
 @{ Layout = "_SidebarLayout"; }
-<style>.scan-area{max-width:500px;margin:0 auto;text-align:center}.scan-input-group{display:flex;gap:8px;margin-bottom:20px}.scan-input-group input{flex:1}.scan-result{padding:20px;border-radius:var(--radius);border:2px solid var(--border);margin-top:16px;text-align:left}.scan-result.success{border-color:var(--success);background:#dcfce7}.scan-result.error{border-color:var(--danger);background:#fee2e2}.scan-result .sr-title{font-size:18px;font-weight:700;margin-bottom:12px}.sr-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.1);font-size:14px}.sr-row:last-child{border:none}</style>
+<style>
+.scan-area{max-width:600px;margin:0 auto;text-align:center}
+.scan-input-group{display:flex;gap:8px;margin-bottom:20px}
+.scan-input-group input{flex:1}
+.scan-result{padding:20px;border-radius:var(--radius);border:2px solid var(--border);margin-top:16px;text-align:left}
+.scan-result.success{border-color:var(--success);background:#dcfce7}
+.scan-result.error{border-color:var(--danger);background:#fee2e2}
+.scan-result .sr-title{font-size:18px;font-weight:700;margin-bottom:12px}
+.sr-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.1);font-size:14px}
+.sr-row:last-child{border:none}
+#reader{width:100%;max-width:500px;margin:0 auto 20px}
+.camera-toggle{margin-bottom:16px}
+.tab-buttons{display:flex;gap:8px;justify-content:center;margin-bottom:20px}
+.tab-btn{padding:10px 24px;border-radius:var(--radius);border:1px solid var(--border);background:white;cursor:pointer;font-weight:500}
+.tab-btn.active{background:var(--primary);color:white;border-color:var(--primary)}
+</style>
+
 <div class="scan-area">
     <div class="stat-icon teal" style="width:64px;height:64px;border-radius:16px;margin:0 auto 16px">@Html.Raw(SvgIcons.QrCode)</div>
-    <h3 class="mb-1">Scan or Enter QR Code</h3>
-    <p class="text-gray text-sm mb-2">Enter the package QR code to verify and view details</p>
-    <div class="scan-input-group"><input type="text" class="form-control" id="qr-input" placeholder="e.g. Q4F2A1" /><button class="btn btn-primary" onclick="scanQr()">Scan</button></div>
+    <h3 class="mb-1">QR Code Scanner</h3>
+    <p class="text-gray text-sm mb-2">Scan package QR codes using camera or enter manually</p>
+    
+    <div class="tab-buttons">
+        <button class="tab-btn active" id="tab-camera" onclick="showTab('camera')">📷 Camera Scan</button>
+        <button class="tab-btn" id="tab-manual" onclick="showTab('manual')">⌨️ Manual Entry</button>
+    </div>
+    
+    <div id="camera-section">
+        <div id="reader"></div>
+        <button class="btn btn-outline btn-sm" id="start-btn" onclick="startScanner()">Start Camera</button>
+        <button class="btn btn-outline btn-sm" id="stop-btn" onclick="stopScanner()" style="display:none">Stop Camera</button>
+    </div>
+    
+    <div id="manual-section" style="display:none">
+        <div class="scan-input-group">
+            <input type="text" class="form-control" id="qr-input" placeholder="e.g. Q4F2A1" />
+            <button class="btn btn-primary" onclick="scanQr()">Scan</button>
+        </div>
+    </div>
+    
     <div id="scan-result"></div>
 </div>
+
 @section Scripts {
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 if(!ApiService.requireAuth('Admin'))throw'';
-document.getElementById('qr-input').addEventListener('keydown',e=>{if(e.key==='Enter')scanQr()});
-async function scanQr(){const code=document.getElementById('qr-input').value.trim();if(!code)return;const el=document.getElementById('scan-result');try{const d=await ApiService.post(`/admin/scan/${code}`,{});const p=d.package;el.innerHTML=`<div class="scan-result success"><div class="sr-title">Package Verified!</div><div class="sr-row"><span class="text-gray">Order #</span><span>${p.orderNumber}</span></div><div class="sr-row"><span class="text-gray">QR Code</span><strong>${p.qrCode}</strong></div><div class="sr-row"><span class="text-gray">Pharmacy</span>${p.pharmacyName||'-'}</div><div class="sr-row"><span class="text-gray">Recipient</span>${p.recipientName}</div><div class="sr-row"><span class="text-gray">Address</span>${p.address}</div><div class="sr-row"><span class="text-gray">Status</span>${statusBadge(p.status)}</div><div class="sr-row"><span class="text-gray">Driver</span>${p.driverName||'Unassigned'}</div>${p.copayAmount>0?`<div class="sr-row"><span class="text-gray">Copay</span>$${p.copayAmount.toFixed(2)}</div>`:''}</div>`;}catch{el.innerHTML=`<div class="scan-result error"><div class="sr-title">Not Found</div><p>No package with QR: <strong>${code}</strong></p></div>`;}document.getElementById('qr-input').value='';document.getElementById('qr-input').focus();}
+
+let html5QrCode = null;
+let isScanning = false;
+
+function showTab(tab) {
+    document.getElementById('tab-camera').className = 'tab-btn' + (tab === 'camera' ? ' active' : '');
+    document.getElementById('tab-manual').className = 'tab-btn' + (tab === 'manual' ? ' active' : '');
+    document.getElementById('camera-section').style.display = tab === 'camera' ? 'block' : 'none';
+    document.getElementById('manual-section').style.display = tab === 'manual' ? 'block' : 'none';
+    if (tab === 'manual' && isScanning) stopScanner();
+}
+
+async function startScanner() {
+    try {
+        html5QrCode = new Html5Qrcode("reader");
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            onScanSuccess,
+            () => {}
+        );
+        isScanning = true;
+        document.getElementById('start-btn').style.display = 'none';
+        document.getElementById('stop-btn').style.display = 'inline-block';
+    } catch (err) {
+        showAlert('alert-area', 'danger', 'Camera error: ' + err.message);
+    }
+}
+
+function stopScanner() {
+    if (html5QrCode && isScanning) {
+        html5QrCode.stop().then(() => {
+            isScanning = false;
+            document.getElementById('start-btn').style.display = 'inline-block';
+            document.getElementById('stop-btn').style.display = 'none';
+        });
+    }
+}
+
+async function onScanSuccess(decodedText) {
+    stopScanner();
+    await lookupQr(decodedText);
+}
+
+async function scanQr() {
+    const code = document.getElementById('qr-input').value.trim();
+    if (!code) return;
+    await lookupQr(code);
+}
+
+async function lookupQr(code) {
+    const el = document.getElementById('scan-result');
+    try {
+        const d = await ApiService.post(`/admin/scan/${code}`, {});
+        const p = d.package;
+        el.innerHTML = `<div class="scan-result success">
+            <div class="sr-title">✓ Package Verified!</div>
+            <div class="sr-row"><span class="text-gray">Order #</span><span>${p.orderNumber}</span></div>
+            <div class="sr-row"><span class="text-gray">QR Code</span><strong>${p.qrCode}</strong></div>
+            <div class="sr-row"><span class="text-gray">Pharmacy</span>${p.pharmacyName || '-'}</div>
+            <div class="sr-row"><span class="text-gray">Recipient</span>${p.recipientName}</div>
+            <div class="sr-row"><span class="text-gray">Address</span>${p.address}</div>
+            <div class="sr-row"><span class="text-gray">Status</span>${statusBadge(p.status)}</div>
+            <div class="sr-row"><span class="text-gray">Driver</span>${p.driverName || 'Unassigned'}</div>
+            ${p.copayAmount > 0 ? `<div class="sr-row"><span class="text-gray">Copay</span>$${p.copayAmount.toFixed(2)}</div>` : ''}
+        </div>`;
+        showAlert('alert-area', 'success', 'Package found!');
+    } catch {
+        el.innerHTML = `<div class="scan-result error">
+            <div class="sr-title">✗ Not Found</div>
+            <p>No package with QR: <strong>${code}</strong></p>
+        </div>`;
+    }
+    document.getElementById('qr-input').value = '';
+    document.getElementById('qr-input').focus();
+}
+
+document.getElementById('qr-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') scanQr();
+});
 </script>
 }
