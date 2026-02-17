@@ -1,0 +1,149 @@
+@{ ViewData["Title"] = "Track Delivery"; Layout = null; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Track Your Delivery - RX Expresss</title>
+    <link rel="stylesheet" href="/css/site.css" />
+    <style>
+        body{background:#f1f5f9;min-height:100vh;padding:40px 20px}
+        .track-container{max-width:600px;margin:0 auto}
+        .track-header{text-align:center;margin-bottom:32px}
+        .track-header h1{font-size:28px;font-weight:700;color:#1e293b;margin-bottom:8px}
+        .track-header .brand{color:var(--primary);font-size:16px;font-weight:600}
+        .track-card{background:white;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+        .search-box{display:flex;gap:8px;margin-bottom:24px}
+        .search-box input{flex:1;padding:12px 16px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px}
+        .search-box input:focus{border-color:var(--primary);outline:none}
+        .search-box button{padding:12px 24px}
+        .order-info{border-bottom:1px solid #e2e8f0;padding-bottom:16px;margin-bottom:16px}
+        .order-info .order-num{font-size:20px;font-weight:700;color:var(--primary)}
+        .order-info .qr{font-family:monospace;background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:14px}
+        .status-timeline{margin:24px 0}
+        .timeline-item{display:flex;gap:16px;position:relative;padding-bottom:24px}
+        .timeline-item:last-child{padding-bottom:0}
+        .timeline-item::before{content:'';position:absolute;left:15px;top:32px;bottom:0;width:2px;background:#e2e8f0}
+        .timeline-item:last-child::before{display:none}
+        .timeline-dot{width:32px;height:32px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0;z-index:1}
+        .timeline-dot.active{background:var(--primary)}
+        .timeline-dot.done{background:var(--success)}
+        .timeline-content h4{font-size:15px;font-weight:600;color:#1e293b;margin-bottom:2px}
+        .timeline-content p{font-size:13px;color:#64748b}
+        .delivery-details{background:#f8fafc;border-radius:10px;padding:16px;margin-top:16px}
+        .detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e2e8f0;font-size:14px}
+        .detail-row:last-child{border:none}
+        .detail-row .label{color:#64748b}
+        .detail-row .value{font-weight:500;color:#1e293b}
+        .no-order{text-align:center;padding:40px;color:#64748b}
+        .driver-info{background:linear-gradient(135deg,var(--primary),#0d9488);color:white;border-radius:10px;padding:16px;margin-top:16px}
+        .driver-info h4{font-size:14px;opacity:0.9;margin-bottom:8px}
+        .driver-info .name{font-size:18px;font-weight:600}
+    </style>
+</head>
+<body>
+    <div class="track-container">
+        <div class="track-header">
+            <div class="brand">RX Expresss</div>
+            <h1>Track Your Delivery</h1>
+        </div>
+        
+        <div class="track-card">
+            <div class="search-box">
+                <input type="text" id="track-input" placeholder="Enter Order # or QR Code" />
+                <button class="btn btn-primary" onclick="trackOrder()">Track</button>
+            </div>
+            
+            <div id="track-result">
+                <div class="no-order">
+                    <p>Enter your order number or QR code to track your delivery.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        // Check if tracking number is in URL
+        const pathParts = window.location.pathname.split('/');
+        if (pathParts.length > 2 && pathParts[2]) {
+            document.getElementById('track-input').value = pathParts[2];
+            trackOrder();
+        }
+        
+        document.getElementById('track-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') trackOrder();
+        });
+        
+        async function trackOrder() {
+            const code = document.getElementById('track-input').value.trim();
+            if (!code) return;
+            
+            try {
+                const resp = await fetch(`${API_BASE}/orders/track/${code}`);
+                if (!resp.ok) throw new Error('Order not found');
+                const order = await resp.json();
+                renderOrder(order);
+            } catch (err) {
+                document.getElementById('track-result').innerHTML = `
+                    <div class="no-order">
+                        <h3>Order Not Found</h3>
+                        <p>We couldn't find an order with that number. Please check and try again.</p>
+                    </div>`;
+            }
+        }
+        
+        function renderOrder(o) {
+            const statuses = ['new', 'assigned', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered'];
+            const statusLabels = {
+                'new': 'Order Placed',
+                'assigned': 'Driver Assigned',
+                'picked_up': 'Picked Up',
+                'in_transit': 'In Transit',
+                'out_for_delivery': 'Out for Delivery',
+                'delivered': 'Delivered'
+            };
+            const currentIdx = statuses.indexOf(o.status);
+            
+            const timeline = statuses.map((s, i) => {
+                const isDone = i < currentIdx;
+                const isActive = i === currentIdx;
+                return `
+                    <div class="timeline-item">
+                        <div class="timeline-dot ${isDone ? 'done' : (isActive ? 'active' : '')}">${isDone ? '✓' : (i + 1)}</div>
+                        <div class="timeline-content">
+                            <h4>${statusLabels[s]}</h4>
+                            <p>${isDone ? 'Completed' : (isActive ? 'Current Status' : 'Pending')}</p>
+                        </div>
+                    </div>`;
+            }).join('');
+            
+            document.getElementById('track-result').innerHTML = `
+                <div class="order-info">
+                    <div class="d-flex justify-between items-center">
+                        <span class="order-num">#${o.orderNumber}</span>
+                        <span class="qr">${o.qrCode || 'N/A'}</span>
+                    </div>
+                </div>
+                
+                <div class="status-timeline">${timeline}</div>
+                
+                <div class="delivery-details">
+                    <div class="detail-row"><span class="label">Recipient</span><span class="value">${o.recipientName}</span></div>
+                    <div class="detail-row"><span class="label">Delivery Address</span><span class="value">${o.street}, ${o.city}</span></div>
+                    <div class="detail-row"><span class="label">Delivery Type</span><span class="value">${o.deliveryType}</span></div>
+                    ${o.timeWindow ? `<div class="detail-row"><span class="label">Time Window</span><span class="value">${o.timeWindow}</span></div>` : ''}
+                    ${o.copayAmount > 0 ? `<div class="detail-row"><span class="label">Copay Due</span><span class="value">$${o.copayAmount.toFixed(2)} ${o.copayCollected ? '(Paid)' : ''}</span></div>` : ''}
+                </div>
+                
+                ${o.driverName ? `
+                <div class="driver-info">
+                    <h4>Your Driver</h4>
+                    <div class="name">${o.driverName}</div>
+                </div>` : ''}
+            `;
+        }
+    </script>
+</body>
+</html>
