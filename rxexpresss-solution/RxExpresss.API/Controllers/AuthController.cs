@@ -120,13 +120,17 @@ public class AuthController : ControllerBase
 
         await _userManager.AddToRoleAsync(user, AppRoles.Pharmacy);
 
-        // Create pharmacy record
+        // Create pharmacy record - parse address into components
+        var addressParts = dto.Address.Split(',').Select(s => s.Trim()).ToArray();
         var pharmacy = new Pharmacy
         {
             Name = dto.PharmacyName,
             LicenseNumber = dto.LicenseNumber,
             Phone = dto.Phone,
-            Address = dto.Address,
+            Street = addressParts.Length > 0 ? addressParts[0] : dto.Address,
+            City = addressParts.Length > 1 ? addressParts[1] : "",
+            State = addressParts.Length > 2 ? addressParts[2].Split(' ').FirstOrDefault() ?? "" : "",
+            PostalCode = addressParts.Length > 2 ? addressParts[2].Split(' ').LastOrDefault() ?? "" : "",
             UserId = user.Id,
             IsActive = false // Requires admin approval
         };
