@@ -160,5 +160,25 @@ RX Expresss is a full-stack pharmacy delivery service application serving NYC bo
 2. POD photos save locally (not cloud)
 3. CircuitDriverId column added manually to SQLite - needs proper migration for prod
 
+## Bug Fixes (Feb 17, 2026 - Session 2)
+
+### Bug 1: "Order Not Found" on Public Tracking Page - FIXED
+- **Symptom:** Tracking page showed "Order Not Found" even for valid QR codes
+- **Root Cause 1:** API_BASE URL was not properly constructed with full origin
+- **Root Cause 2:** Nginx wasn't configured to proxy /api requests to backend port 8001
+- **Fix:** 
+  - Updated Track.cshtml to construct API_BASE with window.location.origin
+  - Configured nginx at /etc/nginx/sites-enabled/default to proxy /api/* to port 8001
+
+### Bug 2: Driver Portal Manual QR Scan Not Working - FIXED
+- **Symptom:** Clicking "Verify" button did nothing, modal stayed open
+- **Root Cause 1:** JavaScript syntax error - extra closing brace in Driver/Index.cshtml
+- **Root Cause 2:** html5QrCode.stop() throws when scanner isn't running
+- **Fix:**
+  - Removed extra closing brace that was causing syntax errors
+  - Added `scannerRunning` flag to track scanner state
+  - Made closeScanModal and stopQrScanner async with proper error handling
+  - Created /wwwroot/js/qr-scanner-patch.js as fallback
+
 ---
-*Last Updated: February 17, 2026*
+*Last Updated: February 17, 2026 - Bug Fixes Session*
