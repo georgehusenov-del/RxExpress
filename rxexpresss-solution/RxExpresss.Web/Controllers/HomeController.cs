@@ -34,4 +34,11 @@ public class HomeController : Controller
         ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? _config["ApiBaseUrl"] ?? "/api";
         return View("RegisterPharmacy");
     }
+
+    [HttpGet("/Track")]
+    [HttpGet("/Track/{code}")]
+    public IActionResult Track(string? code = null)
+    {
+        return View("Track");
+    }
 }
