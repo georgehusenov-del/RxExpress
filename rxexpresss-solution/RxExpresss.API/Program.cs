@@ -67,6 +67,7 @@ builder.Services.AddAuthorization();
 // DI
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddSingleton<RxExpresss.API.Services.CircuitService>();
 
 // CORS - allow Web project to call API
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
