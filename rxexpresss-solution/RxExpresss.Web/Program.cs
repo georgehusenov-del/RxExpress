@@ -1,5 +1,8 @@
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllersWithViews();
+
+// Add Razor Runtime Compilation for development
+var mvcBuilder = builder.Services.AddControllersWithViews();
+mvcBuilder.AddRazorRuntimeCompilation();
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "/api";
 
