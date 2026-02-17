@@ -8,12 +8,10 @@ RX Expresss is a full-stack pharmacy delivery service application serving NYC bo
 - **Frontend:** ASP.NET Core MVC with Razor views (.cshtml)
 - **Authentication:** ASP.NET Identity with JWT tokens
 - **External:** Circuit API for route optimization (configurable)
-- **Architecture:** Clean architecture with 5 projects (API, Web, Core, Data, Identity)
 
-## User Roles
-1. **Admin** - Full system access, manage users, routes, pricing, scanning
-2. **Pharmacy** - Create orders, view order status, share tracking URLs
-3. **Driver** - View assigned deliveries, update status, complete POD
+## Deployment Configuration
+- **Production/Preview:** Uses `/api` prefix for API calls (Kubernetes ingress routing)
+- **Visual Studio Local:** Uses `http://localhost:5001/api` (Development appsettings)
 
 ## Completed Features (Feb 17, 2026)
 
