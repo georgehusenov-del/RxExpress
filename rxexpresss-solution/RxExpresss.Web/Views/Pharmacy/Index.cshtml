@@ -146,7 +146,6 @@ async function loadOrders(){
 }
 
 function copyTrack(url){
-    e.preventDefault();
     navigator.clipboard.writeText(url);
     showAlert('alert-area','success','Tracking URL copied to clipboard!');
 }
