@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "6I4p7tzPo6JKbSdqoa6b8XAgzEiwEpzBYxRIXa1SoTE=",
+  "Hash": "24dhOa7+3yNQ6nFnEwx1kpydMj1L3SorKQqUp4kPk54=",
   "Source": "RxExpresss.Web",
   "BasePath": "_content/RxExpresss.Web",
   "Mode": "Default",
@@ -72,6 +72,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/js/api-service.js"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/js/qr-scanner-patch.js",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "js/qr-scanner-patch.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/js/qr-scanner-patch.js"
     }
   ]
 }

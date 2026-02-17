@@ -13,6 +13,10 @@
       "PackagePath": "staticwebassets/js/api-service.js"
     },
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/js/qr-scanner-patch.js",
+      "PackagePath": "staticwebassets/js/qr-scanner-patch.js"
+    },
+    {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.RxExpresss.Web.Microsoft.AspNetCore.StaticWebAssets.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
     },
