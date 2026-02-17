@@ -13,6 +13,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<DeliveryPricing> DeliveryPricing => Set<DeliveryPricing>();
     public DbSet<ScanLog> ScanLogs => Set<ScanLog>();
+    public DbSet<RoutePlan> RoutePlans => Set<RoutePlan>();
+    public DbSet<RoutePlanDriver> RoutePlanDrivers => Set<RoutePlanDriver>();
+    public DbSet<RoutePlanOrder> RoutePlanOrders => Set<RoutePlanOrder>();
+    public DbSet<ServiceZone> ServiceZones => Set<ServiceZone>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -63,5 +67,20 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.HasKey(s => s.Id);
             e.HasOne(s => s.Order).WithMany().HasForeignKey(s => s.OrderId).OnDelete(DeleteBehavior.SetNull);
         });
+
+        builder.Entity<RoutePlan>(e => { e.HasKey(r => r.Id); });
+        builder.Entity<RoutePlanDriver>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.HasOne(r => r.RoutePlan).WithMany().HasForeignKey(r => r.RoutePlanId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.Driver).WithMany().HasForeignKey(r => r.DriverId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<RoutePlanOrder>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.HasOne(r => r.RoutePlan).WithMany().HasForeignKey(r => r.RoutePlanId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.Order).WithMany().HasForeignKey(r => r.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<ServiceZone>(e => { e.HasKey(z => z.Id); });
     }
 }
