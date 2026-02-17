@@ -34,6 +34,7 @@ public class Order
     // Driver
     public int? DriverId { get; set; }
     public string? DriverName { get; set; }
+    public string? CircuitStopId { get; set; } // Circuit API Stop ID for tracking
 
     // Status
     public string Status { get; set; } = "new";
