@@ -1,29 +1,294 @@
 @{ Layout = "_SidebarLayout"; }
-<style>.stop-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--primary);color:white;font-weight:700;font-size:13px;margin-right:8px}.nav-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius);border:1px solid var(--border);background:white;cursor:pointer;font-size:12px;color:var(--info);text-decoration:none}.nav-btn:hover{background:#dbeafe}.scan-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#dcfce7;color:#15803d}</style>
+<style>
+.stop-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--primary);color:white;font-weight:700;font-size:13px;margin-right:8px}
+.nav-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius);border:1px solid var(--border);background:white;cursor:pointer;font-size:12px;color:var(--info);text-decoration:none}
+.nav-btn:hover{background:#dbeafe}
+.scan-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#dcfce7;color:#15803d}
+#qr-reader{width:100%;max-width:300px;margin:0 auto}
+.history-section{margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+</style>
 
 @section TopbarRight {
-<div class="d-flex gap-2 items-center"><span class="text-sm text-gray">Status:</span><div class="toggle-group"><button class="toggle-btn" id="t-on" onclick="setStatus('available')">Online</button><button class="toggle-btn" id="t-off" onclick="setStatus('offline')">Offline</button></div></div>
+<div class="d-flex gap-2 items-center">
+    <span class="text-sm text-gray">Status:</span>
+    <div class="toggle-group">
+        <button class="toggle-btn" id="t-on" onclick="setStatus('available')">Online</button>
+        <button class="toggle-btn" id="t-off" onclick="setStatus('offline')">Offline</button>
+    </div>
+</div>
 }
 
-<div id="route-nav" class="mb-2" style="display:none"><a href="#" id="full-route-btn" class="btn btn-info" target="_blank">@Html.Raw(SvgIcons.Route) Navigate Full Route</a></div>
-<div id="deliveries"><div class="text-center mt-3"><span class="spinner"></span> Loading...</div></div>
+<div id="route-nav" class="mb-2" style="display:none">
+    <a href="#" id="full-route-btn" class="btn btn-info" target="_blank">@Html.Raw(SvgIcons.Route) Navigate Full Route</a>
+</div>
+
+<!-- Tabs -->
+<div class="mb-2">
+    <button class="btn btn-primary" id="tab-active" onclick="showTab('active')">Active Deliveries</button>
+    <button class="btn btn-outline" id="tab-history" onclick="showTab('history')" style="margin-left:8px">Delivery History</button>
+</div>
+
+<div id="active-section">
+    <div id="deliveries"><div class="text-center mt-3"><span class="spinner"></span> Loading...</div></div>
+</div>
+
+<div id="history-section" style="display:none">
+    <div id="history-list"><div class="text-center mt-3"><span class="spinner"></span> Loading...</div></div>
+</div>
+
+<!-- QR Scanner Modal -->
+<div class="modal-overlay" id="scan-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Scan Package QR</h3>
+            <button class="close-btn" onclick="closeScanModal()">&times;</button>
+        </div>
+        <div class="modal-body text-center">
+            <input type="hidden" id="scan-order-id"/>
+            <input type="hidden" id="scan-expected-qr"/>
+            <div id="qr-reader"></div>
+            <p class="text-sm text-gray mt-2">Point camera at package QR code</p>
+            <div class="mt-2">
+                <input type="text" class="form-control" id="manual-qr" placeholder="Or enter QR manually..." style="max-width:200px;display:inline-block"/>
+                <button class="btn btn-primary btn-sm" onclick="verifyManualQr()">Verify</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- POD Modal -->
+<div class="modal-overlay" id="pod-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Complete Delivery (POD)</h3>
+            <button class="close-btn" onclick="closePodModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="pod-order-id"/>
+            <div class="form-group">
+                <label>Recipient Name (who received it)</label>
+                <input type="text" class="form-control" id="pod-name" placeholder="Enter recipient name"/>
+            </div>
+            <div class="form-group">
+                <label>Photo Proof (optional)</label>
+                <input type="file" class="form-control" id="pod-photo" accept="image/*" capture="environment"/>
+            </div>
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                <textarea class="form-control" id="pod-notes" placeholder="Any delivery notes..." rows="2"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closePodModal()">Cancel</button>
+            <button class="btn btn-success" onclick="submitPod()">Complete Delivery</button>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 if(!ApiService.requireAuth('Driver'))throw'';
-let myStatus='offline';const scannedSet=new Set();
-async function loadProfile(){try{const p=await ApiService.get('/driver-portal/profile');myStatus=p.status;updateToggle();}catch{}}
-function updateToggle(){document.getElementById('t-on').className='toggle-btn'+(myStatus==='available'?' active':'');document.getElementById('t-off').className='toggle-btn'+(myStatus==='offline'?' off':'');}
-async function setStatus(s){await ApiService.put(`/driver-portal/status?status=${s}`);myStatus=s;updateToggle();}
+
+let myStatus='offline';
+const scannedSet=new Set();
+let html5QrCode=null;
+
+function showTab(tab){
+    document.getElementById('tab-active').className='btn '+(tab==='active'?'btn-primary':'btn-outline');
+    document.getElementById('tab-history').className='btn '+(tab==='history'?'btn-primary':'btn-outline');
+    document.getElementById('active-section').style.display=tab==='active'?'block':'none';
+    document.getElementById('history-section').style.display=tab==='history'?'block':'none';
+    if(tab==='history')loadHistory();
+}
+
+async function loadProfile(){
+    try{
+        const p=await ApiService.get('/driver-portal/profile');
+        myStatus=p.status;
+        updateToggle();
+    }catch{}
+}
+
+function updateToggle(){
+    document.getElementById('t-on').className='toggle-btn'+(myStatus==='available'?' active':'');
+    document.getElementById('t-off').className='toggle-btn'+(myStatus==='offline'?' off':'');
+}
+
+async function setStatus(s){
+    await ApiService.put(`/driver-portal/status?status=${s}`);
+    myStatus=s;
+    updateToggle();
+}
+
 function mapsUrl(addr){return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;}
-async function loadDeliveries(){try{const d=await ApiService.get('/driver-portal/deliveries');const el=document.getElementById('deliveries');if(!d.deliveries.length){el.innerHTML='<div class="empty-state"><h3>No Active Deliveries</h3><p>No deliveries assigned right now.</p></div>';document.getElementById('route-nav').style.display='none';return;}
-const addrs=d.deliveries.map(o=>`${o.street}, ${o.city}, ${o.state} ${o.postalCode}`);
-if(addrs.length>1){document.getElementById('full-route-btn').href=`https://www.google.com/maps/dir/${addrs.map(a=>encodeURIComponent(a)).join('/')}`;document.getElementById('route-nav').style.display='block';}
-el.innerHTML=d.deliveries.map((o,i)=>{const addr=`${o.street}, ${o.city}, ${o.state} ${o.postalCode}`;const isS=scannedSet.has(o.id);return `<div class="delivery-card"><div class="dc-header"><div><span class="stop-badge">${i+1}</span><span class="dc-qr">${o.qrCode||o.orderNumber}</span></div><div class="d-flex gap-2 items-center">${isS?'<span class="scan-badge">Scanned</span>':''}${statusBadge(o.status)}<a href="${mapsUrl(addr)}" target="_blank" class="nav-btn">${Icons.mapPin} Navigate</a></div></div><div class="dc-details"><div><strong>To:</strong> ${o.recipientName}</div><div><strong>Phone:</strong> <a href="tel:${o.recipientPhone}">${o.recipientPhone}</a></div><div><strong>Address:</strong> ${addr}</div>${o.copayAmount>0?`<div><strong>Copay:</strong> $${o.copayAmount.toFixed(2)} ${o.copayCollected?'<span class="text-success">(Collected)</span>':'<span class="text-warning">(Pending)</span>'}</div>`:''}</div>${o.deliveryNotes?`<div class="mt-1 text-sm text-gray">Notes: ${o.deliveryNotes}</div>`:''}<div class="dc-actions">${!isS?`<button class="btn btn-sm btn-outline" onclick="scanPkg(${o.id},'${o.qrCode||''}')">Scan Package</button>`:''} ${o.status==='assigned'?`<button class="btn btn-sm btn-warning" onclick="upd(${o.id},'picked_up')">Pick Up</button>`:''} ${o.status==='picked_up'?`<button class="btn btn-sm btn-info" onclick="upd(${o.id},'in_transit')">Start Transit</button>`:''} ${o.status==='in_transit'?`<button class="btn btn-sm btn-primary" onclick="upd(${o.id},'out_for_delivery')">Out for Delivery</button>`:''} ${o.status==='out_for_delivery'&&isS?`<button class="btn btn-sm btn-success" onclick="completePod(${o.id})">Complete POD</button>`:(o.status==='out_for_delivery'?'<span class="text-sm text-gray">Scan package first to enable POD</span>':'')} ${o.copayAmount>0&&!o.copayCollected&&isS?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">Collect Copay</button>`:''}</div></div>`}).join('');}catch(e){showAlert('alert-area','danger',e.message);}}
-function scanPkg(id,qr){const code=prompt('Enter or scan QR code:');if(!code)return;if(code.toUpperCase()===qr.toUpperCase()){scannedSet.add(id);showAlert('alert-area','success','Package scanned! POD enabled.');loadDeliveries();}else{showAlert('alert-area','danger',`QR mismatch! Expected: ${qr}`);}}
-async function upd(id,s){await ApiService.put(`/driver-portal/deliveries/${id}/status?status=${s}`);showAlert('alert-area','success',`Status: ${s.replace(/_/g,' ')}`);loadDeliveries();}
-async function completePod(id){const name=prompt('Recipient name:');if(!name)return;await ApiService.post(`/driver-portal/deliveries/${id}/pod`,{recipientName:name});scannedSet.delete(id);showAlert('alert-area','success','Delivered!');loadDeliveries();}
-async function copay(id){if(!confirm('Confirm copay collected?'))return;await ApiService.post(`/driver-portal/deliveries/${id}/collect-copay`);showAlert('alert-area','success','Copay collected!');loadDeliveries();}
-loadProfile();loadDeliveries();
+
+async function loadDeliveries(){
+    try{
+        const d=await ApiService.get('/driver-portal/deliveries');
+        const el=document.getElementById('deliveries');
+        
+        if(!d.deliveries.length){
+            el.innerHTML='<div class="empty-state"><h3>No Active Deliveries</h3><p>No deliveries assigned right now. Check back later!</p></div>';
+            document.getElementById('route-nav').style.display='none';
+            return;
+        }
+        
+        const addrs=d.deliveries.map(o=>`${o.street}, ${o.city}, ${o.state} ${o.postalCode}`);
+        if(addrs.length>1){
+            document.getElementById('full-route-btn').href=`https://www.google.com/maps/dir/${addrs.map(a=>encodeURIComponent(a)).join('/')}`;
+            document.getElementById('route-nav').style.display='block';
+        }
+        
+        el.innerHTML=d.deliveries.map((o,i)=>{
+            const addr=`${o.street}, ${o.city}, ${o.state} ${o.postalCode}`;
+            const isS=scannedSet.has(o.id);
+            return `<div class="delivery-card">
+                <div class="dc-header">
+                    <div><span class="stop-badge">${i+1}</span><span class="dc-qr">${o.qrCode||o.orderNumber}</span></div>
+                    <div class="d-flex gap-2 items-center">
+                        ${isS?'<span class="scan-badge">✓ Scanned</span>':''}
+                        ${statusBadge(o.status)}
+                        <a href="${mapsUrl(addr)}" target="_blank" class="nav-btn">${Icons.mapPin} Navigate</a>
+                    </div>
+                </div>
+                <div class="dc-details">
+                    <div><strong>To:</strong> ${o.recipientName}</div>
+                    <div><strong>Phone:</strong> <a href="tel:${o.recipientPhone}">${o.recipientPhone}</a></div>
+                    <div><strong>Address:</strong> ${addr}</div>
+                    ${o.copayAmount>0?`<div><strong>Copay:</strong> $${o.copayAmount.toFixed(2)} ${o.copayCollected?'<span class="text-success">(Collected)</span>':'<span class="text-warning">(Pending)</span>'}</div>`:''}
+                </div>
+                ${o.deliveryNotes?`<div class="mt-1 text-sm text-gray">Notes: ${o.deliveryNotes}</div>`:''}
+                <div class="dc-actions">
+                    ${!isS?`<button class="btn btn-sm btn-outline" onclick="openScanModal(${o.id},'${o.qrCode||''}')">📷 Scan Package</button>`:''}
+                    ${o.status==='assigned'?`<button class="btn btn-sm btn-warning" onclick="upd(${o.id},'picked_up')">Pick Up</button>`:''}
+                    ${o.status==='picked_up'?`<button class="btn btn-sm btn-info" onclick="upd(${o.id},'in_transit')">Start Transit</button>`:''}
+                    ${o.status==='in_transit'?`<button class="btn btn-sm btn-primary" onclick="upd(${o.id},'out_for_delivery')">Out for Delivery</button>`:''}
+                    ${o.status==='out_for_delivery'&&isS?`<button class="btn btn-sm btn-success" onclick="openPodModal(${o.id})">Complete Delivery</button>`:(o.status==='out_for_delivery'?'<span class="text-sm text-gray">Scan package to enable delivery</span>':'')}
+                    ${o.copayAmount>0&&!o.copayCollected&&isS?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">Collect $${o.copayAmount.toFixed(2)}</button>`:''}
+                </div>
+            </div>`;
+        }).join('');
+    }catch(e){showAlert('alert-area','danger',e.message);}
+}
+
+async function loadHistory(){
+    try{
+        const d=await ApiService.get('/driver-portal/history');
+        document.getElementById('history-list').innerHTML=d.deliveries.length?d.deliveries.map(o=>`
+            <div class="delivery-card" style="opacity:0.8">
+                <div class="dc-header">
+                    <div><span class="dc-qr">${o.qrCode||o.orderNumber}</span></div>
+                    <div>${statusBadge(o.status)}</div>
+                </div>
+                <div class="dc-details">
+                    <div><strong>To:</strong> ${o.recipientName}</div>
+                    <div><strong>Address:</strong> ${o.street}, ${o.city}</div>
+                    <div><strong>Delivered:</strong> ${o.actualDeliveryTime?formatDate(o.actualDeliveryTime):'-'}</div>
+                </div>
+            </div>
+        `).join(''):'<div class="text-center text-gray py-3">No delivery history yet</div>';
+    }catch{
+        document.getElementById('history-list').innerHTML='<div class="text-center text-gray py-3">Unable to load history</div>';
+    }
+}
+
+// QR Scanner
+function openScanModal(orderId,expectedQr){
+    document.getElementById('scan-order-id').value=orderId;
+    document.getElementById('scan-expected-qr').value=expectedQr;
+    document.getElementById('manual-qr').value='';
+    document.getElementById('scan-modal').classList.add('active');
+    startQrScanner();
+}
+
+function closeScanModal(){
+    stopQrScanner();
+    document.getElementById('scan-modal').classList.remove('active');
+}
+
+async function startQrScanner(){
+    try{
+        html5QrCode=new Html5Qrcode("qr-reader");
+        await html5QrCode.start(
+            {facingMode:"environment"},
+            {fps:10,qrbox:{width:200,height:200}},
+            onQrScanned,
+            ()=>{}
+        );
+    }catch(e){console.log('Camera not available');}
+}
+
+function stopQrScanner(){
+    if(html5QrCode){
+        html5QrCode.stop().catch(()=>{});
+        html5QrCode=null;
+    }
+}
+
+function onQrScanned(code){
+    verifyQrCode(code);
+}
+
+function verifyManualQr(){
+    const code=document.getElementById('manual-qr').value.trim();
+    if(code)verifyQrCode(code);
+}
+
+function verifyQrCode(code){
+    const orderId=parseInt(document.getElementById('scan-order-id').value);
+    const expected=document.getElementById('scan-expected-qr').value;
+    
+    if(code.toUpperCase()===expected.toUpperCase()){
+        scannedSet.add(orderId);
+        closeScanModal();
+        showAlert('alert-area','success','✓ Package verified! You can now complete delivery.');
+        loadDeliveries();
+    }else{
+        showAlert('alert-area','danger',`QR mismatch! Expected: ${expected}, Got: ${code}`);
+    }
+}
+
+// POD
+function openPodModal(orderId){
+    document.getElementById('pod-order-id').value=orderId;
+    document.getElementById('pod-name').value='';
+    document.getElementById('pod-notes').value='';
+    document.getElementById('pod-modal').classList.add('active');
+}
+
+function closePodModal(){
+    document.getElementById('pod-modal').classList.remove('active');
+}
+
+async function submitPod(){
+    const orderId=document.getElementById('pod-order-id').value;
+    const name=document.getElementById('pod-name').value;
+    if(!name){showAlert('alert-area','danger','Please enter recipient name');return;}
+    
+    try{
+        await ApiService.post(`/driver-portal/deliveries/${orderId}/pod`,{recipientName:name});
+        scannedSet.delete(parseInt(orderId));
+        closePodModal();
+        showAlert('alert-area','success','✓ Delivery completed! Great job!');
+        loadDeliveries();
+    }catch(e){showAlert('alert-area','danger',e.message);}
+}
+
+async function upd(id,s){
+    await ApiService.put(`/driver-portal/deliveries/${id}/status?status=${s}`);
+    showAlert('alert-area','success',`Status: ${s.replace(/_/g,' ')}`);
+    loadDeliveries();
+}
+
+async function copay(id){
+    if(!confirm('Confirm copay collected from customer?'))return;
+    await ApiService.post(`/driver-portal/deliveries/${id}/collect-copay`);
+    showAlert('alert-area','success','Copay collected!');
+    loadDeliveries();
+}
+
+loadProfile();
+loadDeliveries();
 </script>
 }
