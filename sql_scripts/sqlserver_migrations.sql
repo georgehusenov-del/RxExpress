@@ -1,9 +1,7 @@
 -- ========================================================
 -- RX Expresss - SQL Server Migration Script
 -- Generated: February 17, 2026
--- ========================================================
--- Run this script on SQL Server to create/update the schema
--- to match the current ASP.NET Core 8 application.
+-- FIXED: Identity key lengths reduced to 128 for SQL Server compatibility
 -- ========================================================
 
 -- Create Migration History table if not exists
@@ -18,23 +16,23 @@ END
 GO
 
 -- ========================================================
--- MIGRATION: 20260217085512_Init
+-- MIGRATION: Init + FixIdentityKeyLengths (Combined)
 -- ========================================================
 IF NOT EXISTS (SELECT * FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260217085512_Init')
 BEGIN
 
-    -- AspNetRoles
+    -- AspNetRoles (Key size: 128)
     CREATE TABLE [AspNetRoles] (
-        [Id] NVARCHAR(450) NOT NULL,
-        [Name] NVARCHAR(256) NULL,
-        [NormalizedName] NVARCHAR(256) NULL,
+        [Id] NVARCHAR(128) NOT NULL,
+        [Name] NVARCHAR(128) NULL,
+        [NormalizedName] NVARCHAR(128) NULL,
         [ConcurrencyStamp] NVARCHAR(MAX) NULL,
         CONSTRAINT [PK_AspNetRoles] PRIMARY KEY ([Id])
     );
 
-    -- AspNetUsers
+    -- AspNetUsers (Key size: 128)
     CREATE TABLE [AspNetUsers] (
-        [Id] NVARCHAR(450) NOT NULL,
+        [Id] NVARCHAR(128) NOT NULL,
         [FirstName] NVARCHAR(100) NOT NULL,
         [LastName] NVARCHAR(100) NOT NULL,
         [IsActive] BIT NOT NULL DEFAULT 1,
@@ -77,6 +75,7 @@ BEGIN
     -- RoutePlans
     CREATE TABLE [RoutePlans] (
         [Id] INT IDENTITY(1,1) NOT NULL,
+        [CircuitPlanId] NVARCHAR(100) NULL,
         [Title] NVARCHAR(200) NOT NULL,
         [Date] NVARCHAR(20) NOT NULL,
         [Status] NVARCHAR(50) NOT NULL DEFAULT 'draft',
@@ -104,7 +103,7 @@ BEGIN
     -- AspNetRoleClaims
     CREATE TABLE [AspNetRoleClaims] (
         [Id] INT IDENTITY(1,1) NOT NULL,
-        [RoleId] NVARCHAR(450) NOT NULL,
+        [RoleId] NVARCHAR(128) NOT NULL,
         [ClaimType] NVARCHAR(MAX) NULL,
         [ClaimValue] NVARCHAR(MAX) NULL,
         CONSTRAINT [PK_AspNetRoleClaims] PRIMARY KEY ([Id]),
@@ -114,35 +113,35 @@ BEGIN
     -- AspNetUserClaims
     CREATE TABLE [AspNetUserClaims] (
         [Id] INT IDENTITY(1,1) NOT NULL,
-        [UserId] NVARCHAR(450) NOT NULL,
+        [UserId] NVARCHAR(128) NOT NULL,
         [ClaimType] NVARCHAR(MAX) NULL,
         [ClaimValue] NVARCHAR(MAX) NULL,
         CONSTRAINT [PK_AspNetUserClaims] PRIMARY KEY ([Id]),
         CONSTRAINT [FK_AspNetUserClaims_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [AspNetUsers] ([Id]) ON DELETE CASCADE
     );
 
-    -- AspNetUserLogins
+    -- AspNetUserLogins (Key sizes: 128)
     CREATE TABLE [AspNetUserLogins] (
         [LoginProvider] NVARCHAR(128) NOT NULL,
         [ProviderKey] NVARCHAR(128) NOT NULL,
         [ProviderDisplayName] NVARCHAR(MAX) NULL,
-        [UserId] NVARCHAR(450) NOT NULL,
+        [UserId] NVARCHAR(128) NOT NULL,
         CONSTRAINT [PK_AspNetUserLogins] PRIMARY KEY ([LoginProvider], [ProviderKey]),
         CONSTRAINT [FK_AspNetUserLogins_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [AspNetUsers] ([Id]) ON DELETE CASCADE
     );
 
     -- AspNetUserRoles
     CREATE TABLE [AspNetUserRoles] (
-        [UserId] NVARCHAR(450) NOT NULL,
-        [RoleId] NVARCHAR(450) NOT NULL,
+        [UserId] NVARCHAR(128) NOT NULL,
+        [RoleId] NVARCHAR(128) NOT NULL,
         CONSTRAINT [PK_AspNetUserRoles] PRIMARY KEY ([UserId], [RoleId]),
         CONSTRAINT [FK_AspNetUserRoles_AspNetRoles_RoleId] FOREIGN KEY ([RoleId]) REFERENCES [AspNetRoles] ([Id]) ON DELETE CASCADE,
         CONSTRAINT [FK_AspNetUserRoles_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [AspNetUsers] ([Id]) ON DELETE CASCADE
     );
 
-    -- AspNetUserTokens
+    -- AspNetUserTokens (Key sizes: 128)
     CREATE TABLE [AspNetUserTokens] (
-        [UserId] NVARCHAR(450) NOT NULL,
+        [UserId] NVARCHAR(128) NOT NULL,
         [LoginProvider] NVARCHAR(128) NOT NULL,
         [Name] NVARCHAR(128) NOT NULL,
         [Value] NVARCHAR(MAX) NULL,
@@ -153,7 +152,7 @@ BEGIN
     -- Pharmacies
     CREATE TABLE [Pharmacies] (
         [Id] INT IDENTITY(1,1) NOT NULL,
-        [UserId] NVARCHAR(450) NOT NULL,
+        [UserId] NVARCHAR(128) NOT NULL,
         [Name] NVARCHAR(200) NOT NULL,
         [LicenseNumber] NVARCHAR(50) NOT NULL,
         [NpiNumber] NVARCHAR(20) NULL,
@@ -177,7 +176,8 @@ BEGIN
     -- Drivers
     CREATE TABLE [Drivers] (
         [Id] INT IDENTITY(1,1) NOT NULL,
-        [UserId] NVARCHAR(450) NOT NULL,
+        [UserId] NVARCHAR(128) NOT NULL,
+        [CircuitDriverId] NVARCHAR(100) NULL,
         [VehicleType] NVARCHAR(20) NOT NULL DEFAULT 'car',
         [VehicleNumber] NVARCHAR(20) NOT NULL,
         [LicenseNumber] NVARCHAR(50) NOT NULL,
@@ -198,6 +198,7 @@ BEGIN
         [OrderNumber] NVARCHAR(20) NOT NULL,
         [TrackingNumber] NVARCHAR(20) NOT NULL,
         [QrCode] NVARCHAR(20) NULL,
+        [CircuitStopId] NVARCHAR(100) NULL,
         [PharmacyId] INT NOT NULL,
         [PharmacyName] NVARCHAR(200) NULL,
         [DeliveryType] NVARCHAR(20) NOT NULL DEFAULT 'next_day',
@@ -263,7 +264,7 @@ BEGIN
         [OrderId] INT NULL,
         [OrderNumber] NVARCHAR(20) NULL,
         [Action] NVARCHAR(50) NOT NULL,
-        [ScannedBy] NVARCHAR(450) NOT NULL,
+        [ScannedBy] NVARCHAR(128) NOT NULL,
         [ScannedByName] NVARCHAR(100) NULL,
         [ScannedByRole] NVARCHAR(20) NULL,
         [ScannedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
@@ -292,31 +293,15 @@ BEGIN
     CREATE INDEX [IX_RoutePlanOrders_RoutePlanId] ON [RoutePlanOrders] ([RoutePlanId]);
     CREATE INDEX [IX_ScanLogs_OrderId] ON [ScanLogs] ([OrderId]);
 
-    -- Record migration
+    -- Record migrations as applied
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES ('20260217085512_Init', '8.0.0');
-
-END
-GO
-
--- ========================================================
--- MIGRATION: 20260217142736_AddCircuitFields
--- ========================================================
-IF NOT EXISTS (SELECT * FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260217142736_AddCircuitFields')
-BEGIN
-
-    -- Add CircuitPlanId to RoutePlans
-    ALTER TABLE [RoutePlans] ADD [CircuitPlanId] NVARCHAR(100) NULL;
-
-    -- Add CircuitStopId to Orders
-    ALTER TABLE [Orders] ADD [CircuitStopId] NVARCHAR(100) NULL;
-
-    -- Add CircuitDriverId to Drivers
-    ALTER TABLE [Drivers] ADD [CircuitDriverId] NVARCHAR(100) NULL;
-
-    -- Record migration
+    
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES ('20260217142736_AddCircuitFields', '8.0.0');
+    
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES ('20260217145432_FixIdentityKeyLengths', '8.0.0');
 
 END
 GO
