@@ -376,5 +376,98 @@ class TestPharmacies:
         assert "total" in data
 
 
+class TestPublicTracking:
+    """Public tracking page tests - no auth required"""
+    
+    def test_track_by_qr_code(self, admin_token):
+        """Test public tracking endpoint with QR code"""
+        # First get an order to find QR code
+        response = requests.get(
+            f"{BASE_URL}/admin/orders",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        orders = response.json()["orders"]
+        if orders and orders[0].get("qrCode"):
+            qr_code = orders[0]["qrCode"]
+            
+            # Test public tracking - no auth required
+            response = requests.get(f"{BASE_URL}/orders/track/{qr_code}")
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+            data = response.json()
+            assert "orderNumber" in data
+            assert "status" in data
+            assert "recipientName" in data
+    
+    def test_track_by_order_number(self, admin_token):
+        """Test public tracking endpoint with order number"""
+        # First get an order
+        response = requests.get(
+            f"{BASE_URL}/admin/orders",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        orders = response.json()["orders"]
+        if orders:
+            order_number = orders[0].get("orderNumber")
+            
+            # Test public tracking
+            response = requests.get(f"{BASE_URL}/orders/track/{order_number}")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["orderNumber"] == order_number
+    
+    def test_track_by_tracking_number(self, admin_token):
+        """Test public tracking endpoint with tracking number"""
+        response = requests.get(
+            f"{BASE_URL}/admin/orders",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        orders = response.json()["orders"]
+        if orders and orders[0].get("trackingNumber"):
+            tracking_number = orders[0]["trackingNumber"]
+            
+            response = requests.get(f"{BASE_URL}/orders/track/{tracking_number}")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["trackingNumber"] == tracking_number
+    
+    def test_track_invalid_code(self):
+        """Test public tracking with invalid code"""
+        response = requests.get(f"{BASE_URL}/orders/track/INVALID_CODE_123")
+        assert response.status_code == 404
+
+
+class TestPharmacyPortal:
+    """Pharmacy portal tests"""
+    
+    def test_get_pharmacy_profile(self, pharmacy_token):
+        """Test get pharmacy profile"""
+        response = requests.get(
+            f"{BASE_URL}/pharmacies/my",
+            headers={"Authorization": f"Bearer {pharmacy_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "id" in data
+        assert "name" in data
+    
+    def test_get_pharmacy_orders(self, pharmacy_token):
+        """Test get pharmacy orders"""
+        # First get pharmacy ID
+        profile_response = requests.get(
+            f"{BASE_URL}/pharmacies/my",
+            headers={"Authorization": f"Bearer {pharmacy_token}"}
+        )
+        pharmacy_id = profile_response.json()["id"]
+        
+        response = requests.get(
+            f"{BASE_URL}/orders?pharmacyId={pharmacy_id}",
+            headers={"Authorization": f"Bearer {pharmacy_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "orders" in data
+        assert "total" in data
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
