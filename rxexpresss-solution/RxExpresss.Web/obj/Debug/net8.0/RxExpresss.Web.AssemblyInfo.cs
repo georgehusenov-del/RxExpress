@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RxExpresss.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+01a507cfa1f31d0e3c881a6f91dfe68aa86a82cc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0d87b3e3fff8cc02529670037157b1eab9949679")]
 [assembly: System.Reflection.AssemblyProductAttribute("RxExpresss.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RxExpresss.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
