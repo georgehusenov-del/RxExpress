@@ -80,12 +80,12 @@ public class CircuitService
         try
         {
             var response = await MakeRequestAsync("POST", "/plans", payload);
-            if (response != null)
+            if (response.HasValue)
             {
                 return new CircuitPlanResult
                 {
                     Success = true,
-                    PlanId = response.GetProperty("id").GetString(),
+                    PlanId = response.Value.GetProperty("id").GetString(),
                     Message = "Plan created in Circuit"
                 };
             }
