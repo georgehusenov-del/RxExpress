@@ -226,19 +226,15 @@ async function startQrScanner(){
 }
 
 async function stopQrScanner(){
-    if(html5QrCode){
+    if(html5QrCode && scannerRunning){
         try{
-            // Check state before stopping
-            const state = html5QrCode.getState();
-            // State 2 = SCANNING, State 3 = PAUSED  
-            if(state === 2 || state === 3){
-                await html5QrCode.stop();
-            }
+            await html5QrCode.stop();
         }catch(e){
-            // Ignore - scanner wasn't in stoppable state
+            // Ignore errors
         }
-        html5QrCode=null;
+        scannerRunning=false;
     }
+    html5QrCode=null;
 }
 
 function onQrScanned(code){
