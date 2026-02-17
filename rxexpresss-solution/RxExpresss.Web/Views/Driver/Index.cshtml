@@ -49,8 +49,8 @@
             <div id="qr-reader"></div>
             <p class="text-sm text-gray mt-2">Point camera at package QR code</p>
             <div class="mt-2">
-                <input type="text" class="form-control" id="manual-qr" placeholder="Or enter QR manually..." style="max-width:200px;display:inline-block"/>
-                <button class="btn btn-primary btn-sm" onclick="verifyManualQr()">Verify</button>
+                <input type="text" class="form-control" id="manual-qr" placeholder="Or enter QR manually..." style="max-width:200px;display:inline-block" data-testid="manual-qr-input"/>
+                <button class="btn btn-primary btn-sm" onclick="verifyManualQr()" data-testid="verify-qr-btn">Verify</button>
             </div>
         </div>
     </div>
