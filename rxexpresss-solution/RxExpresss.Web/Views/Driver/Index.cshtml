@@ -202,8 +202,8 @@ function openScanModal(orderId,expectedQr){
     startQrScanner();
 }
 
-function closeScanModal(){
-    stopQrScanner();
+async function closeScanModal(){
+    await stopQrScanner();
     document.getElementById('scan-modal').classList.remove('active');
 }
 
