@@ -108,12 +108,15 @@ public class RoutesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] CreatePlanDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdatePlanDto dto)
     {
         var plan = await _plans.GetByIdAsync(id);
         if (plan == null) return NotFound();
         if (!string.IsNullOrEmpty(dto.Title)) plan.Title = dto.Title;
         if (!string.IsNullOrEmpty(dto.Date)) plan.Date = dto.Date;
+        if (!string.IsNullOrEmpty(dto.Status)) plan.Status = dto.Status;
+        if (!string.IsNullOrEmpty(dto.OptimizationStatus)) plan.OptimizationStatus = dto.OptimizationStatus;
+        if (dto.Distributed.HasValue) plan.Distributed = dto.Distributed.Value;
         plan.UpdatedAt = DateTime.UtcNow;
         await _plans.UpdateAsync(plan);
         return Ok(new { message = "Plan updated" });
