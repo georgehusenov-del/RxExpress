@@ -5,9 +5,35 @@ Tests authentication, user management, orders, drivers, and routes APIs
 import pytest
 import requests
 import os
+import time
 
 # Use the preview URL for testing
 BASE_URL = "https://rx-express-net.preview.emergentagent.com/api"
+
+def retry_request(method, url, max_retries=3, **kwargs):
+    """Retry request with exponential backoff for transient 520 errors"""
+    for i in range(max_retries):
+        try:
+            if method == 'get':
+                response = requests.get(url, **kwargs)
+            elif method == 'post':
+                response = requests.post(url, **kwargs)
+            elif method == 'put':
+                response = requests.put(url, **kwargs)
+            else:
+                raise ValueError(f"Unsupported method: {method}")
+            
+            if response.status_code != 520:
+                return response
+            
+            if i < max_retries - 1:
+                time.sleep(1 * (i + 1))
+        except Exception as e:
+            if i < max_retries - 1:
+                time.sleep(1 * (i + 1))
+            else:
+                raise e
+    return response
 
 # Test credentials
 ADMIN_EMAIL = "admin@rxexpresss.com"
