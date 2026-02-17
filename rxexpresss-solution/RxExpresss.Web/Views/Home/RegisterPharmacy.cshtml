@@ -1,0 +1,104 @@
+@{ ViewData["Title"] = "Register Pharmacy"; Layout = "_Layout"; }
+<div class="auth-wrapper" style="padding:40px 20px">
+    <div class="auth-card" style="max-width:500px">
+        <h1>Partner With Us</h1>
+        <p>Register your pharmacy to start using RX Expresss delivery service</p>
+        <div id="alert-area"></div>
+        <form id="register-form">
+            <h4 style="margin:20px 0 12px;color:var(--primary)">Pharmacy Information</h4>
+            <div class="form-group">
+                <label>Pharmacy Name *</label>
+                <input type="text" class="form-control" id="p-name" placeholder="ABC Pharmacy" required />
+            </div>
+            <div class="form-group">
+                <label>License Number *</label>
+                <input type="text" class="form-control" id="p-license" placeholder="PH12345" required />
+            </div>
+            <div class="form-group">
+                <label>Phone *</label>
+                <input type="tel" class="form-control" id="p-phone" placeholder="(555) 000-0000" required />
+            </div>
+            <div class="form-group">
+                <label>Address *</label>
+                <input type="text" class="form-control" id="p-address" placeholder="123 Main St, New York, NY 10001" required />
+            </div>
+
+            <h4 style="margin:24px 0 12px;color:var(--primary)">Account Information</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="form-group">
+                    <label>First Name *</label>
+                    <input type="text" class="form-control" id="u-fn" placeholder="John" required />
+                </div>
+                <div class="form-group">
+                    <label>Last Name *</label>
+                    <input type="text" class="form-control" id="u-ln" placeholder="Doe" required />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email *</label>
+                <input type="email" class="form-control" id="u-email" placeholder="pharmacy@example.com" required />
+            </div>
+            <div class="form-group">
+                <label>Password * <small style="color:#94a3b8">(min 6 chars, 1 uppercase, 1 number, 1 special)</small></label>
+                <input type="password" class="form-control" id="u-password" placeholder="••••••••" required />
+            </div>
+            <div class="form-group">
+                <label>Confirm Password *</label>
+                <input type="password" class="form-control" id="u-password2" placeholder="••••••••" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-full mt-2" id="register-btn">Register Pharmacy</button>
+        </form>
+        <div class="mt-3 text-center">
+            Already have an account? <a href="/Home/Login" style="color:var(--primary)">Sign In</a>
+        </div>
+    </div>
+</div>
+@section Scripts {
+<script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('register-btn');
+        const pw1 = document.getElementById('u-password').value;
+        const pw2 = document.getElementById('u-password2').value;
+        
+        if (pw1 !== pw2) {
+            showAlert('alert-area', 'danger', 'Passwords do not match');
+            return;
+        }
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Registering...';
+        
+        try {
+            const resp = await fetch(`${API_BASE_URL}/auth/register-pharmacy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pharmacyName: document.getElementById('p-name').value,
+                    licenseNumber: document.getElementById('p-license').value,
+                    phone: document.getElementById('p-phone').value,
+                    address: document.getElementById('p-address').value,
+                    firstName: document.getElementById('u-fn').value,
+                    lastName: document.getElementById('u-ln').value,
+                    email: document.getElementById('u-email').value,
+                    password: pw1
+                })
+            });
+            
+            if (resp.ok) {
+                showAlert('alert-area', 'success', 'Registration successful! Please wait for admin approval. You will receive an email when your account is activated.');
+                document.getElementById('register-form').reset();
+            } else {
+                const data = await resp.json();
+                showAlert('alert-area', 'danger', data.detail || 'Registration failed');
+            }
+        } catch (err) {
+            showAlert('alert-area', 'danger', 'An error occurred. Please try again.');
+        }
+        
+        btn.disabled = false;
+        btn.textContent = 'Register Pharmacy';
+    });
+</script>
+}
