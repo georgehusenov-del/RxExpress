@@ -63,13 +63,16 @@
     </div>
 
     <script>
-        const API_BASE = '/api';
+        // API_BASE uses the same origin since nginx proxies /api to port 8001
+        const API_BASE = window.location.origin + '/api';
         
         // Check if tracking number is in URL
         const pathParts = window.location.pathname.split('/');
-        if (pathParts.length > 2 && pathParts[2]) {
-            document.getElementById('track-input').value = pathParts[2];
-            trackOrder();
+        const trackingCode = pathParts.length > 2 ? decodeURIComponent(pathParts[2]) : null;
+        if (trackingCode) {
+            document.getElementById('track-input').value = trackingCode;
+            // Slight delay to ensure DOM is ready
+            setTimeout(() => trackOrder(), 100);
         }
         
         document.getElementById('track-input').addEventListener('keydown', (e) => {
