@@ -1,3 +1,75 @@
 @{ Layout = "_SidebarLayout"; }
-<div class="card"><div class="card-body"><div class="empty-state"><h3>@ViewData["PageTitle"]</h3><p>This section is ready for implementation.</p></div></div></div>
-@section Scripts { <script>if(!ApiService.requireAuth('Admin'))throw'';</script> }
+@section TopbarRight { <button class="btn btn-primary" onclick="document.getElementById('create-modal').classList.add('active')">+ Create Gig</button> }
+
+<div class="row mb-2">
+    <div class="col"><div class="card"><div class="card-header">Pending Orders (Ready for Routing)</div><div class="card-body table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all" onchange="toggleAll()"/></th><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th></tr></thead><tbody id="pending-tbl"></tbody></table></div></div></div>
+</div>
+<div class="card"><div class="card-header">Active Gigs (Route Plans)</div><div class="card-body" id="gigs-list"></div></div>
+
+<!-- Create Gig Modal -->
+<div class="modal-overlay" id="create-modal"><div class="modal"><div class="modal-header"><h3>Create New Gig</h3><button class="close-btn" onclick="closeM('create-modal')">&times;</button></div><div class="modal-body">
+    <div class="form-group"><label>Title</label><input class="form-control" id="g-title" placeholder="e.g. Morning Route - Queens"/></div>
+    <div class="form-group"><label>Date</label><input type="date" class="form-control" id="g-date"/></div>
+</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeM('create-modal')">Cancel</button><button class="btn btn-primary" onclick="createGig()">Create</button></div></div></div>
+
+<!-- Gig Detail Modal -->
+<div class="modal-overlay" id="detail-modal"><div class="modal" style="max-width:650px"><div class="modal-header"><h3 id="detail-title">Gig Details</h3><button class="close-btn" onclick="closeM('detail-modal')">&times;</button></div><div class="modal-body" id="detail-body"></div></div></div>
+
+@section Scripts {
+<script>
+if(!ApiService.requireAuth('Admin'))throw'';
+let selectedOrders=new Set(),drivers=[];
+document.getElementById('g-date').value=new Date().toISOString().split('T')[0];
+(async()=>{const d=await ApiService.get('/admin/drivers');drivers=d.drivers;})();
+
+function closeM(id){document.getElementById(id).classList.remove('active')}
+function toggleAll(){const c=document.getElementById('select-all').checked;document.querySelectorAll('.order-cb').forEach(cb=>{cb.checked=c;if(c)selectedOrders.add(parseInt(cb.value));else selectedOrders.delete(parseInt(cb.value))});}
+
+async function loadPending(){
+    const d=await ApiService.get('/routes/pending-orders');
+    document.getElementById('pending-tbl').innerHTML=d.orders.length?d.orders.map(o=>`<tr><td><input type="checkbox" class="order-cb" value="${o.id}" onchange="toggleOrder(${o.id},this.checked)"/></td><td>${o.orderNumber}</td><td><strong>${o.qrCode||'-'}</strong></td><td>${o.recipientName}</td><td>${o.city}</td><td>${o.deliveryType}</td></tr>`).join(''):'<tr><td colspan="6" class="text-center text-gray">No pending orders</td></tr>';
+}
+function toggleOrder(id,checked){if(checked)selectedOrders.add(id);else selectedOrders.delete(id);}
+
+async function loadGigs(){
+    const d=await ApiService.get('/routes');
+    document.getElementById('gigs-list').innerHTML=d.plans.length?d.plans.map(g=>`<div class="delivery-card"><div class="dc-header"><div><span class="dc-qr">${g.title}</span> <span class="text-sm text-gray">${g.date}</span></div><div class="d-flex gap-2 items-center">${statusBadge(g.status)}<span class="text-sm">${g.orderCount} orders | ${g.driverCount} drivers</span></div></div><div class="dc-actions"><button class="btn btn-sm btn-outline" onclick="viewGig(${g.id})">View Details</button><button class="btn btn-sm btn-primary" onclick="addSelectedToGig(${g.id})">Add Selected Orders</button><button class="btn btn-sm btn-warning" onclick="assignDriverModal(${g.id})">Assign Driver</button><button class="btn btn-sm btn-danger" onclick="deleteGig(${g.id})">Delete</button></div></div>`).join(''):'<div class="empty-state"><h3>No gigs yet</h3><p>Create a gig and add orders to it.</p></div>';
+}
+
+async function createGig(){
+    await ApiService.post('/routes',{title:document.getElementById('g-title').value,date:document.getElementById('g-date').value});
+    closeM('create-modal');showAlert('alert-area','success','Gig created!');loadGigs();
+}
+
+async function addSelectedToGig(gigId){
+    if(!selectedOrders.size){showAlert('alert-area','danger','Select orders first');return;}
+    await ApiService.post(`/routes/${gigId}/add-orders`,{orderIds:[...selectedOrders]});
+    selectedOrders.clear();showAlert('alert-area','success','Orders added to gig!');loadPending();loadGigs();
+}
+
+function assignDriverModal(gigId){
+    const driverName=prompt('Select driver:\n'+drivers.map((d,i)=>`${i+1}. ${d.user?.firstName||''} ${d.user?.lastName||''} (ID:${d.id})`).join('\n')+'\n\nEnter Driver ID:');
+    if(driverName)assignDriver(gigId,parseInt(driverName));
+}
+async function assignDriver(gigId,driverId){
+    const r=await ApiService.post(`/routes/${gigId}/assign-driver`,{driverId});
+    showAlert('alert-area','success',r.message);loadGigs();loadPending();
+}
+
+async function viewGig(id){
+    const d=await ApiService.get(`/routes/${id}`);
+    document.getElementById('detail-title').textContent=d.plan.title;
+    document.getElementById('detail-body').innerHTML=`
+        <div class="d-flex justify-between mb-2"><span>Date: <strong>${d.plan.date}</strong></span>${statusBadge(d.plan.status)}</div>
+        <h4>Drivers</h4>${d.drivers.length?d.drivers.map(dr=>`<span class="badge badge-available">${dr.name}</span> `).join(''):'<span class="text-gray">No drivers assigned</span>'}
+        <h4 class="mt-2">Stops (${d.orders.length})</h4>
+        <table><thead><tr><th>#</th><th>Order</th><th>QR</th><th>Recipient</th><th>Address</th><th>Status</th><th></th></tr></thead><tbody>${d.orders.map((o,i)=>`<tr><td>${i+1}</td><td>${o.orderNumber}</td><td><strong>${o.qrCode||'-'}</strong></td><td>${o.recipientName}</td><td>${o.street}, ${o.city}</td><td>${statusBadge(o.status)}</td><td><button class="btn btn-sm btn-danger" onclick="removeFromGig(${id},${o.id})">Remove</button></td></tr>`).join('')}</tbody></table>`;
+    document.getElementById('detail-modal').classList.add('active');
+}
+
+async function removeFromGig(gigId,orderId){await ApiService.delete(`/routes/${gigId}/orders/${orderId}`);showAlert('alert-area','success','Removed');viewGig(gigId);loadPending();}
+async function deleteGig(id){if(!confirm('Delete this gig?'))return;await ApiService.delete(`/routes/${id}`);showAlert('alert-area','success','Deleted');loadGigs();}
+
+loadPending();loadGigs();
+</script>
+}

@@ -1,3 +1,38 @@
 @{ Layout = "_SidebarLayout"; }
-<div class="card"><div class="card-body"><div class="empty-state"><h3>@ViewData["PageTitle"]</h3><p>This section is ready for implementation.</p></div></div></div>
-@section Scripts { <script>if(!ApiService.requireAuth('Admin'))throw'';</script> }
+@section TopbarRight { <button class="btn btn-primary" onclick="document.getElementById('add-modal').classList.add('active')">+ Add Zone</button> }
+<div class="card"><div class="card-body table-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Delivery Fee</th><th>Priority Surcharge</th><th>Zip Codes</th><th>Active</th><th>Actions</th></tr></thead><tbody id="tbl"></tbody></table></div></div>
+
+<div class="modal-overlay" id="add-modal"><div class="modal"><div class="modal-header"><h3 id="modal-title">Add Service Zone</h3><button class="close-btn" onclick="closeM('add-modal')">&times;</button></div><div class="modal-body">
+    <input type="hidden" id="z-id"/>
+    <div class="row"><div class="col"><div class="form-group"><label>Zone Name</label><input class="form-control" id="z-name" placeholder="e.g. Manhattan"/></div></div><div class="col"><div class="form-group"><label>Code</label><input class="form-control" id="z-code" placeholder="e.g. M" maxlength="2"/></div></div></div>
+    <div class="row"><div class="col"><div class="form-group"><label>Delivery Fee ($)</label><input type="number" step="0.01" class="form-control" id="z-fee" value="5.99"/></div></div><div class="col"><div class="form-group"><label>Priority Surcharge ($)</label><input type="number" step="0.01" class="form-control" id="z-surcharge" value="5.00"/></div></div></div>
+    <div class="form-group"><label>Zip Codes (comma-separated)</label><textarea class="form-control" id="z-zips" rows="3" placeholder="10001,10002,10003"></textarea></div>
+</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeM('add-modal')">Cancel</button><button class="btn btn-primary" onclick="saveZone()">Save</button></div></div></div>
+
+@section Scripts {
+<script>
+if(!ApiService.requireAuth('Admin'))throw'';
+function closeM(id){document.getElementById(id).classList.remove('active')}
+const boroughColors={M:'#f59e0b',B:'#22c55e',Q:'#3b82f6',X:'#ef4444',S:'#8b5cf6'};
+async function load(){
+    const d=await ApiService.get('/zones');
+    document.getElementById('tbl').innerHTML=d.zones.map(z=>`<tr><td><span style="display:inline-block;width:28px;height:28px;border-radius:6px;background:${boroughColors[z.code]||'#64748b'};color:white;text-align:center;line-height:28px;font-weight:700">${z.code}</span></td><td><strong>${z.name}</strong></td><td>$${z.deliveryFee.toFixed(2)}</td><td>$${z.prioritySurcharge.toFixed(2)}</td><td><span class="text-sm text-gray">${(z.zipCodes||'').split(',').length} zip codes</span></td><td>${z.isActive?'<span class="text-success">Active</span>':'<span class="text-danger">Inactive</span>'}</td><td><button class="btn btn-sm btn-outline" onclick="editZ(${z.id})">Edit</button> <button class="btn btn-sm btn-danger" onclick="deleteZ(${z.id})">Delete</button></td></tr>`).join('');
+}
+async function editZ(id){
+    const z=await ApiService.get(`/zones/${id}`);
+    document.getElementById('z-id').value=id;document.getElementById('modal-title').textContent='Edit Zone';
+    document.getElementById('z-name').value=z.name;document.getElementById('z-code').value=z.code;
+    document.getElementById('z-fee').value=z.deliveryFee;document.getElementById('z-surcharge').value=z.prioritySurcharge;
+    document.getElementById('z-zips').value=z.zipCodes;
+    document.getElementById('add-modal').classList.add('active');
+}
+async function saveZone(){
+    const id=document.getElementById('z-id').value;
+    const data={name:document.getElementById('z-name').value,code:document.getElementById('z-code').value,deliveryFee:parseFloat(document.getElementById('z-fee').value),prioritySurcharge:parseFloat(document.getElementById('z-surcharge').value),zipCodes:document.getElementById('z-zips').value};
+    if(id)await ApiService.put(`/zones/${id}`,data);else await ApiService.post('/zones',data);
+    closeM('add-modal');showAlert('alert-area','success','Saved!');load();
+}
+async function deleteZ(id){if(!confirm('Delete zone?'))return;await ApiService.delete(`/zones/${id}`);load();}
+load();
+</script>
+}

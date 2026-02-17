@@ -1,3 +1,44 @@
 @{ Layout = "_SidebarLayout"; }
-<div class="card"><div class="card-body"><div class="empty-state"><h3>@ViewData["PageTitle"]</h3><p>This section is ready for implementation.</p></div></div></div>
-@section Scripts { <script>if(!ApiService.requireAuth('Admin'))throw'';</script> }
+@section TopbarRight { <button class="btn btn-primary" onclick="document.getElementById('add-modal').classList.add('active')">+ Add Pricing</button> }
+<div class="card"><div class="card-body table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Price</th><th>Time Window</th><th>Cutoff</th><th>Add-on</th><th>Active</th><th>Actions</th></tr></thead><tbody id="tbl"></tbody></table></div></div>
+
+<div class="modal-overlay" id="add-modal"><div class="modal"><div class="modal-header"><h3 id="modal-title">Add Pricing</h3><button class="close-btn" onclick="closeM('add-modal')">&times;</button></div><div class="modal-body">
+    <input type="hidden" id="p-id"/>
+    <div class="form-group"><label>Delivery Type</label><select class="form-control" id="p-type"><option value="next_day">Next-Day</option><option value="same_day">Same-Day</option><option value="priority">Priority</option><option value="scheduled">Scheduled</option><option value="addon">Add-on</option></select></div>
+    <div class="form-group"><label>Name</label><input class="form-control" id="p-name"/></div>
+    <div class="form-group"><label>Description</label><input class="form-control" id="p-desc"/></div>
+    <div class="form-group"><label>Base Price ($)</label><input type="number" step="0.01" class="form-control" id="p-price"/></div>
+    <div class="row"><div class="col"><div class="form-group"><label>Time Window Start</label><input class="form-control" id="p-tws" placeholder="08:00"/></div></div><div class="col"><div class="form-group"><label>Time Window End</label><input class="form-control" id="p-twe" placeholder="13:00"/></div></div></div>
+    <div class="form-group"><label>Cutoff Time</label><input class="form-control" id="p-cut" placeholder="14:00"/></div>
+    <div class="form-group"><label><input type="checkbox" id="p-addon"/> Is Add-on (extra fee)</label></div>
+</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeM('add-modal')">Cancel</button><button class="btn btn-primary" onclick="savePricing()">Save</button></div></div></div>
+
+@section Scripts {
+<script>
+if(!ApiService.requireAuth('Admin'))throw'';
+function closeM(id){document.getElementById(id).classList.remove('active')}
+async function load(){
+    const d=await ApiService.get('/pricing?includeInactive=true');
+    document.getElementById('tbl').innerHTML=d.pricing.map(p=>`<tr><td><strong>${p.name}</strong><br/><span class="text-sm text-gray">${p.description||''}</span></td><td>${p.deliveryType}</td><td>$${p.basePrice.toFixed(2)}</td><td>${p.timeWindowStart?p.timeWindowStart+' - '+p.timeWindowEnd:'-'}</td><td>${p.cutoffTime||'-'}</td><td>${p.isAddon?'Yes':'-'}</td><td>${p.isActive?'<span class="text-success">Active</span>':'<span class="text-danger">Inactive</span>'}</td><td><button class="btn btn-sm btn-outline" onclick="editP(${p.id})">Edit</button> <button class="btn btn-sm ${p.isActive?'btn-warning':'btn-success'}" onclick="toggleP(${p.id})">${p.isActive?'Disable':'Enable'}</button> <button class="btn btn-sm btn-danger" onclick="deleteP(${p.id})">Delete</button></td></tr>`).join('');
+}
+function openAdd(){document.getElementById('p-id').value='';document.getElementById('modal-title').textContent='Add Pricing';['p-name','p-desc','p-price','p-tws','p-twe','p-cut'].forEach(id=>document.getElementById(id).value='');document.getElementById('p-addon').checked=false;document.getElementById('add-modal').classList.add('active');}
+async function editP(id){
+    const p=await ApiService.get(`/pricing/${id}`);
+    document.getElementById('p-id').value=id;document.getElementById('modal-title').textContent='Edit Pricing';
+    document.getElementById('p-type').value=p.deliveryType;document.getElementById('p-name').value=p.name;
+    document.getElementById('p-desc').value=p.description||'';document.getElementById('p-price').value=p.basePrice;
+    document.getElementById('p-tws').value=p.timeWindowStart||'';document.getElementById('p-twe').value=p.timeWindowEnd||'';
+    document.getElementById('p-cut').value=p.cutoffTime||'';document.getElementById('p-addon').checked=p.isAddon;
+    document.getElementById('add-modal').classList.add('active');
+}
+async function savePricing(){
+    const id=document.getElementById('p-id').value;
+    const data={deliveryType:document.getElementById('p-type').value,name:document.getElementById('p-name').value,description:document.getElementById('p-desc').value,basePrice:parseFloat(document.getElementById('p-price').value),isActive:true,timeWindowStart:document.getElementById('p-tws').value||null,timeWindowEnd:document.getElementById('p-twe').value||null,cutoffTime:document.getElementById('p-cut').value||null,isAddon:document.getElementById('p-addon').checked};
+    if(id)await ApiService.put(`/pricing/${id}`,data);else await ApiService.post('/pricing',data);
+    closeM('add-modal');showAlert('alert-area','success','Saved!');load();
+}
+async function toggleP(id){await ApiService.put(`/pricing/${id}/toggle`);load();}
+async function deleteP(id){if(!confirm('Delete?'))return;await ApiService.delete(`/pricing/${id}`);load();}
+load();
+</script>
+}
