@@ -18,7 +18,21 @@ let drivers=[];
 (async()=>{const d=await ApiService.get('/admin/drivers');drivers=d.drivers;})();
 async function load(){const s=document.getElementById('sf').value;const d=await ApiService.get(s?`/admin/orders?status=${s}`:'/admin/orders');document.getElementById('tbl').innerHTML=d.orders.length?d.orders.map(o=>`<tr><td><a href="#" onclick="showDetail(${o.id});return false" style="color:var(--primary);font-weight:600">${o.orderNumber}</a></td><td><strong>${o.qrCode||'-'}</strong></td><td>${o.pharmacyName||'-'}</td><td>${o.recipientName}</td><td>${o.city}</td><td>${o.deliveryType}</td><td>${o.copayAmount>0?`<span class="${o.copayCollected?'text-success':'text-warning'}">$${o.copayAmount.toFixed(2)}</span>`:'$0'}</td><td>${statusBadge(o.status)}</td><td>${o.driverName||'<span class="text-gray">-</span>'}</td><td><button class="btn btn-sm btn-outline" onclick="openEdit(${o.id},'${o.status}')">Edit</button></td></tr>`).join(''):'<tr><td colspan="10" class="text-center text-gray">No orders</td></tr>';}
 function openEdit(id,s){document.getElementById('m-id').value=id;document.getElementById('m-status').value=s;const sel=document.getElementById('m-driver');sel.innerHTML='<option value="">-- No Change --</option>'+drivers.map(d=>`<option value="${d.id}">${d.user?.firstName||''} ${d.user?.lastName||''}</option>`).join('');document.getElementById('modal').classList.add('active');}
-async function doUpdate(){const id=document.getElementById('m-id').value;await ApiService.put(`/admin/orders/${id}/status`,{status:document.getElementById('m-status').value});const did=document.getElementById('m-driver').value;if(did)await ApiService.put(`/admin/orders/${id}/assign`,{driverId:parseInt(did)});document.getElementById('modal').classList.remove('active');showAlert('alert-area','success','Updated!');load();}
+async function doUpdate(){
+    const id=document.getElementById('m-id').value;
+    const newStatus=document.getElementById('m-status').value;
+    const did=document.getElementById('m-driver').value;
+    // Prevent setting status to "assigned" without selecting a driver
+    if(newStatus==='assigned' && !did){
+        showAlert('alert-area','danger','Please select a driver before setting status to Assigned');
+        return;
+    }
+    await ApiService.put(`/admin/orders/${id}/status`,{status:newStatus});
+    if(did)await ApiService.put(`/admin/orders/${id}/assign`,{driverId:parseInt(did)});
+    document.getElementById('modal').classList.remove('active');
+    showAlert('alert-area','success','Updated!');
+    load();
+}
 async function showDetail(id){const o=await ApiService.get(`/orders/${id}`);document.getElementById('detail-body').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div><div class="od-row"><span class="text-gray">Order #</span><strong>${o.orderNumber}</strong></div><div class="od-row"><span class="text-gray">QR Code</span><strong style="color:var(--primary)">${o.qrCode||'-'}</strong></div><div class="od-row"><span class="text-gray">Status</span>${statusBadge(o.status)}</div><div class="od-row"><span class="text-gray">Type</span>${o.deliveryType}</div><div class="od-row"><span class="text-gray">Driver</span>${o.driverName||'Unassigned'}</div></div><div><div class="od-row"><span class="text-gray">Recipient</span>${o.recipientName}</div><div class="od-row"><span class="text-gray">Phone</span>${o.recipientPhone}</div><div class="od-row"><span class="text-gray">Address</span>${o.street}, ${o.city}, ${o.state} ${o.postalCode}</div><div class="od-row"><span class="text-gray">Copay</span>$${(o.copayAmount||0).toFixed(2)}</div><div class="od-row"><span class="text-gray">Fee</span>$${(o.deliveryFee||0).toFixed(2)}</div></div></div><div class="mt-2"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.street+', '+o.city+', '+o.state)}" target="_blank" class="btn btn-sm btn-outline">${Icons.mapPin} Open in Google Maps</a></div>`;document.getElementById('detail-modal').classList.add('active');}
 load();
 </script>
