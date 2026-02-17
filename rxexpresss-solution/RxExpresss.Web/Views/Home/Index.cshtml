@@ -172,10 +172,15 @@
     </section>
 
     <footer class="footer">
-        <p>&copy; 2026 RX Expresss. All rights reserved. | <a href="#" style="color:var(--primary)">Privacy Policy</a> | <a href="#" style="color:var(--primary)">Terms of Service</a></p>
+        <p>&copy; 2026 RX Expresss. All rights reserved. | <a href="#" onclick="return false;" style="color:var(--primary)">Privacy Policy</a> | <a href="#" onclick="return false;" style="color:var(--primary)">Terms of Service</a></p>
     </footer>
 
     <script>
+        function scrollToSection(e, sectionId) {
+            e.preventDefault();
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        }
+        
         document.getElementById('contact-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const alert = document.getElementById('contact-alert');
