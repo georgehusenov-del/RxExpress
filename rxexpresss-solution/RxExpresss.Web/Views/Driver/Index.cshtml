@@ -93,6 +93,7 @@ if(!ApiService.requireAuth('Driver'))throw'';
 let myStatus='offline';
 const scannedSet=new Set();
 let html5QrCode=null;
+let scannerRunning=false;
 
 function showTab(tab){
     document.getElementById('tab-active').className='btn '+(tab==='active'?'btn-primary':'btn-outline');
