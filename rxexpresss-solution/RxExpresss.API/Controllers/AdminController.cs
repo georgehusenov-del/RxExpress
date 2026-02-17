@@ -197,4 +197,91 @@ public class AdminController : ControllerBase
         var pharmacies = await _pharmacies.Query().ToListAsync();
         return Ok(new { pharmacies, total = pharmacies.Count });
     }
+
+    // User Management CRUD
+    [HttpPost("users")]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
+    {
+        if (await _userManager.FindByEmailAsync(dto.Email) != null)
+            return BadRequest(new { detail = "Email already exists" });
+
+        var user = new ApplicationUser
+        {
+            UserName = dto.Email, Email = dto.Email,
+            FirstName = dto.FirstName, LastName = dto.LastName,
+            PhoneNumber = dto.Phone, EmailConfirmed = true, IsActive = dto.IsActive
+        };
+
+        var result = await _userManager.CreateAsync(user, dto.Password);
+        if (!result.Succeeded)
+            return BadRequest(new { detail = string.Join(", ", result.Errors.Select(e => e.Description)) });
+
+        await _userManager.AddToRoleAsync(user, dto.Role);
+        return Ok(new { message = "User created", userId = user.Id });
+    }
+
+    [HttpGet("users/{id}")]
+    public async Task<IActionResult> GetUser(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound(new { detail = "User not found" });
+        var roles = await _userManager.GetRolesAsync(user);
+        return Ok(new { user.Id, user.Email, user.FirstName, user.LastName, Phone = user.PhoneNumber, Role = roles.FirstOrDefault(), user.IsActive, user.CreatedAt });
+    }
+
+    [HttpPut("users/{id}")]
+    public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound(new { detail = "User not found" });
+
+        user.FirstName = dto.FirstName ?? user.FirstName;
+        user.LastName = dto.LastName ?? user.LastName;
+        user.PhoneNumber = dto.Phone ?? user.PhoneNumber;
+        if (dto.IsActive.HasValue) user.IsActive = dto.IsActive.Value;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(new { detail = string.Join(", ", result.Errors.Select(e => e.Description)) });
+
+        // Update role if changed
+        if (!string.IsNullOrEmpty(dto.Role))
+        {
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            if (!currentRoles.Contains(dto.Role))
+            {
+                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                await _userManager.AddToRoleAsync(user, dto.Role);
+            }
+        }
+
+        return Ok(new { message = "User updated" });
+    }
+
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound(new { detail = "User not found" });
+
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(new { detail = string.Join(", ", result.Errors.Select(e => e.Description)) });
+
+        return Ok(new { message = "User deleted" });
+    }
+
+    [HttpPut("users/{id}/toggle-active")]
+    public async Task<IActionResult> ToggleUserActive(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound(new { detail = "User not found" });
+
+        user.IsActive = !user.IsActive;
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(new { detail = string.Join(", ", result.Errors.Select(e => e.Description)) });
+
+        return Ok(new { message = $"User {(user.IsActive ? "activated" : "deactivated")}", isActive = user.IsActive });
+    }
 }
