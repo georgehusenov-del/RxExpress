@@ -79,4 +79,21 @@ public class OrdersController : ControllerBase
         await _orders.UpdateAsync(order);
         return Ok(new { message = $"Status updated to {dto.Status}" });
     }
+
+    [HttpGet("track/{code}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Track(string code)
+    {
+        var order = await _orders.Query()
+            .Where(o => o.OrderNumber == code || o.TrackingNumber == code || o.QrCode == code)
+            .Select(o => new { 
+                o.OrderNumber, o.TrackingNumber, o.QrCode, o.Status, 
+                o.RecipientName, o.Street, o.City, o.State, o.PostalCode,
+                o.DeliveryType, o.TimeWindow, o.CopayAmount, o.CopayCollected,
+                o.DriverName, o.ActualPickupTime, o.ActualDeliveryTime, o.CreatedAt
+            })
+            .FirstOrDefaultAsync();
+        if (order == null) return NotFound(new { detail = "Order not found" });
+        return Ok(order);
+    }
 }
