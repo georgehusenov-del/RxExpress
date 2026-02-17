@@ -238,9 +238,9 @@ function onQrScanned(code){
     verifyQrCode(code);
 }
 
-function verifyManualQr(){
+async function verifyManualQr(){
     const code=document.getElementById('manual-qr').value.trim();
-    if(code)verifyQrCode(code);
+    if(code) await verifyQrCode(code);
 }
 
 async function verifyQrCode(code){
