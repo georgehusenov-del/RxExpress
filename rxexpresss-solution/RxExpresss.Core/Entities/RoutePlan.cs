@@ -8,6 +8,7 @@ public class RoutePlan
     public string Status { get; set; } = "draft"; // draft, optimized, distributed
     public string OptimizationStatus { get; set; } = "not_started";
     public bool Distributed { get; set; } = false;
+    public string? CircuitPlanId { get; set; } // Circuit API Plan ID
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
