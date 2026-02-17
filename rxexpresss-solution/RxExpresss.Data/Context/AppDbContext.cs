@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using RxExpresss.Core.Entities;
@@ -22,10 +23,31 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
+        // Fix SQL Server index key length issue - reduce Identity key sizes from 450 to 128
         builder.Entity<ApplicationUser>(e =>
         {
+            e.Property(u => u.Id).HasMaxLength(128);
             e.Property(u => u.FirstName).HasMaxLength(100);
             e.Property(u => u.LastName).HasMaxLength(100);
+        });
+
+        builder.Entity<IdentityRole>(e =>
+        {
+            e.Property(r => r.Id).HasMaxLength(128);
+            e.Property(r => r.Name).HasMaxLength(128);
+            e.Property(r => r.NormalizedName).HasMaxLength(128);
+        });
+
+        builder.Entity<IdentityUserLogin<string>>(e =>
+        {
+            e.Property(l => l.LoginProvider).HasMaxLength(128);
+            e.Property(l => l.ProviderKey).HasMaxLength(128);
+        });
+
+        builder.Entity<IdentityUserToken<string>>(e =>
+        {
+            e.Property(t => t.LoginProvider).HasMaxLength(128);
+            e.Property(t => t.Name).HasMaxLength(128);
         });
 
         builder.Entity<Pharmacy>(e =>
