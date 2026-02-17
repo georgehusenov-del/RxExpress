@@ -8,10 +8,30 @@ public class HomeController : Controller
     public HomeController(IConfiguration config) => _config = config;
 
     [HttpGet("/")]
-    [HttpGet("/login")]
     public IActionResult Index()
+    {
+        return View("Index");
+    }
+
+    [HttpGet("/login")]
+    [HttpGet("/Home/Login")]
+    public IActionResult Login()
     {
         ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? _config["ApiBaseUrl"] ?? "/api";
         return View("Login");
+    }
+
+    [HttpGet("/Home/ForgotPassword")]
+    public IActionResult ForgotPassword()
+    {
+        ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? _config["ApiBaseUrl"] ?? "/api";
+        return View("ForgotPassword");
+    }
+
+    [HttpGet("/Home/RegisterPharmacy")]
+    public IActionResult RegisterPharmacy()
+    {
+        ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? _config["ApiBaseUrl"] ?? "/api";
+        return View("RegisterPharmacy");
     }
 }
