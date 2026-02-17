@@ -4,6 +4,7 @@ public class DriverProfile
 {
     public int Id { get; set; }
     public string UserId { get; set; } = string.Empty;
+    public string? CircuitDriverId { get; set; } // Circuit API Driver ID
     public string VehicleType { get; set; } = "car";
     public string VehicleNumber { get; set; } = string.Empty;
     public string LicenseNumber { get; set; } = string.Empty;
