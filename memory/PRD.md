@@ -207,5 +207,35 @@ This script:
   - Made closeScanModal and stopQrScanner async with proper error handling
   - Created /wwwroot/js/qr-scanner-patch.js as fallback
 
+## Enhancements (Feb 18, 2026)
+
+### Gig Workflow Improvements
+- [x] **Auto-Create Gigs** - Creates gigs for all service zones based on date
+- [x] **Split Gig** - Admin can split gig into two if area has too many orders
+- [x] **Status Sync Bug Fix** - Orders assigned via Gig now show "assigned" in Order Management
+- [x] **Improved UI** - Gig cards with icons, stats, and action buttons
+- [x] **Service Zone Support** - Gigs can be linked to service zones (Manhattan, Brooklyn, Queens, Bronx, Staten Island)
+
+### Order Management Improvements
+- [x] **Filters Added** - Date, Pharmacy, Status filters
+- [x] **Status Icons** - Colored SVG icons for each status (New=blue, Assigned=purple, Delivered=green, etc.)
+- [x] **Action Icons** - View (eye), Edit (pencil), Map (location pin) icons replace text buttons
+
+### API Proxy Enhancement
+- [x] **Web Frontend Proxy** - /api requests from frontend now proxy to backend on port 8001
+- [x] **Seamless Integration** - No need for CORS or separate API URL configuration
+
+### New API Endpoints
+- `POST /api/routes/auto-create` - Auto-create gigs for all service zones
+- `POST /api/routes/{id}/split` - Split a gig into two
+- `POST /api/routes/{id}/optimize` - Trigger Circuit API route optimization
+- `GET /api/routes/service-zones` - Get active service zones
+- `GET /api/routes/pending-orders` - Get orders ready for routing (new, not in any gig)
+
+### Circuit API Integration
+- [x] **API Key Configured** - Circuit API key added to appsettings.json
+- [x] **Date Format Fix** - Fixed date format for Circuit API (day/month/year integers)
+- [x] **Optimization Working** - Route optimization marks gig as "optimized"
+
 ---
-*Last Updated: February 17, 2026 - Bug Fixes Session*
+*Last Updated: February 18, 2026 - Gig Workflow & Order Management Enhancements*
