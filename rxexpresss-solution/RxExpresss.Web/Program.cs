@@ -8,6 +8,7 @@ mvcBuilder.AddRazorRuntimeCompilation();
 builder.Services.AddHttpClient("API", client =>
 {
     client.BaseAddress = new Uri("http://localhost:8001");
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "/api";
@@ -27,66 +28,76 @@ app.Use(async (context, next) =>
 });
 
 // Proxy /api requests to the API service on port 8001
-app.Map("/api", async (HttpContext context, IHttpClientFactory httpClientFactory) =>
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), appBuilder =>
 {
-    var client = httpClientFactory.CreateClient("API");
-    var path = context.Request.Path.Value;
-    var query = context.Request.QueryString.Value;
-    var url = $"/api{path}{query}";
-    
-    var requestMessage = new HttpRequestMessage
+    appBuilder.Run(async context =>
     {
-        Method = new HttpMethod(context.Request.Method),
-        RequestUri = new Uri(url, UriKind.Relative)
-    };
-    
-    // Copy headers
-    foreach (var header in context.Request.Headers)
-    {
-        if (!header.Key.StartsWith("Host", StringComparison.OrdinalIgnoreCase) &&
-            !header.Key.StartsWith("Content-Length", StringComparison.OrdinalIgnoreCase) &&
-            !header.Key.StartsWith("Content-Type", StringComparison.OrdinalIgnoreCase))
-        {
-            requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
-        }
-    }
-    
-    // Copy body for POST/PUT/PATCH
-    if (context.Request.ContentLength > 0)
-    {
-        requestMessage.Content = new StreamContent(context.Request.Body);
-        if (context.Request.ContentType != null)
-        {
-            requestMessage.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(context.Request.ContentType);
-        }
-    }
-    
-    try
-    {
-        var response = await client.SendAsync(requestMessage);
-        context.Response.StatusCode = (int)response.StatusCode;
+        var httpClientFactory = context.RequestServices.GetRequiredService<IHttpClientFactory>();
+        var client = httpClientFactory.CreateClient("API");
+        var path = context.Request.Path.Value;
+        var query = context.Request.QueryString.Value;
+        var url = $"{path}{query}";
         
-        // Copy response headers
-        foreach (var header in response.Headers)
+        var requestMessage = new HttpRequestMessage
         {
-            context.Response.Headers[header.Key] = header.Value.ToArray();
-        }
-        foreach (var header in response.Content.Headers)
+            Method = new HttpMethod(context.Request.Method),
+            RequestUri = new Uri(url, UriKind.Relative)
+        };
+        
+        // Copy headers
+        foreach (var header in context.Request.Headers)
         {
-            context.Response.Headers[header.Key] = header.Value.ToArray();
+            if (!header.Key.StartsWith("Host", StringComparison.OrdinalIgnoreCase) &&
+                !header.Key.StartsWith("Content-Length", StringComparison.OrdinalIgnoreCase) &&
+                !header.Key.StartsWith("Content-Type", StringComparison.OrdinalIgnoreCase) &&
+                !header.Key.StartsWith("Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+            {
+                requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
+            }
         }
         
-        // Remove chunked transfer encoding header as we're writing the full content
-        context.Response.Headers.Remove("Transfer-Encoding");
+        // Copy body for POST/PUT/PATCH/DELETE
+        if (context.Request.ContentLength > 0 || context.Request.Headers.ContainsKey("Transfer-Encoding"))
+        {
+            context.Request.EnableBuffering();
+            var body = new MemoryStream();
+            await context.Request.Body.CopyToAsync(body);
+            body.Position = 0;
+            requestMessage.Content = new StreamContent(body);
+            
+            if (context.Request.ContentType != null)
+            {
+                requestMessage.Content.Headers.ContentType = 
+                    System.Net.Http.Headers.MediaTypeHeaderValue.Parse(context.Request.ContentType);
+            }
+        }
         
-        var content = await response.Content.ReadAsByteArrayAsync();
-        await context.Response.Body.WriteAsync(content);
-    }
-    catch (Exception ex)
-    {
-        context.Response.StatusCode = 502;
-        await context.Response.WriteAsync($"API proxy error: {ex.Message}");
-    }
+        try
+        {
+            var response = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+            context.Response.StatusCode = (int)response.StatusCode;
+            
+            // Copy response headers
+            foreach (var header in response.Headers)
+            {
+                if (!header.Key.Equals("Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+                    context.Response.Headers[header.Key] = header.Value.ToArray();
+            }
+            foreach (var header in response.Content.Headers)
+            {
+                if (!header.Key.Equals("Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+                    context.Response.Headers[header.Key] = header.Value.ToArray();
+            }
+            
+            var content = await response.Content.ReadAsByteArrayAsync();
+            await context.Response.Body.WriteAsync(content);
+        }
+        catch (Exception ex)
+        {
+            context.Response.StatusCode = 502;
+            await context.Response.WriteAsync($"API proxy error: {ex.Message}");
+        }
+    });
 });
 
 app.UseStaticFiles();
