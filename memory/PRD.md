@@ -260,3 +260,25 @@ This script:
 
 ---
 *Last Updated: February 18, 2026 - Gig Workflow, Order Management & POD Enhancements*
+
+## SQL Server Migration
+
+The complete SQL Server migration script is available at:
+**`/app/sql_scripts/sqlserver_final_migration.sql`**
+
+### Deployment Steps for MS SQL Server:
+1. Create an empty database in SQL Server
+2. Update connection string in `appsettings.json`:
+   ```json
+   "ConnectionStrings": {
+     "DefaultConnection": "Server=your_server;Database=RxExpresss;User Id=your_user;Password=your_password;TrustServerCertificate=True"
+   }
+   ```
+3. Run the SQL script: `sqlserver_final_migration.sql`
+4. Or let EF Core auto-migrate: Set `"AutoMigrate": true` in settings
+
+### Key SQL Server Considerations:
+- Identity columns use `NVARCHAR(128)` for key fields (SQL Server index limit)
+- All tables created with proper indexes
+- Default roles and service zones seeded
+- Migration history recorded in `__EFMigrationsHistory`
