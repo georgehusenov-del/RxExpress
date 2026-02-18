@@ -158,28 +158,23 @@ class TestOrderDetailsPODDisplay:
     
     def test_order_details_include_pod_fields(self, admin_token):
         """Order details API should include photoUrl, signatureUrl, recipientNameSigned"""
-        # Get any order
-        orders_response = requests.get(
-            f"{BASE_URL}/api/admin/orders",
+        # Get order 1 which we know has POD data
+        detail_response = requests.get(
+            f"{BASE_URL}/api/orders/1",
             headers={"Authorization": f"Bearer {admin_token}"}
         )
-        assert orders_response.status_code == 200
+        assert detail_response.status_code == 200
+        data = detail_response.json()
         
-        orders = orders_response.json().get("orders", [])
-        if orders:
-            order_id = orders[0]["id"]
-            detail_response = requests.get(
-                f"{BASE_URL}/api/orders/{order_id}",
-                headers={"Authorization": f"Bearer {admin_token}"}
-            )
-            assert detail_response.status_code == 200
-            data = detail_response.json()
-            
-            # These fields should exist in the response (even if null)
-            assert "photoUrl" in data, "photoUrl field should exist in order details"
-            assert "signatureUrl" in data, "signatureUrl field should exist in order details"
-            assert "recipientNameSigned" in data, "recipientNameSigned field should exist"
-            print("SUCCESS: Order details include all POD fields")
+        # These fields should exist in the response
+        assert "photoUrl" in data, "photoUrl field should exist in order details"
+        assert "signatureUrl" in data, "signatureUrl field should exist in order details"
+        assert "recipientNameSigned" in data, "recipientNameSigned field should exist"
+        
+        # Verify POD data is present for delivered order
+        if data.get("status") == "delivered":
+            assert data.get("photoUrl") is not None, "Delivered order should have photoUrl"
+        print("SUCCESS: Order details include all POD fields")
 
 
 class TestDriverPortalHistory:
