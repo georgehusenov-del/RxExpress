@@ -100,6 +100,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// CORS must be first!
+app.UseCors();
+
 // Ensure wwwroot exists
 var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
 if (!Directory.Exists(wwwrootPath))
