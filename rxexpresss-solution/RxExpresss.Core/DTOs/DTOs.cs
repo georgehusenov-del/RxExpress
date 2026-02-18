@@ -105,9 +105,10 @@ public class CreatePricingDto
 // POD
 public class SubmitPodDto
 {
-    public string? SignatureData { get; set; }
-    public string? PhotoData { get; set; }
     public string? RecipientName { get; set; }
+    public string? PhotoBase64 { get; set; }  // Required - Base64 encoded photo
+    public string? SignatureBase64 { get; set; }  // Optional - Base64 encoded signature
+    public string? Notes { get; set; }  // Optional delivery notes
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
 }
