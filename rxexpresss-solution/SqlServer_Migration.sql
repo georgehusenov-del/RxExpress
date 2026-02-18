@@ -332,3 +332,7 @@ END
 
 PRINT 'Seed data applied successfully!';
 GO
+
+-- NOTE: Orders and Gigs are NOT seeded
+-- Orders are created by pharmacies via the Order Creation flow
+-- Gigs (Route Plans) are auto-created when orders are submitted based on service zone
