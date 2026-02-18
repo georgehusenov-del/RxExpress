@@ -1,0 +1,77 @@
+{
+  "Version": 1,
+  "Hash": "dHPPvQtG2hWCQzOiIaLxRzpDzkSqgU9iq/0zapIZC30=",
+  "Source": "RxExpresss.API",
+  "BasePath": "_content/RxExpresss.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "RxExpresss.API/wwwroot",
+      "Source": "RxExpresss.API",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/",
+      "BasePath": "_content/RxExpresss.API",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/.gitkeep",
+      "SourceId": "RxExpresss.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/",
+      "BasePath": "_content/RxExpresss.API",
+      "RelativePath": ".gitkeep",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/.gitkeep"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pod_RX-EB0AAB40_20260218093239.jpg",
+      "SourceId": "RxExpresss.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/",
+      "BasePath": "_content/RxExpresss.API",
+      "RelativePath": "pod/pod_RX-EB0AAB40_20260218093239.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/pod_RX-EB0AAB40_20260218093239.jpg"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/sig_RX-EB0AAB40_20260218093239.png",
+      "SourceId": "RxExpresss.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/",
+      "BasePath": "_content/RxExpresss.API",
+      "RelativePath": "pod/sig_RX-EB0AAB40_20260218093239.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/sig_RX-EB0AAB40_20260218093239.png"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+/app/rxexpresss-solution/RxExpresss.Data/bin/Release/net8.0/RxExpresss.Data.deps.json
+/app/rxexpresss-solution/RxExpresss.Data/bin/Release/net8.0/RxExpresss.Data.dll
+/app/rxexpresss-solution/RxExpresss.Data/bin/Release/net8.0/RxExpresss.Data.pdb
+/app/rxexpresss-solution/RxExpresss.Data/bin/Release/net8.0/RxExpresss.Core.dll
+/app/rxexpresss-solution/RxExpresss.Data/bin/Release/net8.0/RxExpresss.Core.pdb
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/RxExpresss.Data.csproj.AssemblyReference.cache
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/RxExpresss.Data.GeneratedMSBuildEditorConfig.editorconfig
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/RxExpresss.Data.AssemblyInfoInputs.cache
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/RxExpresss.Data.AssemblyInfo.cs
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/RxExpresss.Data.csproj.CoreCompileInputs.cache
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/RxExpres.7EB08C33.Up2Date
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/RxExpresss.Data.dll
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/refint/RxExpresss.Data.dll
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/RxExpresss.Data.pdb
+/app/rxexpresss-solution/RxExpresss.Data/obj/Release/net8.0/ref/RxExpresss.Data.dll

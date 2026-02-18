@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/.gitkeep",
+      "PackagePath": "staticwebassets/.gitkeep"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pod_RX-EB0AAB40_20260218093239.jpg",
+      "PackagePath": "staticwebassets/pod/pod_RX-EB0AAB40_20260218093239.jpg"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/sig_RX-EB0AAB40_20260218093239.png",
+      "PackagePath": "staticwebassets/pod/sig_RX-EB0AAB40_20260218093239.png"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.RxExpresss.API.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.build.RxExpresss.API.props",
+      "PackagePath": "build\\RxExpresss.API.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.buildMultiTargeting.RxExpresss.API.props",
+      "PackagePath": "buildMultiTargeting\\RxExpresss.API.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.buildTransitive.RxExpresss.API.props",
+      "PackagePath": "buildTransitive\\RxExpresss.API.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
