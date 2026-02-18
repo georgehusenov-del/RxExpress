@@ -1,7 +1,6 @@
 @{ Layout = "_SidebarLayout"; }
 @section TopbarRight { 
     <div class="d-flex gap-2">
-        <button class="btn btn-outline" onclick="autoCreateGigs()" data-testid="auto-create-gigs-btn">Auto-Create Gigs</button>
         <button class="btn btn-primary" onclick="document.getElementById('create-modal').classList.add('active')" data-testid="create-gig-btn">+ Create Gig</button>
     </div>
 }
@@ -10,10 +9,10 @@
     <div class="col">
         <div class="card">
             <div class="card-header d-flex justify-between items-center">
-                <span>Pending Orders (Ready for Routing)</span>
+                <span>Pending Orders (Not in any Gig)</span>
                 <span class="badge badge-info" id="pending-count">0</span>
             </div>
-            <div class="card-body table-wrap">
+            <div class="card-body table-wrap" style="max-height:250px;overflow-y:auto">
                 <table>
                     <thead>
                         <tr>
@@ -74,11 +73,6 @@
                     <option value="">-- Select Zone --</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Assign Drivers (optional)</label>
-                <select class="form-control" id="g-drivers" multiple style="height:100px" data-testid="gig-drivers-select"></select>
-                <small class="text-gray">Hold Ctrl/Cmd to select multiple</small>
-            </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closeM('create-modal')">Cancel</button>
@@ -89,7 +83,7 @@
 
 <!-- Gig Detail Modal -->
 <div class="modal-overlay" id="detail-modal">
-    <div class="modal" style="max-width:800px">
+    <div class="modal" style="max-width:900px">
         <div class="modal-header">
             <h3 id="detail-title">Gig Details</h3>
             <button class="close-btn" onclick="closeM('detail-modal')">&times;</button>
@@ -98,12 +92,12 @@
     </div>
 </div>
 
-<!-- Assign Driver Modal -->
-<div class="modal-overlay" id="assign-modal">
-    <div class="modal">
+<!-- Assign Orders to Driver Modal -->
+<div class="modal-overlay" id="assign-orders-modal">
+    <div class="modal" style="max-width:700px">
         <div class="modal-header">
-            <h3>Assign Driver to Gig</h3>
-            <button class="close-btn" onclick="closeM('assign-modal')">&times;</button>
+            <h3>Assign Orders to Driver</h3>
+            <button class="close-btn" onclick="closeM('assign-orders-modal')">&times;</button>
         </div>
         <div class="modal-body">
             <input type="hidden" id="assign-gig-id"/>
@@ -111,11 +105,18 @@
                 <label>Select Driver</label>
                 <select class="form-control" id="assign-driver" data-testid="assign-driver-select"></select>
             </div>
-            <p class="text-sm text-gray">This will assign all orders in this gig to the selected driver and set their status to "assigned".</p>
+            <div class="form-group">
+                <label>Select Orders to Assign</label>
+                <div id="assign-orders-list" class="orders-select-container"></div>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                <button class="btn btn-sm btn-outline" onclick="selectAllGigOrders()">Select All</button>
+                <button class="btn btn-sm btn-outline" onclick="deselectAllGigOrders()">Deselect All</button>
+            </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeM('assign-modal')">Cancel</button>
-            <button class="btn btn-primary" onclick="confirmAssignDriver()" data-testid="confirm-assign-driver-btn">Assign Driver</button>
+            <button class="btn btn-outline" onclick="closeM('assign-orders-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmAssignOrdersToDriver()" data-testid="confirm-assign-btn">Assign Selected</button>
         </div>
     </div>
 </div>
@@ -135,7 +136,7 @@
             </div>
             <div class="form-group">
                 <label>Select Orders to Move</label>
-                <div id="split-orders-list" class="split-orders-container"></div>
+                <div id="split-orders-list" class="orders-select-container"></div>
             </div>
         </div>
         <div class="modal-footer">
@@ -166,9 +167,7 @@ document.getElementById('g-date').value = new Date().toISOString().split('T')[0]
 (async() => {
     const d = await ApiService.get('/admin/drivers');
     drivers = d.drivers;
-    const sel = document.getElementById('g-drivers');
     const assignSel = document.getElementById('assign-driver');
-    sel.innerHTML = drivers.map(d => `<option value="${d.id}">${d.user?.firstName || ''} ${d.user?.lastName || ''}</option>`).join('');
     assignSel.innerHTML = drivers.map(d => `<option value="${d.id}">${d.user?.firstName || ''} ${d.user?.lastName || ''}</option>`).join('');
 })();
 
@@ -203,7 +202,7 @@ async function loadPending() {
             <td>${o.city}</td>
             <td><span class="badge badge-info">${o.deliveryType}</span></td>
         </tr>
-    `).join('') : '<tr><td colspan="7" class="text-center text-gray">No pending orders</td></tr>';
+    `).join('') : '<tr><td colspan="7" class="text-center text-gray">No pending orders - orders are auto-assigned to gigs</td></tr>';
 }
 
 function toggleOrder(id, checked) {
@@ -221,12 +220,11 @@ async function loadGigs() {
     
     document.getElementById('active-count').textContent = active.length;
     document.getElementById('gigs-list').innerHTML = active.length ? active.map(g => renderGigCard(g, true)).join('') : 
-        '<div class="empty-state"><h3>No active gigs</h3><p>Create a gig or use Auto-Create to generate gigs based on service zones.</p></div>';
+        '<div class="empty-state"><h3>No active gigs</h3><p>Gigs are auto-created when orders come in based on service zone.</p></div>';
     document.getElementById('completed-list').innerHTML = completed.length ? completed.map(g => renderGigCard(g, false)).join('') : 
         '<div class="text-center text-gray py-3">No completed gigs yet</div>';
 }
 
-// Status icons
 const gigStatusIcons = {
     'draft': { icon: '📝', color: '#64748b' },
     'assigned': { icon: '👤', color: '#8b5cf6' },
@@ -276,22 +274,11 @@ function renderGigCard(g, showActions) {
                 View
             </button>
             ${showActions ? `
-                <button class="btn btn-sm btn-primary" onclick="addSelectedToGig(${g.id})" data-testid="add-orders-${g.id}">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add Orders
-                </button>
-                <button class="btn btn-sm btn-purple" onclick="openAssignModal(${g.id})" data-testid="assign-driver-${g.id}">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    Assign Driver
-                </button>
-                <button class="btn btn-sm btn-info" onclick="optimizeGig(${g.id})" data-testid="optimize-gig-${g.id}">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    Optimize
-                </button>
-                ${g.orderCount > 1 ? `<button class="btn btn-sm btn-warning" onclick="openSplitModal(${g.id})" data-testid="split-gig-${g.id}">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-                    Split
-                </button>` : ''}
+                <button class="btn btn-sm btn-primary" onclick="addSelectedToGig(${g.id})" data-testid="add-orders-${g.id}">+ Add Orders</button>
+                <button class="btn btn-sm btn-purple" onclick="openAssignOrdersModal(${g.id})" data-testid="assign-driver-${g.id}">Assign Driver</button>
+                ${g.driverCount > 0 ? `<button class="btn btn-sm btn-warning" onclick="unassignDriver(${g.id})" data-testid="unassign-${g.id}">Unassign</button>` : ''}
+                <button class="btn btn-sm btn-info" onclick="optimizeGig(${g.id})" data-testid="optimize-gig-${g.id}">Optimize</button>
+                ${g.orderCount > 1 ? `<button class="btn btn-sm btn-outline" onclick="openSplitModal(${g.id})" data-testid="split-gig-${g.id}">Split</button>` : ''}
                 <button class="btn btn-sm btn-danger" onclick="deleteGig(${g.id})" data-testid="delete-gig-${g.id}">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
@@ -301,77 +288,110 @@ function renderGigCard(g, showActions) {
 }
 
 async function createGig() {
-    const selectedDrivers = [...document.getElementById('g-drivers').selectedOptions].map(o => parseInt(o.value));
     const zoneId = document.getElementById('g-zone').value;
     
     await ApiService.post('/routes', {
         title: document.getElementById('g-title').value,
         date: document.getElementById('g-date').value,
-        driverIds: selectedDrivers,
         serviceZoneId: zoneId ? parseInt(zoneId) : null
     });
     
     closeM('create-modal');
     document.getElementById('g-title').value = '';
-    showAlert('alert-area', 'success', 'Gig created!');
+    toast('Gig created!', 'success');
     loadGigs();
-}
-
-async function autoCreateGigs() {
-    try {
-        const date = new Date().toISOString().split('T')[0];
-        const r = await ApiService.post('/routes/auto-create', { date });
-        showAlert('alert-area', 'success', r.message || 'Gigs created!');
-        loadGigs();
-    } catch(e) {
-        showAlert('alert-area', 'warning', e.message || 'No service zones configured');
-    }
 }
 
 async function addSelectedToGig(gigId) {
     if(!selectedOrders.size) {
-        showAlert('alert-area', 'danger', 'Select orders first');
+        toast('Select orders first', 'warning');
         return;
     }
     await ApiService.post(`/routes/${gigId}/add-orders`, { orderIds: [...selectedOrders] });
     selectedOrders.clear();
     document.getElementById('select-all').checked = false;
-    showAlert('alert-area', 'success', 'Orders added to gig!');
+    toast('Orders added to gig!', 'success');
     loadPending();
     loadGigs();
 }
 
-function openAssignModal(gigId) {
+let currentGigOrders = [];
+async function openAssignOrdersModal(gigId) {
     document.getElementById('assign-gig-id').value = gigId;
-    document.getElementById('assign-modal').classList.add('active');
+    
+    // Load orders for this gig
+    const d = await ApiService.get(`/routes/${gigId}`);
+    currentGigOrders = d.orders || [];
+    
+    document.getElementById('assign-orders-list').innerHTML = currentGigOrders.map(o => `
+        <label class="order-select-item">
+            <input type="checkbox" class="assign-order-cb" value="${o.id}" ${o.driverName ? '' : 'checked'}/>
+            <div class="order-info">
+                <strong>${o.orderNumber}</strong> - ${o.recipientName}
+                <span class="text-gray">${o.city}</span>
+            </div>
+            ${o.driverName ? `<span class="badge badge-assigned">${o.driverName}</span>` : '<span class="badge badge-new">Unassigned</span>'}
+        </label>
+    `).join('');
+    
+    document.getElementById('assign-orders-modal').classList.add('active');
 }
 
-async function confirmAssignDriver() {
+function selectAllGigOrders() {
+    document.querySelectorAll('.assign-order-cb').forEach(cb => cb.checked = true);
+}
+
+function deselectAllGigOrders() {
+    document.querySelectorAll('.assign-order-cb').forEach(cb => cb.checked = false);
+}
+
+async function confirmAssignOrdersToDriver() {
     const gigId = document.getElementById('assign-gig-id').value;
     const driverId = document.getElementById('assign-driver').value;
+    const selectedIds = [...document.querySelectorAll('.assign-order-cb:checked')].map(cb => parseInt(cb.value));
+    
     if(!driverId) {
-        showAlert('alert-area', 'danger', 'Select a driver');
+        toast('Select a driver', 'warning');
         return;
     }
+    if(!selectedIds.length) {
+        toast('Select at least one order', 'warning');
+        return;
+    }
+    
     try {
-        const r = await ApiService.post(`/routes/${gigId}/assign-driver`, { driverId: parseInt(driverId) });
-        closeM('assign-modal');
-        showAlert('alert-area', 'success', r.message);
+        const r = await ApiService.post(`/routes/${gigId}/assign-orders-to-driver`, { 
+            driverId: parseInt(driverId),
+            orderIds: selectedIds
+        });
+        closeM('assign-orders-modal');
+        toast(r.message, 'success');
         loadGigs();
         loadPending();
     } catch(e) {
-        showAlert('alert-area', 'danger', e.message);
+        toast(e.message, 'danger');
+    }
+}
+
+async function unassignDriver(gigId) {
+    if(!confirm('Unassign driver from this gig? Orders will be reset to "new" status.')) return;
+    try {
+        const r = await ApiService.post(`/routes/${gigId}/unassign-driver`);
+        toast(r.message, 'success');
+        loadGigs();
+    } catch(e) {
+        toast(e.message, 'danger');
     }
 }
 
 async function optimizeGig(gigId) {
     try {
-        showAlert('alert-area', 'info', 'Optimizing route via Circuit...');
+        toast('Optimizing route...', 'info');
         const r = await ApiService.post(`/routes/${gigId}/optimize`);
-        showAlert('alert-area', r.status === 'optimized' ? 'success' : 'warning', r.message);
+        toast(r.message, r.status === 'optimized' ? 'success' : 'warning');
         loadGigs();
     } catch(e) {
-        showAlert('alert-area', 'danger', e.message || 'Optimization failed');
+        toast(e.message || 'Optimization failed', 'danger');
     }
 }
 
@@ -380,16 +400,16 @@ async function openSplitModal(gigId) {
     document.getElementById('split-gig-id').value = gigId;
     document.getElementById('split-title').value = '';
     
-    // Load orders for this gig
     const d = await ApiService.get(`/routes/${gigId}`);
     splitGigOrders = d.orders || [];
     
     document.getElementById('split-orders-list').innerHTML = splitGigOrders.map(o => `
-        <label class="split-order-item">
+        <label class="order-select-item">
             <input type="checkbox" class="split-cb" value="${o.id}"/>
-            <span>${o.orderNumber}</span>
-            <span class="text-gray">${o.recipientName}</span>
-            <span class="text-gray">${o.city}</span>
+            <div class="order-info">
+                <strong>${o.orderNumber}</strong> - ${o.recipientName}
+                <span class="text-gray">${o.city}</span>
+            </div>
         </label>
     `).join('');
     
@@ -402,18 +422,18 @@ async function confirmSplit() {
     const selectedIds = [...document.querySelectorAll('.split-cb:checked')].map(cb => parseInt(cb.value));
     
     if(!selectedIds.length) {
-        showAlert('alert-area', 'danger', 'Select at least one order to move');
+        toast('Select at least one order to move', 'warning');
         return;
     }
     
     try {
         const r = await ApiService.post(`/routes/${gigId}/split`, { newTitle, orderIds: selectedIds });
         closeM('split-modal');
-        showAlert('alert-area', 'success', r.message);
+        toast(r.message, 'success');
         loadGigs();
         loadPending();
     } catch(e) {
-        showAlert('alert-area', 'danger', e.message);
+        toast(e.message, 'danger');
     }
 }
 
@@ -439,10 +459,10 @@ async function viewGig(id) {
         <h4 class="mt-2">Assigned Drivers</h4>
         ${driversList.length ? driversList.map(dr => `<span class="badge badge-available mr-1">${dr.name}</span>`).join('') : '<span class="text-gray">No drivers assigned yet</span>'}
         
-        <h4 class="mt-2">Stops (${orders.length})</h4>
+        <h4 class="mt-2">Orders (${orders.length})</h4>
         <table>
             <thead>
-                <tr><th>#</th><th>Order</th><th>QR</th><th>Recipient</th><th>Address</th><th>Status</th><th></th></tr>
+                <tr><th>#</th><th>Order</th><th>QR</th><th>Recipient</th><th>City</th><th>Status</th><th>Driver</th><th></th></tr>
             </thead>
             <tbody>
                 ${orders.map((o, i) => `<tr>
@@ -452,6 +472,7 @@ async function viewGig(id) {
                     <td>${o.recipientName}</td>
                     <td>${o.street}, ${o.city}</td>
                     <td>${statusBadge(o.status)}</td>
+                    <td>${o.driverName || '<span class="text-gray">-</span>'}</td>
                     <td><button class="btn btn-sm btn-danger" onclick="removeFromGig(${id},${o.id})">Remove</button></td>
                 </tr>`).join('')}
             </tbody>
@@ -459,7 +480,6 @@ async function viewGig(id) {
         
         ${orders.length > 0 ? `<div class="mt-2">
             <a href="https://www.google.com/maps/dir/${orders.map(o => encodeURIComponent(o.street + ', ' + o.city)).join('/')}" target="_blank" class="btn btn-info btn-sm">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 Open Route in Google Maps
             </a>
         </div>` : ''}`;
@@ -469,7 +489,7 @@ async function viewGig(id) {
 
 async function removeFromGig(gigId, orderId) {
     await ApiService.delete(`/routes/${gigId}/orders/${orderId}`);
-    showAlert('alert-area', 'success', 'Order removed');
+    toast('Order removed', 'success');
     viewGig(gigId);
     loadPending();
 }
@@ -477,7 +497,7 @@ async function removeFromGig(gigId, orderId) {
 async function deleteGig(id) {
     if(!confirm('Delete this gig? Orders will be returned to pending.')) return;
     await ApiService.delete(`/routes/${id}`);
-    showAlert('alert-area', 'success', 'Gig deleted');
+    toast('Gig deleted', 'success');
     loadGigs();
     loadPending();
 }
@@ -544,27 +564,32 @@ loadGigs();
 .btn-purple:hover {
     background: #7c3aed;
 }
-.split-orders-container {
+.orders-select-container {
     max-height: 300px;
     overflow-y: auto;
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 8px;
 }
-.split-order-item {
-    display: grid;
-    grid-template-columns: 24px 1fr 1fr 100px;
+.order-select-item {
+    display: flex;
+    align-items: center;
     gap: 12px;
-    padding: 8px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--border);
     cursor: pointer;
-    align-items: center;
 }
-.split-order-item:hover {
+.order-select-item:hover {
     background: var(--bg-secondary);
 }
-.split-order-item:last-child {
+.order-select-item:last-child {
     border-bottom: none;
+}
+.order-info {
+    flex: 1;
+}
+.order-info span {
+    display: block;
+    font-size: 12px;
 }
 .badge-secondary { background: #64748b; color: white; }
 .badge-warning { background: #f59e0b; color: white; }
