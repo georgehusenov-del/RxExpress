@@ -69,9 +69,30 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddSingleton<RxExpresss.API.Services.CircuitService>();
 
-// CORS - allow Web project to call API
-builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
-    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+// CORS - allow cross-origin requests from frontend
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(
+                "https://rxexpresss.com",
+                "https://www.rxexpresss.com",
+                "http://localhost:3000",
+                "http://localhost:5000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+    
+    // Also add a permissive policy for development
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
