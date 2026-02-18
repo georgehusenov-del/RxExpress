@@ -70,10 +70,17 @@ public class CircuitService
     {
         if (!IsConfigured) return null;
 
+        // Parse date string (yyyy-MM-dd) to day, month, year
+        var parsedDate = DateTime.Parse(date);
+        
         var payload = new
         {
             title,
-            starts = new { day = date },
+            starts = new { 
+                day = parsedDate.Day,
+                month = parsedDate.Month,
+                year = parsedDate.Year
+            },
             drivers = driverIds ?? new List<string>()
         };
 
