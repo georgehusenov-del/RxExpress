@@ -237,5 +237,26 @@ This script:
 - [x] **Date Format Fix** - Fixed date format for Circuit API (day/month/year integers)
 - [x] **Optimization Working** - Route optimization marks gig as "optimized"
 
+## POD (Proof of Delivery) Enhancement (Feb 18, 2026)
+
+### Driver Portal POD Flow
+- [x] **Mandatory Photo** - Photo is required for delivery completion (validation on frontend + backend)
+- [x] **Optional Signature** - Signature pad available but optional (for "leave at door" instructions)
+- [x] **Photo Upload** - Photos saved as base64 to `/pod/` folder with order number timestamp
+- [x] **Signature Capture** - Canvas-based signature pad with clear button
+- [x] **POD Storage** - Files saved to `/wwwroot/pod/` with naming: `pod_{orderNumber}_{timestamp}.jpg`
+
+### POD Display for Admin & Pharmacy
+- [x] **Order Details Modal** - Shows POD section when order is delivered
+- [x] **Photo Display** - Clickable image that opens full-size in new tab
+- [x] **Signature Display** - Shows signature image if available
+- [x] **Recipient Name** - Shows who received the delivery
+- [x] **Delivery Time** - Shows actual delivery timestamp
+
+### Delivery Instructions
+- [x] **Order Creation** - Added "Delivery Instructions" field for special instructions
+- [x] **Driver View** - Instructions displayed in delivery card for driver
+- [x] **Signature Logic** - Helps driver know if signature should be collected
+
 ---
-*Last Updated: February 18, 2026 - Gig Workflow & Order Management Enhancements*
+*Last Updated: February 18, 2026 - Gig Workflow, Order Management & POD Enhancements*
