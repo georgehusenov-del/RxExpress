@@ -6,6 +6,9 @@
 .scan-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#dcfce7;color:#15803d}
 #qr-reader{width:100%;max-width:300px;margin:0 auto}
 .history-section{margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+.photo-preview{max-width:200px;max-height:150px;border-radius:8px;margin-top:8px;display:none}
+.signature-pad{border:1px solid var(--border);border-radius:8px;background:#fafafa;touch-action:none}
+.pod-required{color:#ef4444;font-size:12px;margin-top:4px}
 </style>
 
 @section TopbarRight {
@@ -56,31 +59,45 @@
     </div>
 </div>
 
-<!-- POD Modal -->
+<!-- POD Modal - Enhanced with mandatory photo -->
 <div class="modal-overlay" id="pod-modal">
-    <div class="modal">
+    <div class="modal" style="max-width:500px">
         <div class="modal-header">
             <h3>Complete Delivery (POD)</h3>
             <button class="close-btn" onclick="closePodModal()">&times;</button>
         </div>
         <div class="modal-body">
             <input type="hidden" id="pod-order-id"/>
+            
             <div class="form-group">
                 <label>Recipient Name (who received it)</label>
-                <input type="text" class="form-control" id="pod-name" placeholder="Enter recipient name"/>
+                <input type="text" class="form-control" id="pod-name" placeholder="Enter recipient name" data-testid="pod-name-input"/>
             </div>
+            
             <div class="form-group">
-                <label>Photo Proof (optional)</label>
-                <input type="file" class="form-control" id="pod-photo" accept="image/*" capture="environment"/>
+                <label>Photo Proof <span style="color:#ef4444">*</span></label>
+                <input type="file" class="form-control" id="pod-photo" accept="image/*" capture="environment" onchange="previewPhoto(this)" data-testid="pod-photo-input"/>
+                <img id="photo-preview" class="photo-preview" alt="Preview"/>
+                <p class="pod-required">Photo is required for delivery completion</p>
             </div>
+            
+            <div class="form-group" id="signature-group">
+                <label>Signature (optional)</label>
+                <canvas id="signature-pad" class="signature-pad" width="300" height="100"></canvas>
+                <div class="d-flex gap-2 mt-1">
+                    <button class="btn btn-sm btn-outline" onclick="clearSignature()">Clear</button>
+                </div>
+                <p class="text-sm text-gray">Signature is optional if delivery instructions say to leave at door</p>
+            </div>
+            
             <div class="form-group">
                 <label>Notes (optional)</label>
-                <textarea class="form-control" id="pod-notes" placeholder="Any delivery notes..." rows="2"></textarea>
+                <textarea class="form-control" id="pod-notes" placeholder="Any delivery notes..." rows="2" data-testid="pod-notes-input"></textarea>
             </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closePodModal()">Cancel</button>
-            <button class="btn btn-success" onclick="submitPod()">Complete Delivery</button>
+            <button class="btn btn-success" onclick="submitPod()" data-testid="submit-pod-btn">Complete Delivery</button>
         </div>
     </div>
 </div>
@@ -94,6 +111,8 @@ let myStatus='offline';
 const scannedSet=new Set();
 let html5QrCode=null;
 let scannerRunning=false;
+let signaturePad=null;
+let isDrawing=false;
 
 function showTab(tab){
     document.getElementById('tab-active').className='btn '+(tab==='active'?'btn-primary':'btn-outline');
@@ -158,6 +177,7 @@ async function loadDeliveries(){
                     <div><strong>Phone:</strong> <a href="tel:${o.recipientPhone}">${o.recipientPhone}</a></div>
                     <div><strong>Address:</strong> ${addr}</div>
                     ${o.copayAmount>0?`<div><strong>Copay:</strong> $${o.copayAmount.toFixed(2)} ${o.copayCollected?'<span class="text-success">(Collected)</span>':'<span class="text-warning">(Pending)</span>'}</div>`:''}
+                    ${o.deliveryInstructions?`<div class="text-info"><strong>Instructions:</strong> ${o.deliveryInstructions}</div>`:''}
                 </div>
                 ${o.deliveryNotes?`<div class="mt-1 text-sm text-gray">Notes: ${o.deliveryNotes}</div>`:''}
                 <div class="dc-actions">
@@ -177,10 +197,13 @@ async function loadHistory(){
     try{
         const d=await ApiService.get('/driver-portal/history');
         document.getElementById('history-list').innerHTML=d.deliveries.length?d.deliveries.map(o=>`
-            <div class="delivery-card" style="opacity:0.8">
+            <div class="delivery-card" style="opacity:0.9">
                 <div class="dc-header">
                     <div><span class="dc-qr">${o.qrCode||o.orderNumber}</span></div>
-                    <div>${statusBadge(o.status)}</div>
+                    <div class="d-flex gap-2 items-center">
+                        ${statusBadge(o.status)}
+                        ${o.photoUrl?`<span class="scan-badge">📷 POD</span>`:''}
+                    </div>
                 </div>
                 <div class="dc-details">
                     <div><strong>To:</strong> ${o.recipientName}</div>
@@ -259,30 +282,152 @@ async function verifyQrCode(code){
     }
 }
 
-// POD
+// POD with mandatory photo
 function openPodModal(orderId){
     document.getElementById('pod-order-id').value=orderId;
     document.getElementById('pod-name').value='';
     document.getElementById('pod-notes').value='';
+    document.getElementById('pod-photo').value='';
+    document.getElementById('photo-preview').style.display='none';
     document.getElementById('pod-modal').classList.add('active');
+    initSignaturePad();
 }
 
 function closePodModal(){
     document.getElementById('pod-modal').classList.remove('active');
 }
 
+function previewPhoto(input){
+    const preview=document.getElementById('photo-preview');
+    if(input.files && input.files[0]){
+        const reader=new FileReader();
+        reader.onload=function(e){
+            preview.src=e.target.result;
+            preview.style.display='block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }else{
+        preview.style.display='none';
+    }
+}
+
+// Signature Pad
+function initSignaturePad(){
+    const canvas=document.getElementById('signature-pad');
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fafafa';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle='#000';
+    ctx.lineWidth=2;
+    ctx.lineCap='round';
+    
+    let lastX,lastY;
+    
+    function getPos(e){
+        const rect=canvas.getBoundingClientRect();
+        const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+        const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+        return {x,y};
+    }
+    
+    function startDraw(e){
+        e.preventDefault();
+        isDrawing=true;
+        const pos=getPos(e);
+        lastX=pos.x;
+        lastY=pos.y;
+    }
+    
+    function draw(e){
+        if(!isDrawing)return;
+        e.preventDefault();
+        const pos=getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX,lastY);
+        ctx.lineTo(pos.x,pos.y);
+        ctx.stroke();
+        lastX=pos.x;
+        lastY=pos.y;
+    }
+    
+    function stopDraw(){
+        isDrawing=false;
+    }
+    
+    canvas.addEventListener('mousedown',startDraw);
+    canvas.addEventListener('mousemove',draw);
+    canvas.addEventListener('mouseup',stopDraw);
+    canvas.addEventListener('mouseleave',stopDraw);
+    canvas.addEventListener('touchstart',startDraw);
+    canvas.addEventListener('touchmove',draw);
+    canvas.addEventListener('touchend',stopDraw);
+}
+
+function clearSignature(){
+    const canvas=document.getElementById('signature-pad');
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fafafa';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+function getSignatureData(){
+    const canvas=document.getElementById('signature-pad');
+    // Check if signature has any strokes
+    const ctx=canvas.getContext('2d');
+    const pixelData=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let hasSignature=false;
+    for(let i=0;i<pixelData.length;i+=4){
+        // Check if pixel is not the background color (#fafafa = 250,250,250)
+        if(pixelData[i]<240 || pixelData[i+1]<240 || pixelData[i+2]<240){
+            hasSignature=true;
+            break;
+        }
+    }
+    return hasSignature ? canvas.toDataURL('image/png') : null;
+}
+
 async function submitPod(){
     const orderId=document.getElementById('pod-order-id').value;
     const name=document.getElementById('pod-name').value;
-    if(!name){showAlert('alert-area','danger','Please enter recipient name');return;}
+    const notes=document.getElementById('pod-notes').value;
+    const photoInput=document.getElementById('pod-photo');
+    
+    // Validate photo - MANDATORY
+    if(!photoInput.files || !photoInput.files[0]){
+        showAlert('alert-area','danger','Photo proof is required! Please take a photo.');
+        return;
+    }
+    
+    // Read photo as base64
+    const photoBase64=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result);
+        reader.onerror=reject;
+        reader.readAsDataURL(photoInput.files[0]);
+    });
+    
+    // Get signature (optional)
+    const signatureBase64=getSignatureData();
     
     try{
-        await ApiService.post(`/driver-portal/deliveries/${orderId}/pod`,{recipientName:name});
+        showAlert('alert-area','info','Uploading proof of delivery...');
+        
+        const payload={
+            recipientName:name || null,
+            photoBase64:photoBase64,
+            signatureBase64:signatureBase64,
+            notes:notes || null
+        };
+        
+        const result=await ApiService.post(`/driver-portal/deliveries/${orderId}/pod`,payload);
+        
         scannedSet.delete(parseInt(orderId));
         closePodModal();
-        showAlert('alert-area','success','✓ Delivery completed! Great job!');
+        showAlert('alert-area','success','✓ Delivery completed! POD uploaded successfully.');
         loadDeliveries();
-    }catch(e){showAlert('alert-area','danger',e.message);}
+    }catch(e){
+        showAlert('alert-area','danger',e.message || 'Failed to submit POD');
+    }
 }
 
 async function upd(id,s){
@@ -301,5 +446,4 @@ async function copay(id){
 loadProfile();
 loadDeliveries();
 </script>
-<script src="~/js/qr-scanner-patch.js?v=@DateTime.Now.Ticks"></script>
 }
