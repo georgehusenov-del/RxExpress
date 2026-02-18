@@ -78,10 +78,16 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("orders")]
-    public async Task<IActionResult> GetOrders([FromQuery] string? status, [FromQuery] int skip = 0, [FromQuery] int limit = 100)
+    public async Task<IActionResult> GetOrders([FromQuery] string? status, [FromQuery] int? pharmacyId, [FromQuery] string? date, [FromQuery] int skip = 0, [FromQuery] int limit = 100)
     {
         var query = _orders.Query();
         if (!string.IsNullOrEmpty(status)) query = query.Where(o => o.Status == status);
+        if (pharmacyId.HasValue) query = query.Where(o => o.PharmacyId == pharmacyId.Value);
+        if (!string.IsNullOrEmpty(date)) 
+        {
+            var targetDate = DateTime.Parse(date).Date;
+            query = query.Where(o => o.CreatedAt.Date == targetDate);
+        }
         var total = await query.CountAsync();
         var orders = await query.OrderByDescending(o => o.CreatedAt).Skip(skip).Take(limit).ToListAsync();
         return Ok(new { orders, total });
