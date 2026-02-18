@@ -6,9 +6,9 @@ const ApiService={
     async request(m,u,d){const h={'Content-Type':'application/json'};const t=this.getToken();if(t)h['Authorization']=`Bearer ${t}`;const r=await fetch(`${this.baseUrl}${u}`,{method:m,headers:h,body:d?JSON.stringify(d):undefined});if(r.status===401){this.logout();return null}if(r.status===403)return null;if(!r.ok){const e=await r.json().catch(()=>({detail:'Error'}));throw new Error(e.detail||'Failed')}return r.json()},
     get(u){return this.request('GET',u)},post(u,d){return this.request('POST',u,d)},put(u,d){return this.request('PUT',u,d)},delete(u){return this.request('DELETE',u)},
     async login(e,p){const d=await this.post('/auth/login',{email:e,password:p});if(d){this.setToken(d.token);this.setUser(d.user)}return d},
-    logout(){localStorage.removeItem('rx_token');localStorage.removeItem('rx_user');window.location.replace('/Home/Index')},
+    logout(){localStorage.removeItem('rx_token');localStorage.removeItem('rx_user');window.location.replace('/');},
     isLoggedIn(){return!!this.getToken()},hasRole(r){const u=this.getUser();return u&&u.role===r},
-    requireAuth(r){if(!this.isLoggedIn()){window.location.replace('/Home/Index');return false}if(r&&!this.hasRole(r)){window.location.replace('/Home/Index');return false}return true}
+    requireAuth(r){if(!this.isLoggedIn()){window.location.replace('/');return false}if(r&&!this.hasRole(r)){window.location.replace('/');return false}return true}
 };
 function statusBadge(s){return`<span class="badge badge-${s}">${(s||'').replace(/_/g,' ')}</span>`}
 function formatDate(d){if(!d)return'-';return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
