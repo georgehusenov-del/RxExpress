@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "iL2PwL0RRCk4c3/ryIfFx6kxsvOROazUpbMEBW9r570=",
+  "Hash": "dHPPvQtG2hWCQzOiIaLxRzpDzkSqgU9iq/0zapIZC30=",
   "Source": "RxExpresss.API",
   "BasePath": "_content/RxExpresss.API",
   "Mode": "Default",
@@ -34,6 +34,44 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/.gitkeep"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pod_RX-EB0AAB40_20260218093239.jpg",
+      "SourceId": "RxExpresss.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/",
+      "BasePath": "_content/RxExpresss.API",
+      "RelativePath": "pod/pod_RX-EB0AAB40_20260218093239.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/pod_RX-EB0AAB40_20260218093239.jpg"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/sig_RX-EB0AAB40_20260218093239.png",
+      "SourceId": "RxExpresss.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/",
+      "BasePath": "_content/RxExpresss.API",
+      "RelativePath": "pod/sig_RX-EB0AAB40_20260218093239.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/sig_RX-EB0AAB40_20260218093239.png"
     }
   ]
 }
