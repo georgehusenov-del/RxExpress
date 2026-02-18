@@ -142,7 +142,7 @@ async function loadOrders(){
     document.getElementById('tbl').innerHTML=d.orders.length?d.orders.map(o=>{
         const trackUrl=`${PREVIEW_URL}/Track/${o.trackingNumber||o.orderNumber}`;
         return `<tr>
-            <td><strong>${o.orderNumber}</strong></td>
+            <td><a href="#" onclick="showDetail(${o.id});return false" style="color:var(--primary);font-weight:600">${o.orderNumber}</a></td>
             <td>${o.qrCode||'-'}</td>
             <td>${o.recipientName}</td>
             <td>${o.city}</td>
@@ -152,11 +152,57 @@ async function loadOrders(){
                 <a href="${trackUrl}" class="track-link">View</a>
                 <button class="btn btn-sm btn-outline" style="margin-left:4px;padding:2px 6px;font-size:11px" onclick="copyTrack('${trackUrl}')">Copy</button>
             </td>
-            <td>$${(o.copayAmount||0).toFixed(2)}</td>
+            <td>$${(o.copayAmount||0).toFixed(2)} ${o.copayCollected?'<span class="text-success">✓</span>':''}</td>
             <td>$${(o.deliveryFee||0).toFixed(2)}</td>
             <td>${formatDate(o.createdAt)}</td>
+            <td>${o.status==='delivered'&&o.photoUrl?'<span title="POD Available" style="color:#22c55e">📷</span>':''}</td>
         </tr>`;
-    }).join(''):'<tr><td colspan="10" class="text-center text-gray">No orders yet</td></tr>';
+    }).join(''):'<tr><td colspan="11" class="text-center text-gray">No orders yet</td></tr>';
+}
+
+async function showDetail(id){
+    const o=await ApiService.get(`/orders/${id}`);
+    
+    // Build POD section if delivered
+    let podSection = '';
+    if (o.status === 'delivered') {
+        podSection = `
+            <div class="pod-section mt-3" style="padding-top:16px;border-top:1px solid var(--border)">
+                <h4 style="margin-bottom:12px;color:var(--primary)">📷 Proof of Delivery</h4>
+                <div class="d-flex gap-3" style="flex-wrap:wrap">
+                    ${o.photoUrl ? `<div>
+                        <p class="text-sm text-gray mb-1">Delivery Photo</p>
+                        <img src="${o.photoUrl}" alt="POD Photo" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="window.open('${o.photoUrl}','_blank')"/>
+                    </div>` : '<p class="text-gray">No photo available</p>'}
+                    ${o.signatureUrl ? `<div>
+                        <p class="text-sm text-gray mb-1">Signature</p>
+                        <img src="${o.signatureUrl}" alt="Signature" style="max-width:200px;max-height:80px;border-radius:8px;border:1px solid var(--border);background:#fafafa"/>
+                    </div>` : ''}
+                </div>
+                ${o.recipientNameSigned ? `<p class="mt-2 text-sm"><strong>Received by:</strong> ${o.recipientNameSigned}</p>` : ''}
+                ${o.actualDeliveryTime ? `<p class="text-sm text-gray">Delivered: ${formatDate(o.actualDeliveryTime)}</p>` : ''}
+            </div>`;
+    }
+    
+    document.getElementById('detail-body').innerHTML=`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+                <div class="od-row"><span class="text-gray">Order #</span><strong>${o.orderNumber}</strong></div>
+                <div class="od-row"><span class="text-gray">QR Code</span><strong style="color:var(--primary)">${o.qrCode || '-'}</strong></div>
+                <div class="od-row"><span class="text-gray">Status</span>${statusBadge(o.status)}</div>
+                <div class="od-row"><span class="text-gray">Type</span>${o.deliveryType}</div>
+                <div class="od-row"><span class="text-gray">Driver</span>${o.driverName || 'Unassigned'}</div>
+            </div>
+            <div>
+                <div class="od-row"><span class="text-gray">Recipient</span>${o.recipientName}</div>
+                <div class="od-row"><span class="text-gray">Phone</span>${o.recipientPhone}</div>
+                <div class="od-row"><span class="text-gray">Address</span>${o.street}, ${o.city}, ${o.state} ${o.postalCode}</div>
+                <div class="od-row"><span class="text-gray">Copay</span>$${(o.copayAmount || 0).toFixed(2)} ${o.copayCollected ? '<span class="text-success">(Collected)</span>' : ''}</div>
+                <div class="od-row"><span class="text-gray">Fee</span>$${(o.deliveryFee || 0).toFixed(2)}</div>
+            </div>
+        </div>
+        ${podSection}`;
+    document.getElementById('detail-modal').classList.add('active');
 }
 
 function copyTrack(url){
