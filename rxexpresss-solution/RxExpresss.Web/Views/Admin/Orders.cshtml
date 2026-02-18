@@ -216,6 +216,28 @@ async function doUpdate() {
 
 async function showDetail(id) {
     const o = await ApiService.get(`/orders/${id}`);
+    
+    // Build POD section if delivered
+    let podSection = '';
+    if (o.status === 'delivered') {
+        podSection = `
+            <div class="pod-section mt-3" style="padding-top:16px;border-top:1px solid var(--border)">
+                <h4 style="margin-bottom:12px;color:var(--primary)">📷 Proof of Delivery</h4>
+                <div class="d-flex gap-3" style="flex-wrap:wrap">
+                    ${o.photoUrl ? `<div>
+                        <p class="text-sm text-gray mb-1">Delivery Photo</p>
+                        <img src="${o.photoUrl}" alt="POD Photo" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="window.open('${o.photoUrl}','_blank')" data-testid="pod-photo"/>
+                    </div>` : '<p class="text-gray">No photo available</p>'}
+                    ${o.signatureUrl ? `<div>
+                        <p class="text-sm text-gray mb-1">Signature</p>
+                        <img src="${o.signatureUrl}" alt="Signature" style="max-width:200px;max-height:80px;border-radius:8px;border:1px solid var(--border);background:#fafafa" data-testid="pod-signature"/>
+                    </div>` : ''}
+                </div>
+                ${o.recipientNameSigned ? `<p class="mt-2 text-sm"><strong>Received by:</strong> ${o.recipientNameSigned}</p>` : ''}
+                ${o.actualDeliveryTime ? `<p class="text-sm text-gray">Delivered: ${formatDate(o.actualDeliveryTime)}</p>` : ''}
+            </div>`;
+    }
+    
     document.getElementById('detail-body').innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
             <div>
@@ -229,10 +251,11 @@ async function showDetail(id) {
                 <div class="od-row"><span class="text-gray">Recipient</span>${o.recipientName}</div>
                 <div class="od-row"><span class="text-gray">Phone</span>${o.recipientPhone}</div>
                 <div class="od-row"><span class="text-gray">Address</span>${o.street}, ${o.city}, ${o.state} ${o.postalCode}</div>
-                <div class="od-row"><span class="text-gray">Copay</span>$${(o.copayAmount || 0).toFixed(2)}</div>
+                <div class="od-row"><span class="text-gray">Copay</span>$${(o.copayAmount || 0).toFixed(2)} ${o.copayCollected ? '<span class="text-success">(Collected)</span>' : ''}</div>
                 <div class="od-row"><span class="text-gray">Fee</span>$${(o.deliveryFee || 0).toFixed(2)}</div>
             </div>
         </div>
+        ${podSection}
         <div class="mt-2">
             <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.street + ', ' + o.city + ', ' + o.state)}" target="_blank" class="btn btn-sm btn-outline">
                 ${actionIcons.map} Open in Google Maps
