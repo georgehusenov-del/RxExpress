@@ -5,12 +5,17 @@ public class RoutePlan
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Date { get; set; } = DateTime.UtcNow.ToString("yyyy-MM-dd");
-    public string Status { get; set; } = "draft"; // draft, optimized, distributed
-    public string OptimizationStatus { get; set; } = "not_started";
+    public string Status { get; set; } = "draft"; // draft, assigned, in_progress, completed, cancelled
+    public string OptimizationStatus { get; set; } = "not_started"; // not_started, optimizing, optimized, failed
     public bool Distributed { get; set; } = false;
     public string? CircuitPlanId { get; set; } // Circuit API Plan ID
+    public int? ServiceZoneId { get; set; } // Area-based gig (Queens, Brooklyn, etc.)
+    public bool IsAutoCreated { get; set; } = false; // True if system auto-created this gig
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    
+    // Navigation
+    public ServiceZone? ServiceZone { get; set; }
 }
 
 public class RoutePlanDriver

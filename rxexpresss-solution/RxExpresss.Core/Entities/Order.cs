@@ -35,6 +35,9 @@ public class Order
     public int? DriverId { get; set; }
     public string? DriverName { get; set; }
     public string? CircuitStopId { get; set; } // Circuit API Stop ID for tracking
+    
+    // Gig/Route Plan
+    public int? RoutePlanId { get; set; } // Which gig this order belongs to
 
     // Status
     public string Status { get; set; } = "new";
