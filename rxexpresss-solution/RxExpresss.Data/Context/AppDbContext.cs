@@ -50,6 +50,23 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.Property(t => t.Name).HasMaxLength(128);
         });
 
+        // Additional Identity tables - SQL Server key length fix
+        builder.Entity<IdentityUserRole<string>>(e =>
+        {
+            e.Property(r => r.UserId).HasMaxLength(128);
+            e.Property(r => r.RoleId).HasMaxLength(128);
+        });
+
+        builder.Entity<IdentityUserClaim<string>>(e =>
+        {
+            e.Property(c => c.UserId).HasMaxLength(128);
+        });
+
+        builder.Entity<IdentityRoleClaim<string>>(e =>
+        {
+            e.Property(c => c.RoleId).HasMaxLength(128);
+        });
+
         builder.Entity<Pharmacy>(e =>
         {
             e.HasKey(p => p.Id);
