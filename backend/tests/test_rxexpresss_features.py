@@ -7,7 +7,7 @@ import pytest
 import requests
 import time
 
-BASE_URL = "https://rx-express-rebuild.preview.emergentagent.com/api"
+BASE_URL = "https://express-rx-portal.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@rxexpresss.com"
