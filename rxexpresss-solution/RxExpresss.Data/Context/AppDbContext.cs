@@ -92,7 +92,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.HasOne(s => s.Order).WithMany().HasForeignKey(s => s.OrderId).OnDelete(DeleteBehavior.SetNull);
         });
 
-        builder.Entity<RoutePlan>(e => { e.HasKey(r => r.Id); });
+        builder.Entity<RoutePlan>(e => { 
+            e.HasKey(r => r.Id);
+            e.HasOne(r => r.ServiceZone).WithMany().HasForeignKey(r => r.ServiceZoneId).OnDelete(DeleteBehavior.SetNull);
+        });
         builder.Entity<RoutePlanDriver>(e =>
         {
             e.HasKey(r => r.Id);
