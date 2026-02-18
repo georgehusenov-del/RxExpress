@@ -556,6 +556,11 @@ public class CreatePlanDto
 }
 public class OrderIdsDto { public List<int> OrderIds { get; set; } = new(); }
 public class DriverIdDto { public int DriverId { get; set; } }
+public class AssignOrdersToDriverDto 
+{ 
+    public int DriverId { get; set; }
+    public List<int> OrderIds { get; set; } = new();
+}
 public class SplitGigDto 
 { 
     public string? NewTitle { get; set; }
