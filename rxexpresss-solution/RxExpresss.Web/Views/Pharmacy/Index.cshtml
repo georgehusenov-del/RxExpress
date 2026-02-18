@@ -2,6 +2,8 @@
 <style>
 .track-link{color:var(--info);text-decoration:none;font-size:12px}
 .track-link:hover{text-decoration:underline}
+.od-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px}
+.od-row:last-child{border:none}
 </style>
 
 @section TopbarRight { <button class="btn btn-primary" onclick="openOrderModal()">+ Create Order</button> }
@@ -11,7 +13,7 @@
 <div class="card"><div class="card-header">My Orders <span class="text-sm text-gray" id="order-count"></span></div>
     <div class="card-body table-wrap">
         <table>
-            <thead><tr><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th><th>Status</th><th>Tracking</th><th>Copay</th><th>Fee</th><th>Date</th></tr></thead>
+            <thead><tr><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th><th>Status</th><th>Tracking</th><th>Copay</th><th>Fee</th><th>Date</th><th></th></tr></thead>
             <tbody id="tbl"></tbody>
         </table>
     </div>
@@ -37,6 +39,7 @@
                         <h4 class="mb-1">Recipient</h4>
                         <div class="row"><div class="col"><div class="form-group"><label>Name *</label><input class="form-control" id="r-name" required/></div></div><div class="col"><div class="form-group"><label>Phone *</label><input class="form-control" id="r-phone" required/></div></div></div>
                         <div class="form-group"><label>Email</label><input type="email" class="form-control" id="r-email"/></div>
+                        <div class="form-group"><label>Delivery Instructions</label><input class="form-control" id="r-instructions" placeholder="e.g. Leave at door, with doorman, etc."/></div>
                         <h4 class="mb-1 mt-2">Delivery Address</h4>
                         <div class="form-group"><label>Street *</label><input class="form-control" id="a-st" required/></div>
                         <div class="row"><div class="col"><div class="form-group"><label>Apt/Unit</label><input class="form-control" id="a-apt"/></div></div><div class="col"><div class="form-group"><label>City *</label><input class="form-control" id="a-city" value="New York" required/></div></div></div>
@@ -61,6 +64,17 @@
             <button class="btn btn-outline" onclick="closeOrderModal()">Cancel</button>
             <button class="btn btn-primary" onclick="submitOrder()" id="sub-btn">Create Order</button>
         </div>
+    </div>
+</div>
+
+<!-- Order Detail Modal with POD -->
+<div class="modal-overlay" id="detail-modal">
+    <div class="modal" style="max-width:600px">
+        <div class="modal-header">
+            <h3>Order Details</h3>
+            <button class="close-btn" onclick="document.getElementById('detail-modal').classList.remove('active')">&times;</button>
+        </div>
+        <div class="modal-body" id="detail-body"></div>
     </div>
 </div>
 
