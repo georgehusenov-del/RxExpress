@@ -52,6 +52,7 @@ public class CreateOrderDto
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public string? DeliveryNotes { get; set; }
+    public string? DeliveryInstructions { get; set; }
     public decimal CopayAmount { get; set; } = 0;
 }
 
