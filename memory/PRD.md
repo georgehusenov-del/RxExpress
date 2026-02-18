@@ -282,3 +282,18 @@ The complete SQL Server migration script is available at:
 - All tables created with proper indexes
 - Default roles and service zones seeded
 - Migration history recorded in `__EFMigrationsHistory`
+
+## Bug Fixes (Feb 18, 2026 - Session 3)
+
+### Bug 3: Logout Redirect to 404 Page - FIXED
+- **Symptom:** Logging out from any role redirected to `/Home/Index` which doesn't exist
+- **Root Cause:** `api-service.js` logout function redirected to wrong URL
+- **Fix:** Changed `window.location.replace('/')` in logout function (line 9)
+
+### Bug 4: Landing Page Button Text Invisible - FIXED
+- **Symptom:** "Partner With Us" outline button text was invisible on dark hero background
+- **Root Cause:** `.btn-outline` class had `color:var(--dark)` which is dark navy on dark background
+- **Fix:** Added `.hero-btns .btn-outline{border-color:white;color:white}` CSS rule to override in hero section
+
+---
+*Last Updated: February 18, 2026 - UI Bug Fixes (Logout Redirect, Button Styling)*
