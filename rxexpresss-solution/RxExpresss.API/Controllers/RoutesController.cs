@@ -188,6 +188,96 @@ public class RoutesController : ControllerBase
         return Ok(new { message = $"Driver {driverName} assigned to {assignedCount} orders", driverName, assignedCount });
     }
 
+    [HttpPost("{id}/unassign-driver")]
+    public async Task<IActionResult> UnassignDriver(int id)
+    {
+        var plan = await _plans.GetByIdAsync(id);
+        if (plan == null) return NotFound();
+        
+        // Remove all drivers from plan
+        var planDrivers = await _planDrivers.Query().Where(d => d.RoutePlanId == id).ToListAsync();
+        foreach (var pd in planDrivers)
+        {
+            await _planDrivers.DeleteAsync(pd);
+        }
+        
+        // Reset all orders in plan
+        var orderIds = await _planOrders.Query().Where(o => o.RoutePlanId == id).Select(o => o.OrderId).ToListAsync();
+        var resetCount = 0;
+        
+        foreach (var oid in orderIds)
+        {
+            var order = await _orders.GetByIdAsync(oid);
+            if (order != null && order.Status == "assigned") 
+            { 
+                order.DriverId = null;
+                order.DriverName = null;
+                order.Status = "new";
+                order.UpdatedAt = DateTime.UtcNow;
+                await _orders.UpdateAsync(order);
+                resetCount++;
+            }
+        }
+        
+        // Update plan status to draft
+        plan.Status = "draft";
+        plan.UpdatedAt = DateTime.UtcNow;
+        await _plans.UpdateAsync(plan);
+        
+        return Ok(new { message = $"Driver unassigned from {resetCount} orders", resetCount });
+    }
+
+    [HttpPost("{id}/assign-orders-to-driver")]
+    public async Task<IActionResult> AssignOrdersToDriver(int id, [FromBody] AssignOrdersToDriverDto dto)
+    {
+        var plan = await _plans.GetByIdAsync(id);
+        if (plan == null) return NotFound();
+        
+        var driver = await _drivers.GetByIdAsync(dto.DriverId);
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+        
+        // Get driver name
+        var user = await _userManager.FindByIdAsync(driver.UserId);
+        var driverName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
+        
+        // Add driver to plan if not exists
+        var exists = await _planDrivers.Query().AnyAsync(d => d.RoutePlanId == id && d.DriverId == dto.DriverId);
+        if (!exists) 
+            await _planDrivers.AddAsync(new RoutePlanDriver { RoutePlanId = id, DriverId = dto.DriverId });
+        
+        // Assign selected orders to this driver
+        var assignedCount = 0;
+        foreach (var oid in dto.OrderIds)
+        {
+            var order = await _orders.GetByIdAsync(oid);
+            if (order != null && order.RoutePlanId == id)
+            {
+                order.DriverId = dto.DriverId;
+                order.DriverName = driverName;
+                order.Status = "assigned";
+                order.UpdatedAt = DateTime.UtcNow;
+                await _orders.UpdateAsync(order);
+                assignedCount++;
+            }
+        }
+        
+        // Check if all orders are assigned
+        var unassignedOrders = await _planOrders.Query()
+            .Where(po => po.RoutePlanId == id)
+            .Join(_orders.Query(), po => po.OrderId, o => o.Id, (po, o) => o)
+            .Where(o => o.DriverId == null)
+            .CountAsync();
+        
+        if (unassignedOrders == 0)
+        {
+            plan.Status = "assigned";
+            plan.UpdatedAt = DateTime.UtcNow;
+            await _plans.UpdateAsync(plan);
+        }
+        
+        return Ok(new { message = $"{assignedCount} orders assigned to {driverName}", driverName, assignedCount });
+    }
+
     [HttpPost("{id}/optimize")]
     public async Task<IActionResult> OptimizeRoute(int id)
     {
