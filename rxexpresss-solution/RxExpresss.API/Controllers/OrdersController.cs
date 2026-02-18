@@ -15,10 +15,22 @@ public class OrdersController : ControllerBase
 {
     private readonly IRepository<Order> _orders;
     private readonly IRepository<Pharmacy> _pharmacies;
+    private readonly IRepository<ServiceZone> _zones;
+    private readonly IRepository<RoutePlan> _plans;
+    private readonly IRepository<RoutePlanOrder> _planOrders;
 
-    public OrdersController(IRepository<Order> orders, IRepository<Pharmacy> pharmacies)
+    public OrdersController(
+        IRepository<Order> orders, 
+        IRepository<Pharmacy> pharmacies,
+        IRepository<ServiceZone> zones,
+        IRepository<RoutePlan> plans,
+        IRepository<RoutePlanOrder> planOrders)
     {
-        _orders = orders; _pharmacies = pharmacies;
+        _orders = orders; 
+        _pharmacies = pharmacies;
+        _zones = zones;
+        _plans = plans;
+        _planOrders = planOrders;
     }
 
     [HttpPost]
@@ -36,12 +48,60 @@ public class OrdersController : ControllerBase
             Street = dto.Street, AptUnit = dto.AptUnit, City = dto.City,
             State = dto.State, PostalCode = dto.PostalCode,
             Latitude = dto.Latitude, Longitude = dto.Longitude,
-            DeliveryNotes = dto.DeliveryNotes, CopayAmount = dto.CopayAmount,
-            QrCode = QrCodeGenerator.Generate(dto.City), Status = "new"
+            DeliveryNotes = dto.DeliveryNotes, 
+            DeliveryInstructions = dto.DeliveryInstructions,
+            CopayAmount = dto.CopayAmount,
+            QrCode = QrCodeGenerator.Generate(dto.City), 
+            Status = "new"
         };
 
         await _orders.AddAsync(order);
+        
+        // Auto-assign to gig based on city/service zone
+        await AutoAssignToGig(order);
+
         return Ok(new { message = "Order created", order_id = order.Id, order_number = order.OrderNumber, qr_code = order.QrCode });
+    }
+
+    private async Task AutoAssignToGig(Order order)
+    {
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        
+        // Find service zone by city name
+        var zone = await _zones.Query()
+            .FirstOrDefaultAsync(z => z.IsActive && z.Name.ToLower().Contains(order.City.ToLower()));
+        
+        if (zone == null)
+        {
+            // Try to find by zip code
+            zone = await _zones.Query()
+                .FirstOrDefaultAsync(z => z.IsActive && z.ZipCodes.Contains(order.PostalCode));
+        }
+        
+        if (zone == null) return; // No matching zone, order stays unassigned
+        
+        // Find existing gig for this zone and date, or create new one
+        var gig = await _plans.Query()
+            .FirstOrDefaultAsync(p => p.ServiceZoneId == zone.Id && p.Date == today && p.Status == "draft");
+        
+        if (gig == null)
+        {
+            // Create new gig for this zone
+            gig = new RoutePlan
+            {
+                Title = $"{zone.Name} - {today}",
+                Date = today,
+                ServiceZoneId = zone.Id,
+                Status = "draft",
+                IsAutoCreated = true
+            };
+            await _plans.AddAsync(gig);
+        }
+        
+        // Add order to gig
+        await _planOrders.AddAsync(new RoutePlanOrder { RoutePlanId = gig.Id, OrderId = order.Id });
+        order.RoutePlanId = gig.Id;
+        await _orders.UpdateAsync(order);
     }
 
     [HttpGet]
