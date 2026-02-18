@@ -1,204 +1,574 @@
 @{ Layout = "_SidebarLayout"; }
-@section TopbarRight { <button class="btn btn-primary" onclick="document.getElementById('create-modal').classList.add('active')">+ Create Gig</button> }
+@section TopbarRight { 
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline" onclick="autoCreateGigs()" data-testid="auto-create-gigs-btn">Auto-Create Gigs</button>
+        <button class="btn btn-primary" onclick="document.getElementById('create-modal').classList.add('active')" data-testid="create-gig-btn">+ Create Gig</button>
+    </div>
+}
 
 <div class="row mb-2">
-    <div class="col"><div class="card"><div class="card-header">Pending Orders (Ready for Routing)</div><div class="card-body table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all" onchange="toggleAll()"/></th><th>Order #</th><th>QR</th><th>Recipient</th><th>City</th><th>Type</th></tr></thead><tbody id="pending-tbl"></tbody></table></div></div></div>
+    <div class="col">
+        <div class="card">
+            <div class="card-header d-flex justify-between items-center">
+                <span>Pending Orders (Ready for Routing)</span>
+                <span class="badge badge-info" id="pending-count">0</span>
+            </div>
+            <div class="card-body table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all" onchange="toggleAll()"/></th>
+                            <th>Order #</th>
+                            <th>QR</th>
+                            <th>Pharmacy</th>
+                            <th>Recipient</th>
+                            <th>City</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pending-tbl"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Tab navigation -->
 <div class="mb-2">
-    <button class="btn btn-outline" id="tab-active" onclick="showTab('active')" style="margin-right:8px">Active Gigs</button>
+    <button class="btn btn-primary" id="tab-active" onclick="showTab('active')" style="margin-right:8px">Active Gigs</button>
     <button class="btn btn-outline" id="tab-completed" onclick="showTab('completed')">Completed Gigs</button>
 </div>
 
-<div class="card" id="active-section"><div class="card-header d-flex justify-between items-center"><span>Active Gigs (Route Plans)</span></div><div class="card-body" id="gigs-list"></div></div>
+<div class="card" id="active-section">
+    <div class="card-header d-flex justify-between items-center">
+        <span>Active Gigs (Route Plans)</span>
+        <span class="badge badge-info" id="active-count">0</span>
+    </div>
+    <div class="card-body" id="gigs-list"></div>
+</div>
 
-<div class="card" id="completed-section" style="display:none"><div class="card-header">Completed/Past Gigs</div><div class="card-body" id="completed-list"></div></div>
+<div class="card" id="completed-section" style="display:none">
+    <div class="card-header">Completed/Past Gigs</div>
+    <div class="card-body" id="completed-list"></div>
+</div>
 
 <!-- Create Gig Modal -->
-<div class="modal-overlay" id="create-modal"><div class="modal"><div class="modal-header"><h3>Create New Gig</h3><button class="close-btn" onclick="closeM('create-modal')">&times;</button></div><div class="modal-body">
-    <div class="form-group"><label>Title</label><input class="form-control" id="g-title" placeholder="e.g. Morning Route - Queens"/></div>
-    <div class="form-group"><label>Date</label><input type="date" class="form-control" id="g-date"/></div>
-    <div class="form-group"><label>Assign Drivers (optional)</label><select class="form-control" id="g-drivers" multiple style="height:100px"></select><small class="text-gray">Hold Ctrl/Cmd to select multiple</small></div>
-</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeM('create-modal')">Cancel</button><button class="btn btn-primary" onclick="createGig()">Create</button></div></div></div>
+<div class="modal-overlay" id="create-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Create New Gig</h3>
+            <button class="close-btn" onclick="closeM('create-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Title</label>
+                <input class="form-control" id="g-title" placeholder="e.g. Morning Route - Queens" data-testid="gig-title-input"/>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" class="form-control" id="g-date" data-testid="gig-date-input"/>
+            </div>
+            <div class="form-group">
+                <label>Service Zone (Optional)</label>
+                <select class="form-control" id="g-zone" data-testid="gig-zone-select">
+                    <option value="">-- Select Zone --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Assign Drivers (optional)</label>
+                <select class="form-control" id="g-drivers" multiple style="height:100px" data-testid="gig-drivers-select"></select>
+                <small class="text-gray">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeM('create-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="createGig()" data-testid="create-gig-submit-btn">Create</button>
+        </div>
+    </div>
+</div>
 
 <!-- Gig Detail Modal -->
-<div class="modal-overlay" id="detail-modal"><div class="modal" style="max-width:700px"><div class="modal-header"><h3 id="detail-title">Gig Details</h3><button class="close-btn" onclick="closeM('detail-modal')">&times;</button></div><div class="modal-body" id="detail-body"></div></div></div>
+<div class="modal-overlay" id="detail-modal">
+    <div class="modal" style="max-width:800px">
+        <div class="modal-header">
+            <h3 id="detail-title">Gig Details</h3>
+            <button class="close-btn" onclick="closeM('detail-modal')">&times;</button>
+        </div>
+        <div class="modal-body" id="detail-body"></div>
+    </div>
+</div>
 
 <!-- Assign Driver Modal -->
-<div class="modal-overlay" id="assign-modal"><div class="modal"><div class="modal-header"><h3>Assign Driver to Gig</h3><button class="close-btn" onclick="closeM('assign-modal')">&times;</button></div><div class="modal-body">
-    <input type="hidden" id="assign-gig-id"/>
-    <div class="form-group"><label>Select Driver</label><select class="form-control" id="assign-driver"></select></div>
-    <p class="text-sm text-gray">This will assign all orders in this gig to the selected driver and set their status to "assigned".</p>
-</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeM('assign-modal')">Cancel</button><button class="btn btn-primary" onclick="confirmAssignDriver()">Assign Driver</button></div></div></div>
+<div class="modal-overlay" id="assign-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Assign Driver to Gig</h3>
+            <button class="close-btn" onclick="closeM('assign-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="assign-gig-id"/>
+            <div class="form-group">
+                <label>Select Driver</label>
+                <select class="form-control" id="assign-driver" data-testid="assign-driver-select"></select>
+            </div>
+            <p class="text-sm text-gray">This will assign all orders in this gig to the selected driver and set their status to "assigned".</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeM('assign-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmAssignDriver()" data-testid="confirm-assign-driver-btn">Assign Driver</button>
+        </div>
+    </div>
+</div>
+
+<!-- Split Gig Modal -->
+<div class="modal-overlay" id="split-modal">
+    <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+            <h3>Split Gig</h3>
+            <button class="close-btn" onclick="closeM('split-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="split-gig-id"/>
+            <div class="form-group">
+                <label>New Gig Title</label>
+                <input class="form-control" id="split-title" placeholder="e.g. Queens - Part 2" data-testid="split-title-input"/>
+            </div>
+            <div class="form-group">
+                <label>Select Orders to Move</label>
+                <div id="split-orders-list" class="split-orders-container"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeM('split-modal')">Cancel</button>
+            <button class="btn btn-warning" onclick="confirmSplit()" data-testid="confirm-split-btn">Split Gig</button>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
 <script>
 if(!ApiService.requireAuth('Admin'))throw'';
-let selectedOrders=new Set(),drivers=[],allGigs=[];
-document.getElementById('g-date').value=new Date().toISOString().split('T')[0];
+let selectedOrders = new Set(), drivers = [], allGigs = [], zones = [];
+document.getElementById('g-date').value = new Date().toISOString().split('T')[0];
 
-// Load drivers
-(async()=>{
-    const d=await ApiService.get('/admin/drivers');
-    drivers=d.drivers;
-    const sel=document.getElementById('g-drivers');
-    const assignSel=document.getElementById('assign-driver');
-    sel.innerHTML=drivers.map(d=>`<option value="${d.id}">${d.user?.firstName||''} ${d.user?.lastName||''}</option>`).join('');
-    assignSel.innerHTML=drivers.map(d=>`<option value="${d.id}">${d.user?.firstName||''} ${d.user?.lastName||''}</option>`).join('');
+// Load service zones
+(async() => {
+    try {
+        const z = await ApiService.get('/routes/service-zones');
+        zones = z.zones || [];
+        const sel = document.getElementById('g-zone');
+        sel.innerHTML = '<option value="">-- Select Zone --</option>' + 
+            zones.map(z => `<option value="${z.id}">${z.name} (${z.code})</option>`).join('');
+    } catch(e) { console.log('No zones configured'); }
 })();
 
-function showTab(tab){
-    document.getElementById('tab-active').className='btn '+(tab==='active'?'btn-primary':'btn-outline');
-    document.getElementById('tab-completed').className='btn '+(tab==='completed'?'btn-primary':'btn-outline');
-    document.getElementById('active-section').style.display=tab==='active'?'block':'none';
-    document.getElementById('completed-section').style.display=tab==='completed'?'block':'none';
+// Load drivers
+(async() => {
+    const d = await ApiService.get('/admin/drivers');
+    drivers = d.drivers;
+    const sel = document.getElementById('g-drivers');
+    const assignSel = document.getElementById('assign-driver');
+    sel.innerHTML = drivers.map(d => `<option value="${d.id}">${d.user?.firstName || ''} ${d.user?.lastName || ''}</option>`).join('');
+    assignSel.innerHTML = drivers.map(d => `<option value="${d.id}">${d.user?.firstName || ''} ${d.user?.lastName || ''}</option>`).join('');
+})();
+
+function showTab(tab) {
+    document.getElementById('tab-active').className = 'btn ' + (tab === 'active' ? 'btn-primary' : 'btn-outline');
+    document.getElementById('tab-completed').className = 'btn ' + (tab === 'completed' ? 'btn-primary' : 'btn-outline');
+    document.getElementById('active-section').style.display = tab === 'active' ? 'block' : 'none';
+    document.getElementById('completed-section').style.display = tab === 'completed' ? 'block' : 'none';
 }
-showTab('active');
 
-function closeM(id){document.getElementById(id).classList.remove('active')}
-function toggleAll(){const c=document.getElementById('select-all').checked;document.querySelectorAll('.order-cb').forEach(cb=>{cb.checked=c;if(c)selectedOrders.add(parseInt(cb.value));else selectedOrders.delete(parseInt(cb.value))});}
-
-async function loadPending(){
-    const d=await ApiService.get('/routes/pending-orders');
-    document.getElementById('pending-tbl').innerHTML=d.orders.length?d.orders.map(o=>`<tr><td><input type="checkbox" class="order-cb" value="${o.id}" onchange="toggleOrder(${o.id},this.checked)"/></td><td>${o.orderNumber}</td><td><strong>${o.qrCode||'-'}</strong></td><td>${o.recipientName}</td><td>${o.city}</td><td>${o.deliveryType}</td></tr>`).join(''):'<tr><td colspan="6" class="text-center text-gray">No pending orders</td></tr>';
+function closeM(id) { document.getElementById(id).classList.remove('active'); }
+function toggleAll() {
+    const c = document.getElementById('select-all').checked;
+    document.querySelectorAll('.order-cb').forEach(cb => {
+        cb.checked = c;
+        if(c) selectedOrders.add(parseInt(cb.value));
+        else selectedOrders.delete(parseInt(cb.value));
+    });
 }
-function toggleOrder(id,checked){if(checked)selectedOrders.add(id);else selectedOrders.delete(id);}
 
-async function loadGigs(){
-    const d=await ApiService.get('/routes');
-    allGigs=d.plans;
+async function loadPending() {
+    const d = await ApiService.get('/routes/pending-orders');
+    const orders = d.orders || [];
+    document.getElementById('pending-count').textContent = orders.length;
+    document.getElementById('pending-tbl').innerHTML = orders.length ? orders.map(o => `
+        <tr>
+            <td><input type="checkbox" class="order-cb" value="${o.id}" onchange="toggleOrder(${o.id},this.checked)"/></td>
+            <td><strong>${o.orderNumber}</strong></td>
+            <td><span style="color:var(--primary);font-weight:600">${o.qrCode || '-'}</span></td>
+            <td>${o.pharmacyName || '-'}</td>
+            <td>${o.recipientName}</td>
+            <td>${o.city}</td>
+            <td><span class="badge badge-info">${o.deliveryType}</span></td>
+        </tr>
+    `).join('') : '<tr><td colspan="7" class="text-center text-gray">No pending orders</td></tr>';
+}
+
+function toggleOrder(id, checked) {
+    if(checked) selectedOrders.add(id);
+    else selectedOrders.delete(id);
+}
+
+async function loadGigs() {
+    const d = await ApiService.get('/routes');
+    allGigs = d.plans || [];
     
     // Split into active and completed
-    const active=allGigs.filter(g=>g.status!=='completed'&&g.status!=='cancelled');
-    const completed=allGigs.filter(g=>g.status==='completed'||g.status==='cancelled');
+    const active = allGigs.filter(g => g.status !== 'completed' && g.status !== 'cancelled');
+    const completed = allGigs.filter(g => g.status === 'completed' || g.status === 'cancelled');
     
-    document.getElementById('gigs-list').innerHTML=active.length?active.map(g=>renderGigCard(g,true)).join(''):'<div class="empty-state"><h3>No active gigs</h3><p>Create a gig and add orders to it.</p></div>';
-    document.getElementById('completed-list').innerHTML=completed.length?completed.map(g=>renderGigCard(g,false)).join(''):'<div class="text-center text-gray py-3">No completed gigs yet</div>';
+    document.getElementById('active-count').textContent = active.length;
+    document.getElementById('gigs-list').innerHTML = active.length ? active.map(g => renderGigCard(g, true)).join('') : 
+        '<div class="empty-state"><h3>No active gigs</h3><p>Create a gig or use Auto-Create to generate gigs based on service zones.</p></div>';
+    document.getElementById('completed-list').innerHTML = completed.length ? completed.map(g => renderGigCard(g, false)).join('') : 
+        '<div class="text-center text-gray py-3">No completed gigs yet</div>';
 }
 
-function renderGigCard(g,showActions){
-    return `<div class="delivery-card" style="margin-bottom:12px">
-        <div class="dc-header">
-            <div>
-                <span class="dc-qr">${g.title}</span> 
-                <span class="text-sm text-gray">${g.date}</span>
+// Status icons
+const gigStatusIcons = {
+    'draft': { icon: '📝', color: '#64748b' },
+    'assigned': { icon: '👤', color: '#8b5cf6' },
+    'in_progress': { icon: '🚚', color: '#06b6d4' },
+    'completed': { icon: '✅', color: '#22c55e' },
+    'cancelled': { icon: '❌', color: '#ef4444' }
+};
+
+const optimizationBadge = {
+    'not_started': { text: 'Not Optimized', class: 'badge-secondary' },
+    'optimizing': { text: 'Optimizing...', class: 'badge-warning' },
+    'optimized': { text: 'Optimized', class: 'badge-success' },
+    'failed': { text: 'Failed', class: 'badge-danger' }
+};
+
+function renderGigCard(g, showActions) {
+    const statusIcon = gigStatusIcons[g.status] || gigStatusIcons['draft'];
+    const optBadge = optimizationBadge[g.optimizationStatus] || optimizationBadge['not_started'];
+    
+    return `<div class="gig-card" data-testid="gig-card-${g.id}">
+        <div class="gig-header">
+            <div class="gig-title">
+                <span class="gig-icon" style="color:${statusIcon.color}">${statusIcon.icon}</span>
+                <div>
+                    <strong>${g.title}</strong>
+                    <small class="text-gray d-block">${g.date}${g.isAutoCreated ? ' • Auto-created' : ''}</small>
+                </div>
             </div>
-            <div class="d-flex gap-2 items-center">
+            <div class="gig-badges">
                 ${statusBadge(g.status)}
-                ${g.optimizationStatus?`<span class="badge badge-${g.optimizationStatus==='optimized'?'delivered':'new'}">${g.optimizationStatus}</span>`:''}
-                <span class="text-sm">${g.orderCount} orders | ${g.driverCount} drivers</span>
+                <span class="badge ${optBadge.class}">${optBadge.text}</span>
             </div>
         </div>
-        <div class="dc-actions">
-            <button class="btn btn-sm btn-outline" onclick="viewGig(${g.id})">View Details</button>
-            ${showActions?`
-                <button class="btn btn-sm btn-primary" onclick="addSelectedToGig(${g.id})">Add Orders</button>
-                <button class="btn btn-sm btn-warning" onclick="openAssignModal(${g.id})">Assign Driver</button>
-                <button class="btn btn-sm btn-info" onclick="optimizeGig(${g.id})">Optimize Route</button>
-                ${g.driverCount>0?`<button class="btn btn-sm btn-success" onclick="distributeGig(${g.id})">Distribute</button>`:''}
-                <button class="btn btn-sm btn-danger" onclick="deleteGig(${g.id})">Delete</button>
-            `:''}
+        <div class="gig-stats">
+            <div class="stat-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                <span>${g.orderCount} orders</span>
+            </div>
+            <div class="stat-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                <span>${g.driverCount} driver${g.driverCount !== 1 ? 's' : ''}</span>
+            </div>
+        </div>
+        <div class="gig-actions">
+            <button class="btn btn-sm btn-outline" onclick="viewGig(${g.id})" data-testid="view-gig-${g.id}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                View
+            </button>
+            ${showActions ? `
+                <button class="btn btn-sm btn-primary" onclick="addSelectedToGig(${g.id})" data-testid="add-orders-${g.id}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Orders
+                </button>
+                <button class="btn btn-sm btn-purple" onclick="openAssignModal(${g.id})" data-testid="assign-driver-${g.id}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Assign Driver
+                </button>
+                <button class="btn btn-sm btn-info" onclick="optimizeGig(${g.id})" data-testid="optimize-gig-${g.id}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    Optimize
+                </button>
+                ${g.orderCount > 1 ? `<button class="btn btn-sm btn-warning" onclick="openSplitModal(${g.id})" data-testid="split-gig-${g.id}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                    Split
+                </button>` : ''}
+                <button class="btn btn-sm btn-danger" onclick="deleteGig(${g.id})" data-testid="delete-gig-${g.id}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+            ` : ''}
         </div>
     </div>`;
 }
 
-async function createGig(){
-    const selectedDrivers=[...document.getElementById('g-drivers').selectedOptions].map(o=>parseInt(o.value));
-    await ApiService.post('/routes',{
-        title:document.getElementById('g-title').value,
-        date:document.getElementById('g-date').value,
-        driverIds:selectedDrivers
+async function createGig() {
+    const selectedDrivers = [...document.getElementById('g-drivers').selectedOptions].map(o => parseInt(o.value));
+    const zoneId = document.getElementById('g-zone').value;
+    
+    await ApiService.post('/routes', {
+        title: document.getElementById('g-title').value,
+        date: document.getElementById('g-date').value,
+        driverIds: selectedDrivers,
+        serviceZoneId: zoneId ? parseInt(zoneId) : null
     });
+    
     closeM('create-modal');
-    document.getElementById('g-title').value='';
-    showAlert('alert-area','success','Gig created!');
+    document.getElementById('g-title').value = '';
+    showAlert('alert-area', 'success', 'Gig created!');
     loadGigs();
 }
 
-async function addSelectedToGig(gigId){
-    if(!selectedOrders.size){showAlert('alert-area','danger','Select orders first');return;}
-    await ApiService.post(`/routes/${gigId}/add-orders`,{orderIds:[...selectedOrders]});
-    selectedOrders.clear();
-    document.getElementById('select-all').checked=false;
-    showAlert('alert-area','success','Orders added to gig!');
-    loadPending();loadGigs();
+async function autoCreateGigs() {
+    try {
+        const date = new Date().toISOString().split('T')[0];
+        const r = await ApiService.post('/routes/auto-create', { date });
+        showAlert('alert-area', 'success', r.message || 'Gigs created!');
+        loadGigs();
+    } catch(e) {
+        showAlert('alert-area', 'warning', e.message || 'No service zones configured');
+    }
 }
 
-function openAssignModal(gigId){
-    document.getElementById('assign-gig-id').value=gigId;
+async function addSelectedToGig(gigId) {
+    if(!selectedOrders.size) {
+        showAlert('alert-area', 'danger', 'Select orders first');
+        return;
+    }
+    await ApiService.post(`/routes/${gigId}/add-orders`, { orderIds: [...selectedOrders] });
+    selectedOrders.clear();
+    document.getElementById('select-all').checked = false;
+    showAlert('alert-area', 'success', 'Orders added to gig!');
+    loadPending();
+    loadGigs();
+}
+
+function openAssignModal(gigId) {
+    document.getElementById('assign-gig-id').value = gigId;
     document.getElementById('assign-modal').classList.add('active');
 }
 
-async function confirmAssignDriver(){
-    const gigId=document.getElementById('assign-gig-id').value;
-    const driverId=document.getElementById('assign-driver').value;
-    if(!driverId){showAlert('alert-area','danger','Select a driver');return;}
-    try{
-        const r=await ApiService.post(`/routes/${gigId}/assign-driver`,{driverId:parseInt(driverId)});
+async function confirmAssignDriver() {
+    const gigId = document.getElementById('assign-gig-id').value;
+    const driverId = document.getElementById('assign-driver').value;
+    if(!driverId) {
+        showAlert('alert-area', 'danger', 'Select a driver');
+        return;
+    }
+    try {
+        const r = await ApiService.post(`/routes/${gigId}/assign-driver`, { driverId: parseInt(driverId) });
         closeM('assign-modal');
-        showAlert('alert-area','success',r.message);
-        loadGigs();loadPending();
-    }catch(e){showAlert('alert-area','danger',e.message);}
-}
-
-async function optimizeGig(gigId){
-    try{
-        showAlert('alert-area','info','Optimizing route... (Circuit API)');
-        // For now, simulate optimization since Circuit API key may not be set
-        await ApiService.put(`/routes/${gigId}`,{optimizationStatus:'optimized'});
-        showAlert('alert-area','success','Route optimized! Orders are now in optimal delivery order.');
+        showAlert('alert-area', 'success', r.message);
         loadGigs();
-    }catch(e){showAlert('alert-area','warning','Circuit API not configured. Manual optimization only.');}
+        loadPending();
+    } catch(e) {
+        showAlert('alert-area', 'danger', e.message);
+    }
 }
 
-async function distributeGig(gigId){
-    try{
-        showAlert('alert-area','info','Distributing to drivers...');
-        await ApiService.put(`/routes/${gigId}`,{distributed:true,status:'distributed'});
-        showAlert('alert-area','success','Gig distributed to drivers!');
+async function optimizeGig(gigId) {
+    try {
+        showAlert('alert-area', 'info', 'Optimizing route via Circuit...');
+        const r = await ApiService.post(`/routes/${gigId}/optimize`);
+        showAlert('alert-area', r.status === 'optimized' ? 'success' : 'warning', r.message);
         loadGigs();
-    }catch(e){showAlert('alert-area','danger',e.message);}
+    } catch(e) {
+        showAlert('alert-area', 'danger', e.message || 'Optimization failed');
+    }
 }
 
-async function viewGig(id){
-    const d=await ApiService.get(`/routes/${id}`);
-    document.getElementById('detail-title').textContent=d.plan.title;
-    document.getElementById('detail-body').innerHTML=`
+let splitGigOrders = [];
+async function openSplitModal(gigId) {
+    document.getElementById('split-gig-id').value = gigId;
+    document.getElementById('split-title').value = '';
+    
+    // Load orders for this gig
+    const d = await ApiService.get(`/routes/${gigId}`);
+    splitGigOrders = d.orders || [];
+    
+    document.getElementById('split-orders-list').innerHTML = splitGigOrders.map(o => `
+        <label class="split-order-item">
+            <input type="checkbox" class="split-cb" value="${o.id}"/>
+            <span>${o.orderNumber}</span>
+            <span class="text-gray">${o.recipientName}</span>
+            <span class="text-gray">${o.city}</span>
+        </label>
+    `).join('');
+    
+    document.getElementById('split-modal').classList.add('active');
+}
+
+async function confirmSplit() {
+    const gigId = document.getElementById('split-gig-id').value;
+    const newTitle = document.getElementById('split-title').value;
+    const selectedIds = [...document.querySelectorAll('.split-cb:checked')].map(cb => parseInt(cb.value));
+    
+    if(!selectedIds.length) {
+        showAlert('alert-area', 'danger', 'Select at least one order to move');
+        return;
+    }
+    
+    try {
+        const r = await ApiService.post(`/routes/${gigId}/split`, { newTitle, orderIds: selectedIds });
+        closeM('split-modal');
+        showAlert('alert-area', 'success', r.message);
+        loadGigs();
+        loadPending();
+    } catch(e) {
+        showAlert('alert-area', 'danger', e.message);
+    }
+}
+
+async function viewGig(id) {
+    const d = await ApiService.get(`/routes/${id}`);
+    const plan = d.plan;
+    const orders = d.orders || [];
+    const driversList = d.drivers || [];
+    
+    document.getElementById('detail-title').textContent = plan.title;
+    document.getElementById('detail-body').innerHTML = `
         <div class="d-flex justify-between mb-2">
-            <span>Date: <strong>${d.plan.date}</strong></span>
-            <div>${statusBadge(d.plan.status)} ${d.plan.optimizationStatus?`<span class="badge badge-info">${d.plan.optimizationStatus}</span>`:''}</div>
+            <div>
+                <span>Date: <strong>${plan.date}</strong></span>
+                ${plan.isAutoCreated ? '<span class="badge badge-info ml-2">Auto-created</span>' : ''}
+            </div>
+            <div>
+                ${statusBadge(plan.status)}
+                <span class="badge ${optimizationBadge[plan.optimizationStatus]?.class || 'badge-secondary'}">${optimizationBadge[plan.optimizationStatus]?.text || plan.optimizationStatus}</span>
+            </div>
         </div>
-        <h4>Assigned Drivers</h4>
-        ${d.drivers.length?d.drivers.map(dr=>`<span class="badge badge-available">${dr.name}</span> `).join(''):'<span class="text-gray">No drivers assigned yet</span>'}
-        <h4 class="mt-2">Stops (${d.orders.length})</h4>
-        <table><thead><tr><th>#</th><th>Order</th><th>QR</th><th>Recipient</th><th>Address</th><th>Status</th><th></th></tr></thead>
-        <tbody>${d.orders.map((o,i)=>`<tr>
-            <td>${i+1}</td>
-            <td>${o.orderNumber}</td>
-            <td><strong>${o.qrCode||'-'}</strong></td>
-            <td>${o.recipientName}</td>
-            <td>${o.street}, ${o.city}</td>
-            <td>${statusBadge(o.status)}</td>
-            <td><button class="btn btn-sm btn-danger" onclick="removeFromGig(${id},${o.id})">Remove</button></td>
-        </tr>`).join('')}</tbody></table>
-        ${d.orders.length>0?`<div class="mt-2"><a href="https://www.google.com/maps/dir/${d.orders.map(o=>encodeURIComponent(o.street+', '+o.city)).join('/')}" target="_blank" class="btn btn-info btn-sm">${Icons.mapPin} Open Route in Google Maps</a></div>`:''}`;
+        
+        <h4 class="mt-2">Assigned Drivers</h4>
+        ${driversList.length ? driversList.map(dr => `<span class="badge badge-available mr-1">${dr.name}</span>`).join('') : '<span class="text-gray">No drivers assigned yet</span>'}
+        
+        <h4 class="mt-2">Stops (${orders.length})</h4>
+        <table>
+            <thead>
+                <tr><th>#</th><th>Order</th><th>QR</th><th>Recipient</th><th>Address</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+                ${orders.map((o, i) => `<tr>
+                    <td>${i + 1}</td>
+                    <td>${o.orderNumber}</td>
+                    <td><strong style="color:var(--primary)">${o.qrCode || '-'}</strong></td>
+                    <td>${o.recipientName}</td>
+                    <td>${o.street}, ${o.city}</td>
+                    <td>${statusBadge(o.status)}</td>
+                    <td><button class="btn btn-sm btn-danger" onclick="removeFromGig(${id},${o.id})">Remove</button></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+        
+        ${orders.length > 0 ? `<div class="mt-2">
+            <a href="https://www.google.com/maps/dir/${orders.map(o => encodeURIComponent(o.street + ', ' + o.city)).join('/')}" target="_blank" class="btn btn-info btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Open Route in Google Maps
+            </a>
+        </div>` : ''}`;
+    
     document.getElementById('detail-modal').classList.add('active');
 }
 
-async function removeFromGig(gigId,orderId){
+async function removeFromGig(gigId, orderId) {
     await ApiService.delete(`/routes/${gigId}/orders/${orderId}`);
-    showAlert('alert-area','success','Order removed');
-    viewGig(gigId);loadPending();
+    showAlert('alert-area', 'success', 'Order removed');
+    viewGig(gigId);
+    loadPending();
 }
 
-async function deleteGig(id){
-    if(!confirm('Delete this gig?'))return;
+async function deleteGig(id) {
+    if(!confirm('Delete this gig? Orders will be returned to pending.')) return;
     await ApiService.delete(`/routes/${id}`);
-    showAlert('alert-area','success','Gig deleted');
+    showAlert('alert-area', 'success', 'Gig deleted');
     loadGigs();
+    loadPending();
 }
 
-loadPending();loadGigs();
+loadPending();
+loadGigs();
 </script>
+
+<style>
+.gig-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: box-shadow 0.2s;
+}
+.gig-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.gig-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+.gig-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.gig-icon {
+    font-size: 24px;
+}
+.gig-badges {
+    display: flex;
+    gap: 8px;
+}
+.gig-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+.gig-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.btn-purple {
+    background: #8b5cf6;
+    color: white;
+    border: none;
+}
+.btn-purple:hover {
+    background: #7c3aed;
+}
+.split-orders-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+}
+.split-order-item {
+    display: grid;
+    grid-template-columns: 24px 1fr 1fr 100px;
+    gap: 12px;
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    align-items: center;
+}
+.split-order-item:hover {
+    background: var(--bg-secondary);
+}
+.split-order-item:last-child {
+    border-bottom: none;
+}
+.badge-secondary { background: #64748b; color: white; }
+.badge-warning { background: #f59e0b; color: white; }
+.badge-success { background: #22c55e; color: white; }
+.badge-danger { background: #ef4444; color: white; }
+</style>
 }
