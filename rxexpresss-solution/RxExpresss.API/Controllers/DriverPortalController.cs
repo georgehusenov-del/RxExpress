@@ -15,10 +15,19 @@ public class DriverPortalController : ControllerBase
 {
     private readonly IRepository<DriverProfile> _drivers;
     private readonly IRepository<Order> _orders;
+    private readonly IWebHostEnvironment _env;
+    private readonly ILogger<DriverPortalController> _logger;
 
-    public DriverPortalController(IRepository<DriverProfile> drivers, IRepository<Order> orders)
+    public DriverPortalController(
+        IRepository<DriverProfile> drivers, 
+        IRepository<Order> orders,
+        IWebHostEnvironment env,
+        ILogger<DriverPortalController> logger)
     {
-        _drivers = drivers; _orders = orders;
+        _drivers = drivers; 
+        _orders = orders;
+        _env = env;
+        _logger = logger;
     }
 
     private async Task<DriverProfile?> GetMyDriver()
@@ -44,7 +53,7 @@ public class DriverPortalController : ControllerBase
         var orders = await _orders.Query()
             .Where(o => o.DriverId == driver.Id && (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "in_transit" || o.Status == "out_for_delivery"))
             .OrderBy(o => o.CreatedAt)
-            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.Status, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.CreatedAt })
+            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.Status, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.DeliveryInstructions, o.RequiresSignature, o.CreatedAt })
             .ToListAsync();
         return Ok(new { deliveries = orders, count = orders.Count });
     }
@@ -57,8 +66,8 @@ public class DriverPortalController : ControllerBase
         var orders = await _orders.Query()
             .Where(o => o.DriverId == driver.Id && (o.Status == "delivered" || o.Status == "failed" || o.Status == "cancelled"))
             .OrderByDescending(o => o.ActualDeliveryTime ?? o.UpdatedAt)
-            .Take(50) // Last 50 deliveries
-            .Select(o => new { o.Id, o.OrderNumber, o.QrCode, o.RecipientName, o.Street, o.City, o.Status, o.ActualDeliveryTime, o.CopayAmount, o.CopayCollected })
+            .Take(50)
+            .Select(o => new { o.Id, o.OrderNumber, o.QrCode, o.RecipientName, o.Street, o.City, o.Status, o.ActualDeliveryTime, o.CopayAmount, o.CopayCollected, o.PhotoUrl })
             .ToListAsync();
         return Ok(new { deliveries = orders, count = orders.Count });
     }
@@ -82,17 +91,104 @@ public class DriverPortalController : ControllerBase
     public async Task<IActionResult> SubmitPod(int id, [FromBody] SubmitPodDto dto)
     {
         var driver = await GetMyDriver();
-        if (driver == null) return NotFound();
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+        
         var order = await _orders.Query().FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driver.Id);
-        if (order == null) return NotFound();
+        if (order == null) return NotFound(new { detail = "Order not found" });
+        
+        // Photo is MANDATORY
+        if (string.IsNullOrEmpty(dto.PhotoBase64))
+        {
+            return BadRequest(new { detail = "Photo proof is required for delivery completion" });
+        }
+        
+        // Save photo to filesystem
+        try
+        {
+            var photoPath = await SavePhotoAsync(dto.PhotoBase64, order.OrderNumber);
+            order.PhotoUrl = photoPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save POD photo for order {OrderId}", id);
+            return BadRequest(new { detail = "Failed to save photo. Please try again." });
+        }
+        
+        // Signature is optional (based on delivery instructions like "leave at door")
+        if (!string.IsNullOrEmpty(dto.SignatureBase64))
+        {
+            try
+            {
+                var signaturePath = await SaveSignatureAsync(dto.SignatureBase64, order.OrderNumber);
+                order.SignatureUrl = signaturePath;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to save signature for order {OrderId}", id);
+                // Don't fail - signature is optional
+            }
+        }
+        
         order.Status = "delivered";
         order.ActualDeliveryTime = DateTime.UtcNow;
         order.RecipientNameSigned = dto.RecipientName;
+        order.DeliveryNotes = dto.Notes;
         order.UpdatedAt = DateTime.UtcNow;
+        
         driver.TotalDeliveries++;
+        
         await _orders.UpdateAsync(order);
         await _drivers.UpdateAsync(driver);
-        return Ok(new { success = true, message = "POD submitted" });
+        
+        return Ok(new { success = true, message = "Delivery completed with POD", photoUrl = order.PhotoUrl, signatureUrl = order.SignatureUrl });
+    }
+    
+    private async Task<string> SavePhotoAsync(string base64Data, string orderNumber)
+    {
+        // Remove data URL prefix if present
+        var base64 = base64Data;
+        if (base64.Contains(","))
+        {
+            base64 = base64.Split(',')[1];
+        }
+        
+        var bytes = Convert.FromBase64String(base64);
+        var fileName = $"pod_{orderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.jpg";
+        
+        // Save to wwwroot/pod folder
+        var podFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "pod");
+        if (!Directory.Exists(podFolder))
+        {
+            Directory.CreateDirectory(podFolder);
+        }
+        
+        var filePath = Path.Combine(podFolder, fileName);
+        await System.IO.File.WriteAllBytesAsync(filePath, bytes);
+        
+        return $"/pod/{fileName}";
+    }
+    
+    private async Task<string> SaveSignatureAsync(string base64Data, string orderNumber)
+    {
+        var base64 = base64Data;
+        if (base64.Contains(","))
+        {
+            base64 = base64.Split(',')[1];
+        }
+        
+        var bytes = Convert.FromBase64String(base64);
+        var fileName = $"sig_{orderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.png";
+        
+        var podFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "pod");
+        if (!Directory.Exists(podFolder))
+        {
+            Directory.CreateDirectory(podFolder);
+        }
+        
+        var filePath = Path.Combine(podFolder, fileName);
+        await System.IO.File.WriteAllBytesAsync(filePath, bytes);
+        
+        return $"/pod/{fileName}";
     }
 
     [HttpPost("deliveries/{id}/collect-copay")]
