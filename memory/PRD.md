@@ -6,105 +6,64 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 ## Current Architecture
 ```
 /app/rxexpresss-solution/
-├── RxExpresss.API/        # ASP.NET Core Web API project
-├── RxExpresss.Web/        # ASP.NET Core MVC project (frontend)
-├── RxExpresss.Core/       # Class library (entities, DTOs, services, interfaces)
-├── RxExpresss.Data/       # Class library (DbContext, repositories, migrations)
-├── RxExpresss.Identity/   # Class library (JWT service, auth logic)
-└── RxExpresss.sln         # Main solution file
+├── RxExpresss.API/        # ASP.NET Core Web API
+├── RxExpresss.Web/        # ASP.NET Core MVC (frontend)
+├── RxExpresss.Core/       # Class library (entities, DTOs)
+├── RxExpresss.Data/       # DbContext, repositories
+├── RxExpresss.Identity/   # JWT service, auth logic
+└── RxExpresss.sln
 ```
 
 ## Core Features Implemented
 
+### UI/UX Improvements (Latest)
+- ✅ **Invisible scrollbar** - Scrollbars hidden but scrolling works
+- ✅ **Collapsible sidebar** - Fixed toggle button (teal) on mobile/tablet
+- ✅ **Actual QR codes** - Black/white box pattern QR images in order details and printing
+- ✅ **Removed status flow from Driver page**
+- ✅ Responsive design for all screen sizes
+
 ### Authentication & Authorization
 - JWT-based authentication
 - Role-based access: Admin, Pharmacy, Driver
-- Login, logout, session management
 
 ### Landing Page
-- Responsive hero section with mobile hamburger menu
-- Features showcase
-- Contact form
-- Updated contact info: +1 (718) 799-4103, getfastdeliverywith@rxexpresss.com
+- Mobile hamburger menu navigation
 - Privacy Policy and Terms of Service pages
-- Separate CSS file (landing.css) - no inline styles
-
-### Responsive Design (VERIFIED WORKING)
-- ✅ Collapsible sidebar with hamburger icon (3-line menu)
-- ✅ Mobile-first responsive styles
-- ✅ Breakpoints: 1024px (tablet), 768px (mobile), 480px (small mobile)
-- ✅ Touch-friendly navigation
-- ✅ Adaptive layouts for all screen sizes
-- ✅ Sidebar slides in from left on mobile
-- ✅ Dark overlay when sidebar is open
-- ✅ X button to close sidebar
+- Contact: +1 (718) 799-4103, getfastdeliverywith@rxexpresss.com
 
 ### Admin Dashboard
-- Dashboard with statistics
-- Order management with filters (date, status, pharmacy)
-- QR code printing functionality (shared print-qr.js)
-- Driver management
-- Pharmacy management
-- Route/Gig management
-- Service zones management
-- Pricing configuration
-- QR scanning page
-- POD viewing capability
+- QR code display in order details (actual QR image)
+- Print QR labels with actual QR codes
+- Order management with filters
+- Driver/Pharmacy/Route management
 
 ### Pharmacy Portal
-- Profile display
-- Order creation with delivery options
-- Order tracking (case-insensitive search)
-- QR code printing functionality
-- POD viewing capability
+- QR code display in order details
+- Print QR labels with actual QR codes
+- Order creation and tracking
 
 ### Driver Portal
-- Status toggle (Online/Offline)
-- QR-scan-based status workflow (no manual status changes):
-  - New → Picked Up (scan at pharmacy)
-  - Picked Up → In Transit (scan at office)
-  - In Transit → Out for Delivery (scan when dispatching)
-  - Out for Delivery → Delivering Now (scan when starting delivery)
-  - Delivering Now → Delivered (POD with mandatory photo)
-  - Delivering Now → Failed (if patient not home)
-- Delivery history
-- Route navigation (Google Maps)
-- Copay collection
+- Clean interface (no status flow legend)
+- QR-scan-based status workflow
+- POD with mandatory photo
 
 ### Order Status Flow
 | Status | Meaning |
 |--------|---------|
-| New | QR created, order placed |
-| Picked Up | Package picked up from pharmacy |
-| In Transit | Package arrived at office |
-| Out for Delivery | Package dispatched for route |
-| Delivering Now | Driver actively delivering this package |
+| New | QR created |
+| Picked Up | From pharmacy |
+| In Transit | At office |
+| Out for Delivery | Dispatched |
+| Delivering Now | Active delivery |
 | Delivered | POD complete |
-| Failed | Patient not home / delivery issue |
-| Cancelled | Pharmacy cancelled or max attempts |
+| Failed | Patient not home |
+| Cancelled | Pharmacy cancelled |
 
-### Tracking
-- Public tracking page with timeline
-- Case-insensitive search (Order #, Tracking #, QR Code)
+## Preview URL
+- https://rx-express-rebuild-1.preview.emergentagent.com
 
-## Configuration Files
-
-### API appsettings.json (Production)
-- SQL Server connection to production database
-- JWT configuration
-- Circuit API keys
-
-### API appsettings.Development.json
-- SQLite for local development
-- JWT configuration
-
-### Web appsettings.Production.json
-- API base URL: https://backend.rxexpresss.com/api
-
-### Web appsettings.Development.json
-- API base URL: /api (relative for local dev)
-
-## Test Accounts (Commented out in production)
+## Test Accounts
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@rxexpresss.com | Admin@123 |
@@ -112,55 +71,22 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 | Driver | driver@test.com | Driver@123 |
 
 ## Recent Changes (Feb 21, 2026)
-1. ✅ Added Privacy Policy page (/Home/PrivacyPolicy)
-2. ✅ Added Terms of Service page (/Home/TermsOfService)
-3. ✅ Updated landing page with mobile hamburger menu
-4. ✅ Implemented collapsible sidebar with hamburger icon
-5. ✅ Added comprehensive responsive styles for all screen sizes
-6. ✅ Commented out test accounts from login page
-7. ✅ Updated contact info (phone and email)
-8. ✅ Fixed pharmacy order tracking (case-insensitive search)
-9. ✅ Added QR code printing from Admin and Pharmacy portals
-10. ✅ Created shared print-qr.js for label printing
-11. ✅ Updated Driver portal to QR-scan-based status changes only
-12. ✅ Added "delivering_now" status to the workflow
-13. ✅ Fixed @media syntax in Razor files (@@media)
-14. ✅ Installed .NET 8 SDK and enabled preview
-15. ✅ Legal page styles moved to landing.css (no inline styles)
+1. ✅ Hidden scrollbars (CSS: scrollbar-width:none)
+2. ✅ Fixed collapsible sidebar with toggle button
+3. ✅ Actual QR code images using qrserver.com API
+4. ✅ Print labels with QRCode.js generated QR codes
+5. ✅ Removed status flow section from Driver portal
 
-## Preview URL
-- **Landing Page**: https://rx-express-rebuild-1.preview.emergentagent.com
-- **Login**: https://rx-express-rebuild-1.preview.emergentagent.com/Home/Login
-- **Privacy Policy**: https://rx-express-rebuild-1.preview.emergentagent.com/Home/PrivacyPolicy
-- **Terms of Service**: https://rx-express-rebuild-1.preview.emergentagent.com/Home/TermsOfService
-
-## File Structure for CSS/JS
-```
-/wwwroot/
-├── css/
-│   ├── site.css        # Main application styles
-│   └── landing.css     # Landing page and legal page styles
-└── js/
-    ├── api-service.js  # API communication service
-    └── print-qr.js     # Shared QR label printing function
-```
-
-## Backlog / Future Tasks
-1. **(P1)** Implement Circuit Spoke Webhook Logic
-2. **(P1)** Integrate Twilio/SendGrid Notifications
-3. **(P2)** Replace Circuit with Google Maps API for route optimization
-4. **(P2)** Cloud Storage for POD images (Azure Blob/AWS S3)
-5. **(P2)** Stripe Frontend Payment Flow
-6. **(P2)** Forgot Password implementation
-7. **(P3)** Pharmacy Software Integration (needs clarification)
-
-## Known Issues
-- POD images stored locally in wwwroot/uploads (not production-ready)
-- Circuit webhook endpoint is placeholder
+## Backlog
+1. (P1) Circuit Webhook implementation
+2. (P1) Twilio/SendGrid notifications
+3. (P2) Google Maps route optimization
+4. (P2) Cloud storage for POD images
+5. (P2) Stripe payment flow
+6. (P2) Forgot password
 
 ## Deployment
-- DNS and SSL managed via Cloudflare
+- DNS/SSL: Cloudflare
 - Backend: backend.rxexpresss.com
 - Frontend: rxexpresss.com
-- SSL Mode: Full (Strict)
-- Hosting: Hoster.pk with IIS
+- Hosting: Hoster.pk (IIS)
