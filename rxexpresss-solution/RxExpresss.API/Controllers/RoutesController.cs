@@ -387,7 +387,7 @@ public class RoutesController : ControllerBase
         };
         await _plans.AddAsync(newPlan);
         
-        // Move selected orders to new gig
+        // Move selected orders to new gig - keep their current status and driver
         var movedCount = 0;
         foreach (var oid in dto.OrderIds)
         {
@@ -400,19 +400,39 @@ public class RoutesController : ControllerBase
                 // Add to new plan
                 await _planOrders.AddAsync(new RoutePlanOrder { RoutePlanId = newPlan.Id, OrderId = oid });
                 
-                // Update order's RoutePlanId
+                // Update order's RoutePlanId but keep status and driver
                 var order = await _orders.GetByIdAsync(oid);
                 if (order != null)
                 {
                     order.RoutePlanId = newPlan.Id;
-                    order.Status = "new"; // Reset status since it's a new gig
-                    order.DriverId = null;
-                    order.DriverName = null;
                     order.UpdatedAt = DateTime.UtcNow;
                     await _orders.UpdateAsync(order);
+                    
+                    // If order has a driver, add driver to new plan
+                    if (order.DriverId.HasValue)
+                    {
+                        var driverExists = await _planDrivers.Query()
+                            .AnyAsync(pd => pd.RoutePlanId == newPlan.Id && pd.DriverId == order.DriverId.Value);
+                        if (!driverExists)
+                        {
+                            await _planDrivers.AddAsync(new RoutePlanDriver { RoutePlanId = newPlan.Id, DriverId = order.DriverId.Value });
+                        }
+                    }
                 }
                 movedCount++;
             }
+        }
+        
+        // Update new plan status based on orders
+        var hasAssignedOrders = await _planOrders.Query()
+            .Where(po => po.RoutePlanId == newPlan.Id)
+            .Join(_orders.Query(), po => po.OrderId, o => o.Id, (po, o) => o)
+            .AnyAsync(o => o.DriverId != null);
+        
+        if (hasAssignedOrders)
+        {
+            newPlan.Status = "assigned";
+            await _plans.UpdateAsync(newPlan);
         }
         
         return Ok(new { 
