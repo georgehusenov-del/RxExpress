@@ -12,53 +12,74 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - RX Expresss</title>
-    <link rel="stylesheet" href="~/css/site.css?v=20260221" />
+    <link rel="stylesheet" href="~/css/site.css?v=20260221b" />
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
-        /* Collapsible Sidebar Styles */
-        .hamburger-btn {
+        /* Sidebar Toggle Button */
+        .sidebar-toggle {
             display: none;
-            background: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 60;
+            background: var(--primary);
             border: none;
+            border-radius: 8px;
+            padding: 10px;
             cursor: pointer;
-            padding: 8px;
-            color: var(--dark);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
-        .hamburger-btn svg {
+        .sidebar-toggle svg {
             width: 24px;
             height: 24px;
+            color: white;
+            display: block;
         }
         
+        /* Sidebar Overlay */
         .sidebar-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 45;
+            z-index: 48;
         }
         
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        /* Sidebar Close Button */
         .sidebar-close {
             display: none;
             position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
+            top: 12px;
+            right: 12px;
+            background: rgba(255,255,255,0.1);
             border: none;
-            color: white;
+            border-radius: 6px;
+            padding: 6px;
             cursor: pointer;
-            padding: 4px;
         }
         
         .sidebar-close svg {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
+            color: white;
+            display: block;
         }
         
-        /* Mobile Responsive Styles */
+        .sidebar-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Responsive - Show toggle button and make sidebar collapsible */
         @@media (max-width: 1024px) {
+            .sidebar-toggle {
+                display: block;
+            }
+            
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
@@ -68,174 +89,57 @@
                 transform: translateX(0);
             }
             
-            .sidebar-overlay.active {
-                display: block;
-            }
-            
             .sidebar-close {
                 display: block;
             }
             
             .main-content {
-                margin-left: 0;
-            }
-            
-            .hamburger-btn {
-                display: block;
+                margin-left: 0 !important;
             }
             
             .topbar {
-                padding: 12px 16px;
-            }
-            
-            .topbar h1 {
-                font-size: 18px;
-            }
-            
-            .page-body {
-                padding: 16px;
+                padding-left: 70px;
             }
         }
         
         @@media (max-width: 768px) {
-            .row {
-                flex-direction: column;
-            }
-            
-            .col, .col-2 {
-                min-width: 100%;
-            }
-            
-            .d-flex.gap-2 {
-                flex-wrap: wrap;
-            }
-            
-            .topbar {
-                flex-direction: column;
-                gap: 12px;
-                align-items: flex-start;
-            }
-            
-            .topbar > div:last-child {
-                width: 100%;
-                flex-wrap: wrap;
-            }
-            
-            table {
-                font-size: 12px;
-            }
-            
-            table th, table td {
-                padding: 8px 6px;
-            }
-            
-            .btn {
-                padding: 6px 12px;
-                font-size: 13px;
-            }
-            
-            .modal {
-                width: 95%;
-                max-height: 85vh;
-            }
-            
-            .stat-card {
-                padding: 16px;
-            }
-            
-            .stat-card .stat-value {
-                font-size: 24px;
-            }
-            
-            .features-grid {
-                gap: 16px;
-            }
-            
-            .feature-card {
-                padding: 20px;
-            }
-            
-            .card-header {
-                padding: 12px 16px;
-                flex-direction: column;
-                gap: 8px;
-                align-items: flex-start;
-            }
-            
-            .card-body {
-                padding: 16px;
-            }
-            
-            /* Filter controls on mobile */
-            .form-control {
-                width: 100% !important;
-                min-width: unset !important;
-            }
+            .row { flex-direction: column; }
+            .col, .col-2 { min-width: 100%; flex: none; }
+            .topbar { flex-direction: column; gap: 12px; align-items: flex-start; padding-left: 70px; }
+            .topbar > div:last-child { width: 100%; flex-wrap: wrap; }
+            table { font-size: 12px; }
+            table th, table td { padding: 8px 6px; }
+            .btn { padding: 6px 12px; font-size: 13px; }
+            .modal { width: 95%; max-height: 85vh; }
+            .stat-card { padding: 16px; }
+            .stat-card .stat-value { font-size: 24px; }
+            .card-header { padding: 12px 16px; flex-direction: column; gap: 8px; align-items: flex-start; }
+            .card-body { padding: 16px; }
+            .form-control { width: 100% !important; min-width: unset !important; }
         }
         
         @@media (max-width: 480px) {
-            .page-body {
-                padding: 12px;
-            }
-            
-            .card {
-                border-radius: 8px;
-            }
-            
-            .btn-sm {
-                padding: 4px 8px;
-                font-size: 12px;
-            }
-            
-            .delivery-card {
-                padding: 12px;
-            }
-            
-            .dc-header {
-                flex-direction: column;
-                gap: 8px;
-                align-items: flex-start;
-            }
-            
-            .dc-details {
-                font-size: 13px;
-            }
-            
-            .dc-actions {
-                flex-direction: column;
-            }
-            
-            .dc-actions .btn {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .toggle-group {
-                width: 100%;
-            }
-            
-            .toggle-btn {
-                flex: 1;
-                text-align: center;
-            }
-            
-            .action-btns {
-                flex-wrap: wrap;
-            }
-            
-            /* Hide non-essential table columns on very small screens */
-            table th:nth-child(n+5),
-            table td:nth-child(n+5) {
-                display: none;
-            }
-            
-            .stat-card .stat-label {
-                font-size: 11px;
-            }
+            .page-body { padding: 12px; }
+            .topbar { padding: 12px; padding-left: 60px; }
+            .topbar h1 { font-size: 16px; }
+            .btn-sm { padding: 4px 8px; font-size: 12px; }
+            .delivery-card { padding: 12px; }
+            .dc-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+            .dc-actions { flex-direction: column; }
+            .dc-actions .btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
 <body>
+<!-- Sidebar Toggle Button (Mobile) -->
+<button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+</button>
+
 <!-- Mobile Overlay -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
@@ -261,16 +165,7 @@
     </aside>
     <main class="main-content">
         <div class="topbar">
-            <div class="d-flex items-center gap-2">
-                <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
-                <h1>@ViewData["PageTitle"]</h1>
-            </div>
+            <h1>@ViewData["PageTitle"]</h1>
             @await RenderSectionAsync("TopbarRight", required: false)
         </div>
         <div class="page-body">
@@ -292,31 +187,20 @@
     
     // Sidebar toggle functions
     function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-        document.getElementById('sidebar-overlay').classList.toggle('active');
-        document.body.style.overflow = document.getElementById('sidebar').classList.contains('open') ? 'hidden' : '';
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
     }
     
     function closeSidebar() {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebar-overlay').classList.remove('active');
-        document.body.style.overflow = '';
     }
     
     // Close sidebar when clicking on a nav link (mobile)
     document.querySelectorAll('.sidebar-nav a').forEach(link => {
-        link.addEventListener('click', () => {
-            if (window.innerWidth <= 1024) {
-                closeSidebar();
-            }
-        });
-    });
-    
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 1024) {
-            closeSidebar();
-        }
+        link.addEventListener('click', closeSidebar);
     });
 </script>
 @await RenderSectionAsync("Scripts", required: false)
