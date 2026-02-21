@@ -38,3 +38,20 @@
 .empty-state{text-align:center;padding:60px 20px;color:var(--gray)}.empty-state h3{margin-bottom:8px;color:#334155}
 .delivery-card{border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;background:white;transition:box-shadow .2s}.delivery-card:hover{box-shadow:var(--shadow-lg)}.dc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.dc-qr{font-size:18px;font-weight:700;color:var(--primary)}.dc-details{display:flex;gap:20px;flex-wrap:wrap;font-size:14px;color:var(--gray)}.dc-details strong{color:var(--dark)}.dc-actions{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
 .toggle-group{display:flex;gap:4px}.toggle-btn{padding:6px 16px;border-radius:20px;border:2px solid var(--border);background:white;cursor:pointer;font-weight:600;font-size:13px}.toggle-btn.active{background:var(--success);color:white;border-color:var(--success)}.toggle-btn.off{background:var(--sidebar-bg);color:white;border-color:var(--sidebar-bg)}
+
+/* Responsive Base Styles */
+@media (max-width: 1024px) {
+    .main-content { margin-left: 0; }
+}
+
+@media (max-width: 768px) {
+    .auth-card { width: 90%; max-width: 400px; padding: 24px; }
+    .auth-card h1 { font-size: 24px; }
+    .row { flex-direction: column; }
+    .col, .col-2 { min-width: 100%; flex: none; }
+}
+
+@media (max-width: 480px) {
+    .auth-card { padding: 20px; }
+    .btn-lg { padding: 10px 20px; font-size: 14px; }
+}
