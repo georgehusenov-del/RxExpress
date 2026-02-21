@@ -182,4 +182,23 @@ public class OrdersController : ControllerBase
         if (order == null) return NotFound(new { detail = "Order not found" });
         return Ok(order);
     }
+
+    [HttpPost("reassign-to-gigs")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ReassignAllToGigs()
+    {
+        // Get all orders without a route plan
+        var unassignedOrders = await _orders.Query()
+            .Where(o => o.RoutePlanId == null)
+            .ToListAsync();
+
+        int assigned = 0;
+        foreach (var order in unassignedOrders)
+        {
+            await AutoAssignToGig(order);
+            if (order.RoutePlanId != null) assigned++;
+        }
+
+        return Ok(new { message = $"Assigned {assigned} orders to gigs", total = unassignedOrders.Count });
+    }
 }
