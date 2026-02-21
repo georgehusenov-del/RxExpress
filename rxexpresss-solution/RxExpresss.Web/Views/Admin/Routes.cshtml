@@ -473,7 +473,10 @@ async function viewGig(id) {
                     <td>${o.street}, ${o.city}</td>
                     <td>${statusBadge(o.status)}</td>
                     <td>${o.driverName || '<span class="text-gray">-</span>'}</td>
-                    <td><button class="btn btn-sm btn-danger" onclick="removeFromGig(${id},${o.id})">Remove</button></td>
+                    <td class="action-btns">
+                        ${o.driverName && o.status === 'assigned' ? `<button class="btn btn-sm btn-warning" onclick="unassignOrderDriver(${id},${o.id})" title="Unassign driver from this order">Unassign</button>` : ''}
+                        <button class="btn btn-sm btn-danger" onclick="removeFromGig(${id},${o.id})" title="Remove from gig">Remove</button>
+                    </td>
                 </tr>`).join('')}
             </tbody>
         </table>
