@@ -9,6 +9,9 @@
 .photo-preview{max-width:200px;max-height:150px;border-radius:8px;margin-top:8px;display:none}
 .signature-pad{border:1px solid var(--border);border-radius:8px;background:#fafafa;touch-action:none}
 .pod-required{color:#ef4444;font-size:12px;margin-top:4px}
+.status-info{background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px}
+.status-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.status-legend span{padding:2px 8px;border-radius:4px;font-size:11px}
 </style>
 
 @section TopbarRight {
@@ -32,6 +35,18 @@
 </div>
 
 <div id="active-section">
+    <div class="status-info">
+        <strong>Status Flow (Scan-Based):</strong>
+        <div class="status-legend">
+            <span style="background:#dbeafe;color:#1d4ed8">New</span>
+            <span style="background:#fef3c7;color:#92400e">Picked Up</span>
+            <span style="background:#e0f2fe;color:#0369a1">In Transit</span>
+            <span style="background:#cffafe;color:#0e7490">Out for Delivery</span>
+            <span style="background:#d1fae5;color:#059669">Delivering Now</span>
+            <span style="background:#dcfce7;color:#15803d">Delivered</span>
+            <span style="background:#fee2e2;color:#b91c1c">Failed</span>
+        </div>
+    </div>
     <div id="deliveries"><div class="text-center mt-3"><span class="spinner"></span> Loading...</div></div>
 </div>
 
@@ -43,14 +58,15 @@
 <div class="modal-overlay" id="scan-modal">
     <div class="modal">
         <div class="modal-header">
-            <h3>Scan Package QR</h3>
+            <h3 id="scan-modal-title">Scan Package QR</h3>
             <button class="close-btn" onclick="closeScanModal()">&times;</button>
         </div>
         <div class="modal-body text-center">
             <input type="hidden" id="scan-order-id"/>
             <input type="hidden" id="scan-expected-qr"/>
+            <input type="hidden" id="scan-action"/>
             <div id="qr-reader"></div>
-            <p class="text-sm text-gray mt-2">Point camera at package QR code</p>
+            <p class="text-sm text-gray mt-2" id="scan-instruction">Point camera at package QR code</p>
             <div class="mt-2">
                 <input type="text" class="form-control" id="manual-qr" placeholder="Or enter QR manually..." style="max-width:200px;display:inline-block" data-testid="manual-qr-input"/>
                 <button class="btn btn-primary btn-sm" onclick="verifyManualQr()" data-testid="verify-qr-btn">Verify</button>
@@ -102,6 +118,36 @@
     </div>
 </div>
 
+<!-- Failed Delivery Modal -->
+<div class="modal-overlay" id="failed-modal">
+    <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+            <h3>Mark Delivery as Failed</h3>
+            <button class="close-btn" onclick="closeFailedModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="failed-order-id"/>
+            <div class="form-group">
+                <label>Reason</label>
+                <select class="form-control" id="failed-reason">
+                    <option value="patient_not_home">Patient Not Home</option>
+                    <option value="wrong_address">Wrong Address</option>
+                    <option value="refused_delivery">Refused Delivery</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea class="form-control" id="failed-notes" placeholder="Additional details..." rows="2"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeFailedModal()">Cancel</button>
+            <button class="btn btn-danger" onclick="submitFailed()">Mark as Failed</button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
@@ -113,6 +159,7 @@ let html5QrCode=null;
 let scannerRunning=false;
 let signaturePad=null;
 let isDrawing=false;
+let currentScanAction='verify'; // verify, pickup, intransit, outfordelivery, delivering
 
 function showTab(tab){
     document.getElementById('tab-active').className='btn '+(tab==='active'?'btn-primary':'btn-outline');
@@ -143,6 +190,25 @@ async function setStatus(s){
 
 function mapsUrl(addr){return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;}
 
+// Status display helpers
+function getNextAction(status, isScanned) {
+    switch(status) {
+        case 'assigned':
+        case 'new':
+            return { action: 'pickup', label: 'Scan to Pick Up', icon: '📦', color: 'btn-warning' };
+        case 'picked_up':
+            return { action: 'intransit', label: 'Scan at Office', icon: '🏢', color: 'btn-info' };
+        case 'in_transit':
+            return { action: 'outfordelivery', label: 'Scan to Dispatch', icon: '🚗', color: 'btn-primary' };
+        case 'out_for_delivery':
+            return { action: 'delivering', label: 'Scan - Delivering Now', icon: '📍', color: 'btn-success' };
+        case 'delivering_now':
+            return isScanned ? { action: 'pod', label: 'Complete Delivery', icon: '✅', color: 'btn-success' } : null;
+        default:
+            return null;
+    }
+}
+
 async function loadDeliveries(){
     try{
         const d=await ApiService.get('/driver-portal/deliveries');
@@ -163,11 +229,13 @@ async function loadDeliveries(){
         el.innerHTML=d.deliveries.map((o,i)=>{
             const addr=`${o.street}, ${o.city}, ${o.state} ${o.postalCode}`;
             const isS=scannedSet.has(o.id);
+            const nextAction = getNextAction(o.status, isS);
+            
             return `<div class="delivery-card">
                 <div class="dc-header">
                     <div><span class="stop-badge">${i+1}</span><span class="dc-qr">${o.qrCode||o.orderNumber}</span></div>
                     <div class="d-flex gap-2 items-center">
-                        ${isS?'<span class="scan-badge">✓ Scanned</span>':''}
+                        ${isS?'<span class="scan-badge">✓ Verified</span>':''}
                         ${statusBadge(o.status)}
                         <a href="${mapsUrl(addr)}" target="_blank" class="nav-btn">${Icons.mapPin} Navigate</a>
                     </div>
@@ -181,12 +249,10 @@ async function loadDeliveries(){
                 </div>
                 ${o.deliveryNotes?`<div class="mt-1 text-sm text-gray">Notes: ${o.deliveryNotes}</div>`:''}
                 <div class="dc-actions">
-                    ${!isS?`<button class="btn btn-sm btn-outline" onclick="openScanModal(${o.id},'${o.qrCode||''}')">📷 Scan Package</button>`:''}
-                    ${o.status==='assigned'?`<button class="btn btn-sm btn-warning" onclick="upd(${o.id},'picked_up')">Pick Up</button>`:''}
-                    ${o.status==='picked_up'?`<button class="btn btn-sm btn-info" onclick="upd(${o.id},'in_transit')">Start Transit</button>`:''}
-                    ${o.status==='in_transit'?`<button class="btn btn-sm btn-primary" onclick="upd(${o.id},'out_for_delivery')">Out for Delivery</button>`:''}
-                    ${o.status==='out_for_delivery'&&isS?`<button class="btn btn-sm btn-success" onclick="openPodModal(${o.id})">Complete Delivery</button>`:(o.status==='out_for_delivery'?'<span class="text-sm text-gray">Scan package to enable delivery</span>':'')}
-                    ${o.copayAmount>0&&!o.copayCollected&&isS?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">Collect $${o.copayAmount.toFixed(2)}</button>`:''}
+                    ${nextAction ? `<button class="btn btn-sm ${nextAction.color}" onclick="openScanModal(${o.id},'${o.qrCode||''}','${nextAction.action}')">${nextAction.icon} ${nextAction.label}</button>` : ''}
+                    ${o.status==='delivering_now' && isS ? `<button class="btn btn-sm btn-success" onclick="openPodModal(${o.id})">✅ Complete Delivery (POD)</button>` : ''}
+                    ${o.status==='delivering_now' && isS ? `<button class="btn btn-sm btn-danger" onclick="openFailedModal(${o.id})">❌ Failed Delivery</button>` : ''}
+                    ${o.copayAmount>0&&!o.copayCollected&&isS?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">💵 Collect $${o.copayAmount.toFixed(2)}</button>`:''}
                 </div>
             </div>`;
         }).join('');
@@ -217,11 +283,33 @@ async function loadHistory(){
     }
 }
 
-// QR Scanner
-function openScanModal(orderId,expectedQr){
+// QR Scanner - Updated for action-based scanning
+function openScanModal(orderId, expectedQr, action){
     document.getElementById('scan-order-id').value=orderId;
     document.getElementById('scan-expected-qr').value=expectedQr;
+    document.getElementById('scan-action').value=action;
     document.getElementById('manual-qr').value='';
+    currentScanAction = action;
+    
+    // Update modal title based on action
+    const titles = {
+        'verify': 'Verify Package QR',
+        'pickup': 'Scan to Pick Up Package',
+        'intransit': 'Scan at Office (In Transit)',
+        'outfordelivery': 'Scan to Dispatch (Out for Delivery)',
+        'delivering': 'Scan - Start Delivering'
+    };
+    document.getElementById('scan-modal-title').textContent = titles[action] || 'Scan Package QR';
+    
+    const instructions = {
+        'verify': 'Point camera at package QR code to verify',
+        'pickup': 'Scan the package QR to mark as PICKED UP',
+        'intransit': 'Scan at office to mark as IN TRANSIT',
+        'outfordelivery': 'Scan before leaving to mark as OUT FOR DELIVERY',
+        'delivering': 'Scan when starting delivery to this location'
+    };
+    document.getElementById('scan-instruction').textContent = instructions[action] || 'Point camera at package QR code';
+    
     document.getElementById('scan-modal').classList.add('active');
     startQrScanner();
 }
@@ -271,11 +359,37 @@ async function verifyManualQr(){
 async function verifyQrCode(code){
     const orderId=parseInt(document.getElementById('scan-order-id').value);
     const expected=document.getElementById('scan-expected-qr').value;
+    const action=document.getElementById('scan-action').value;
     
     if(code.toUpperCase()===expected.toUpperCase()){
         scannedSet.add(orderId);
         await closeScanModal();
-        showAlert('alert-area','success','✓ Package verified! You can now complete delivery.');
+        
+        // Map action to status
+        const statusMap = {
+            'pickup': 'picked_up',
+            'intransit': 'in_transit',
+            'outfordelivery': 'out_for_delivery',
+            'delivering': 'delivering_now'
+        };
+        
+        if(action === 'verify') {
+            showAlert('alert-area','success','✓ Package verified!');
+        } else if(statusMap[action]) {
+            try {
+                await ApiService.put(`/driver-portal/deliveries/${orderId}/status?status=${statusMap[action]}`);
+                const statusLabels = {
+                    'picked_up': 'Picked Up',
+                    'in_transit': 'In Transit',
+                    'out_for_delivery': 'Out for Delivery',
+                    'delivering_now': 'Delivering Now'
+                };
+                showAlert('alert-area','success',`✓ Status updated to: ${statusLabels[statusMap[action]]}`);
+            } catch(e) {
+                showAlert('alert-area','danger', e.message || 'Failed to update status');
+            }
+        }
+        
         loadDeliveries();
     }else{
         showAlert('alert-area','danger',`QR mismatch! Expected: ${expected}, Got: ${code}`);
@@ -308,6 +422,34 @@ function previewPhoto(input){
         reader.readAsDataURL(input.files[0]);
     }else{
         preview.style.display='none';
+    }
+}
+
+// Failed Delivery Modal
+function openFailedModal(orderId){
+    document.getElementById('failed-order-id').value=orderId;
+    document.getElementById('failed-reason').value='patient_not_home';
+    document.getElementById('failed-notes').value='';
+    document.getElementById('failed-modal').classList.add('active');
+}
+
+function closeFailedModal(){
+    document.getElementById('failed-modal').classList.remove('active');
+}
+
+async function submitFailed(){
+    const orderId=document.getElementById('failed-order-id').value;
+    const reason=document.getElementById('failed-reason').value;
+    const notes=document.getElementById('failed-notes').value;
+    
+    try {
+        await ApiService.put(`/driver-portal/deliveries/${orderId}/status?status=failed`);
+        closeFailedModal();
+        scannedSet.delete(parseInt(orderId));
+        showAlert('alert-area','warning',`Delivery marked as Failed: ${reason.replace(/_/g,' ')}`);
+        loadDeliveries();
+    } catch(e) {
+        showAlert('alert-area','danger', e.message || 'Failed to update status');
     }
 }
 
@@ -428,12 +570,6 @@ async function submitPod(){
     }catch(e){
         showAlert('alert-area','danger',e.message || 'Failed to submit POD');
     }
-}
-
-async function upd(id,s){
-    await ApiService.put(`/driver-portal/deliveries/${id}/status?status=${s}`);
-    showAlert('alert-area','success',`Status: ${s.replace(/_/g,' ')}`);
-    loadDeliveries();
 }
 
 async function copay(id){
