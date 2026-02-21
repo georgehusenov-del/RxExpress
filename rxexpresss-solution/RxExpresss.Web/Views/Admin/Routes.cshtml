@@ -497,6 +497,18 @@ async function removeFromGig(gigId, orderId) {
     loadPending();
 }
 
+async function unassignOrderDriver(gigId, orderId) {
+    if(!confirm('Unassign driver from this order? The order will remain in the gig but become unassigned.')) return;
+    try {
+        const r = await ApiService.post(`/routes/${gigId}/orders/${orderId}/unassign`);
+        toast(r.message, 'success');
+        viewGig(gigId);
+        loadGigs();
+    } catch(e) {
+        toast(e.detail || e.message || 'Failed to unassign', 'danger');
+    }
+}
+
 async function deleteGig(id) {
     if(!confirm('Delete this gig? Orders will be returned to pending.')) return;
     await ApiService.delete(`/routes/${id}`);
