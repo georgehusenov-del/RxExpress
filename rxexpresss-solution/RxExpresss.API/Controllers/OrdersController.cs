@@ -67,15 +67,29 @@ public class OrdersController : ControllerBase
     {
         var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
         
-        // Find service zone by city name
+        // Find service zone by city name (exact or close match)
+        var cityLower = order.City.ToLower().Trim();
         var zone = await _zones.Query()
-            .FirstOrDefaultAsync(z => z.IsActive && z.Name.ToLower().Contains(order.City.ToLower()));
+            .FirstOrDefaultAsync(z => z.IsActive && z.Name.ToLower() == cityLower);
+        
+        if (zone == null)
+        {
+            // Try partial match
+            zone = await _zones.Query()
+                .FirstOrDefaultAsync(z => z.IsActive && (
+                    z.Name.ToLower().Contains(cityLower) || 
+                    cityLower.Contains(z.Name.ToLower())
+                ));
+        }
         
         if (zone == null)
         {
             // Try to find by zip code
             zone = await _zones.Query()
-                .FirstOrDefaultAsync(z => z.IsActive && z.ZipCodes.Contains(order.PostalCode));
+                .Where(z => z.IsActive)
+                .ToListAsync()
+                .ContinueWith(t => t.Result.FirstOrDefault(z => 
+                    z.ZipCodes.Split(',').Any(zip => zip.Trim() == order.PostalCode)));
         }
         
         if (zone == null) return; // No matching zone, order stays unassigned
@@ -98,8 +112,16 @@ public class OrdersController : ControllerBase
             await _plans.AddAsync(gig);
         }
         
-        // Add order to gig
-        await _planOrders.AddAsync(new RoutePlanOrder { RoutePlanId = gig.Id, OrderId = order.Id });
+        // Check if order already in a gig
+        var existingPlanOrder = await _planOrders.Query()
+            .FirstOrDefaultAsync(po => po.OrderId == order.Id);
+        
+        if (existingPlanOrder == null)
+        {
+            // Add order to gig
+            await _planOrders.AddAsync(new RoutePlanOrder { RoutePlanId = gig.Id, OrderId = order.Id });
+        }
+        
         order.RoutePlanId = gig.Id;
         await _orders.UpdateAsync(order);
     }
