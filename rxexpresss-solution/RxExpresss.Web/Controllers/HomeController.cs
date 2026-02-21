@@ -41,4 +41,18 @@ public class HomeController : Controller
     {
         return View("Track");
     }
+
+    [HttpGet("/Home/PrivacyPolicy")]
+    public IActionResult PrivacyPolicy()
+    {
+        ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? _config["ApiBaseUrl"] ?? "/api";
+        return View("PrivacyPolicy");
+    }
+
+    [HttpGet("/Home/TermsOfService")]
+    public IActionResult TermsOfService()
+    {
+        ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? _config["ApiBaseUrl"] ?? "/api";
+        return View("TermsOfService");
+    }
 }
