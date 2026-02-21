@@ -144,8 +144,12 @@ public class OrdersController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Track(string code)
     {
+        // Case-insensitive search for order number, tracking number, or QR code
+        var codeUpper = code.ToUpper();
         var order = await _orders.Query()
-            .Where(o => o.OrderNumber == code || o.TrackingNumber == code || o.QrCode == code)
+            .Where(o => o.OrderNumber.ToUpper() == codeUpper || 
+                       o.TrackingNumber.ToUpper() == codeUpper || 
+                       (o.QrCode != null && o.QrCode.ToUpper() == codeUpper))
             .Select(o => new { 
                 o.OrderNumber, o.TrackingNumber, o.QrCode, o.Status, 
                 o.RecipientName, o.Street, o.City, o.State, o.PostalCode,
