@@ -1,193 +1,156 @@
-@{ ViewData["Title"] = "Home"; Layout = null; }
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RX Expresss - Pharmacy Delivery Service</title>
-    <link rel="stylesheet" href="/css/site.css?v=20260218" />
-    <style>
-        .landing-nav{position:fixed;top:0;left:0;right:0;background:rgba(30,41,59,0.95);backdrop-filter:blur(10px);padding:16px 40px;display:flex;justify-content:space-between;align-items:center;z-index:1000}
-        .landing-nav .brand{font-size:24px;font-weight:700;color:white}
-        .landing-nav .brand span{color:var(--primary)}
-        .nav-links{display:flex;gap:24px;align-items:center}
-        .nav-links a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color 0.2s}
-        .nav-links a:hover{color:white}
-        .hero{min-height:100vh;display:flex;align-items:center;padding:100px 40px 60px;background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)}
-        .hero-content{max-width:600px}
-        .hero h1{font-size:48px;font-weight:800;color:white;line-height:1.1;margin-bottom:20px}
-        .hero h1 span{color:var(--primary)}
-        .hero p{font-size:18px;color:#94a3b8;line-height:1.7;margin-bottom:32px}
-        .hero-btns{display:flex;gap:16px;flex-wrap:wrap}
-        .hero-btns .btn{padding:14px 28px;font-size:15px}
-        .features{padding:80px 40px;background:#f8fafc}
-        .section-title{text-align:center;margin-bottom:60px}
-        .section-title h2{font-size:36px;font-weight:700;color:#1e293b;margin-bottom:12px}
-        .section-title p{color:#64748b;font-size:16px}
-        .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px;max-width:1200px;margin:0 auto}
-        .feature-card{background:white;border-radius:16px;padding:32px;box-shadow:0 4px 20px rgba(0,0,0,0.05);border:1px solid #e2e8f0;transition:transform 0.3s,box-shadow 0.3s}
-        .feature-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.1)}
-        .feature-icon{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:24px}
-        .feature-icon.blue{background:#dbeafe;color:#2563eb}
-        .feature-icon.green{background:#dcfce7;color:#16a34a}
-        .feature-icon.orange{background:#fed7aa;color:#ea580c}
-        .feature-icon.purple{background:#e9d5ff;color:#9333ea}
-        .feature-card h3{font-size:20px;font-weight:600;color:#1e293b;margin-bottom:8px}
-        .feature-card p{color:#64748b;font-size:14px;line-height:1.6}
-        .contact-section{padding:80px 40px;background:#1e293b}
-        .contact-section .section-title h2{color:white}
-        .contact-section .section-title p{color:#94a3b8}
-        .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;max-width:1000px;margin:0 auto}
-        .contact-info{color:white}
-        .contact-info h3{font-size:24px;margin-bottom:24px}
-        .contact-item{display:flex;gap:16px;margin-bottom:20px;align-items:flex-start}
-        .contact-item .icon{width:40px;height:40px;border-radius:10px;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center}
-        .contact-item .text h4{font-size:15px;margin-bottom:4px}
-        .contact-item .text p{color:#94a3b8;font-size:14px}
-        .contact-form{background:white;border-radius:16px;padding:32px}
-        .contact-form .form-group{margin-bottom:16px}
-        .contact-form label{display:block;font-size:14px;font-weight:500;color:#1e293b;margin-bottom:6px}
-        .contact-form input,.contact-form textarea{width:100%;padding:12px 16px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px}
-        .contact-form textarea{min-height:100px;resize:vertical}
-        .footer{background:#0f172a;padding:40px;text-align:center;color:#64748b;font-size:14px}
-        @@media(max-width:768px){
-            .hero h1{font-size:32px}
-            .contact-grid{grid-template-columns:1fr}
-            .landing-nav{padding:12px 20px}
-            .nav-links{gap:12px}
-        }
-    </style>
-</head>
-<body>
-    <nav class="landing-nav">
-        <a href="/" class="brand" style="text-decoration:none">RX <span>Expresss</span></a>
-        <div class="nav-links">
-            <a href="#features" onclick="scrollToSection(event,'features')">Features</a>
-            <a href="#contact" onclick="scrollToSection(event,'contact')">Contact</a>
-            <a href="/Home/RegisterPharmacy" class="btn btn-outline btn-sm">Add Pharmacy</a>
-            <a href="/Home/Login" class="btn btn-primary btn-sm">Login</a>
-        </div>
-    </nav>
+@{
+    ViewData["Title"] = "Home";
+    Layout = "_Layout";
+}
+<link rel="stylesheet" href="~/css/landing.css?v=20260218" />
 
-    <section class="hero">
-        <div class="hero-content">
-            <h1>Fast & Reliable <span>Pharmacy Delivery</span> in NYC</h1>
-            <p>RX Expresss provides same-day medication delivery across all 5 NYC boroughs. Our professional drivers ensure your prescriptions arrive safely and on time.</p>
-            <div class="hero-btns">
-                <a href="/Home/Login" class="btn btn-primary">Get Started</a>
-                <a href="/Home/RegisterPharmacy" class="btn btn-outline">Partner With Us</a>
-            </div>
-        </div>
-    </section>
+<nav class="landing-nav">
+    <a href="/" class="brand">RX <span>Expresss</span></a>
+    <div class="nav-links">
+        <a href="#features" onclick="scrollToSection(event,'features')">Features</a>
+        <a href="#contact" onclick="scrollToSection(event,'contact')">Contact</a>
+        <a href="/Home/RegisterPharmacy" class="btn btn-outline btn-sm">Add Pharmacy</a>
+        <a href="/Home/Login" class="btn btn-primary btn-sm">Login</a>
+    </div>
+</nav>
 
-    <section class="features" id="features">
-        <div class="section-title">
-            <h2>Why Choose RX Expresss?</h2>
-            <p>We deliver medications with care, speed, and reliability.</p>
+<section class="hero">
+    <div class="hero-content">
+        <h1>Fast & Reliable <span>Pharmacy Delivery</span> in NYC</h1>
+        <p>RX Expresss provides same-day medication delivery across all 5 NYC boroughs. Our professional drivers ensure your prescriptions arrive safely and on time.</p>
+        <div class="hero-btns">
+            <a href="/Home/Login" class="btn btn-primary">Get Started</a>
+            <a href="/Home/RegisterPharmacy" class="btn btn-outline">Partner With Us</a>
         </div>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon blue">🚀</div>
-                <h3>Same-Day Delivery</h3>
-                <p>Get your medications delivered within hours. We offer express, standard, and scheduled delivery options to fit your needs.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon green">✓</div>
-                <h3>Verified Drivers</h3>
-                <p>All our drivers are background-checked and trained in medication handling. Your prescriptions are in safe hands.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon orange">📍</div>
-                <h3>Real-Time Tracking</h3>
-                <p>Track your delivery in real-time. Get notified when your driver is on the way and when your package arrives.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon purple">🏥</div>
-                <h3>Pharmacy Integration</h3>
-                <p>We integrate seamlessly with your pharmacy's workflow. Easy order creation, QR scanning, and proof of delivery.</p>
-            </div>
-        </div>
-    </section>
+    </div>
+</section>
 
-    <section class="contact-section" id="contact">
-        <div class="section-title">
-            <h2>Contact Us</h2>
-            <p>Have questions? We're here to help.</p>
+<section class="features" id="features">
+    <div class="section-title">
+        <h2>Why Choose RX Expresss?</h2>
+        <p>We deliver medications with care, speed, and reliability.</p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <h3>Same-Day Delivery</h3>
+            <p>Get your medications delivered within hours. We offer express, standard, and scheduled delivery options to fit your needs.</p>
         </div>
-        <div class="contact-grid">
-            <div class="contact-info">
-                <h3>Get In Touch</h3>
-                <div class="contact-item">
-                    <div class="icon">📍</div>
-                    <div class="text">
-                        <h4>Address</h4>
-                        <p>123 Pharmacy Lane, New York, NY 10001</p>
-                    </div>
+        <div class="feature-card">
+            <div class="feature-icon green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <h3>Verified Drivers</h3>
+            <p>All our drivers are background-checked and trained in medication handling. Your prescriptions are in safe hands.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <h3>Real-Time Tracking</h3>
+            <p>Track your delivery in real-time. Get notified when your driver is on the way and when your package arrives.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon purple">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM21 9H3M9 21V9"/></svg>
+            </div>
+            <h3>Pharmacy Integration</h3>
+            <p>We integrate seamlessly with your pharmacy's workflow. Easy order creation, QR scanning, and proof of delivery.</p>
+        </div>
+    </div>
+</section>
+
+<section class="contact-section" id="contact">
+    <div class="section-title">
+        <h2>Contact Us</h2>
+        <p>Have questions? We're here to help.</p>
+    </div>
+    <div class="contact-grid">
+        <div class="contact-info">
+            <h3>Get In Touch</h3>
+            <!-- Location commented out as per request
+            <div class="contact-item">
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 </div>
-                <div class="contact-item">
-                    <div class="icon">📞</div>
-                    <div class="text">
-                        <h4>Phone</h4>
-                        <p>(555) 123-4567</p>
-                    </div>
-                </div>
-                <div class="contact-item">
-                    <div class="icon">✉️</div>
-                    <div class="text">
-                        <h4>Email</h4>
-                        <p>support@rxexpresss.com</p>
-                    </div>
-                </div>
-                <div class="contact-item">
-                    <div class="icon">⏰</div>
-                    <div class="text">
-                        <h4>Hours</h4>
-                        <p>Mon - Sat: 8AM - 10PM<br/>Sunday: 9AM - 6PM</p>
-                    </div>
+                <div class="text">
+                    <h4>Address</h4>
+                    <p>123 Pharmacy Lane, New York, NY 10001</p>
                 </div>
             </div>
-            <div class="contact-form">
-                <form id="contact-form">
-                    <div id="contact-alert"></div>
-                    <div class="form-group">
-                        <label>Name</label>
-                        <input type="text" id="c-name" placeholder="Your name" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="c-email" placeholder="your@email.com" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Phone</label>
-                        <input type="tel" id="c-phone" placeholder="(555) 000-0000" />
-                    </div>
-                    <div class="form-group">
-                        <label>Message</label>
-                        <textarea id="c-message" placeholder="How can we help you?" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-full">Send Message</button>
-                </form>
+            -->
+            <div class="contact-item">
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <div class="text">
+                    <h4>Phone</h4>
+                    <p>+1 (718) 799-4103</p>
+                </div>
+            </div>
+            <div class="contact-item">
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="text">
+                    <h4>Email</h4>
+                    <p>getfastdeliverywith@rxexpresss.com</p>
+                </div>
+            </div>
+            <div class="contact-item">
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="text">
+                    <h4>Hours</h4>
+                    <p>Mon - Sat: 8AM - 10PM<br/>Sunday: 9AM - 6PM</p>
+                </div>
             </div>
         </div>
-    </section>
+        <div class="contact-form">
+            <form id="contact-form">
+                <div id="contact-alert"></div>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="c-name" placeholder="Your name" required />
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="c-email" placeholder="your@email.com" required />
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="c-phone" placeholder="(555) 000-0000" />
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="c-message" placeholder="How can we help you?" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Send Message</button>
+            </form>
+        </div>
+    </div>
+</section>
 
-    <footer class="footer">
-        <p>&copy; 2026 RX Expresss. All rights reserved. | <a href="#" onclick="return false;" style="color:var(--primary)">Privacy Policy</a> | <a href="#" onclick="return false;" style="color:var(--primary)">Terms of Service</a></p>
-    </footer>
+<footer class="landing-footer">
+    <p>&copy; 2026 RX Expresss. All rights reserved. | <a href="/Home/PrivacyPolicy">Privacy Policy</a> | <a href="/Home/TermsOfService">Terms of Service</a></p>
+</footer>
 
-    <script>
-        function scrollToSection(e, sectionId) {
-            e.preventDefault();
-            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        document.getElementById('contact-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const alert = document.getElementById('contact-alert');
-            alert.innerHTML = '<div class="alert alert-success">Thank you! We\'ll get back to you soon.</div>';
-            this.reset();
-            setTimeout(() => alert.innerHTML = '', 5000);
-        });
-    </script>
-</body>
-</html>
+@section Scripts {
+<script>
+    function scrollToSection(e, sectionId) {
+        e.preventDefault();
+        document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    document.getElementById('contact-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const alert = document.getElementById('contact-alert');
+        alert.innerHTML = '<div class="alert alert-success">Thank you! We\'ll get back to you soon.</div>';
+        this.reset();
+        setTimeout(() => alert.innerHTML = '', 5000);
+    });
+</script>
+}
