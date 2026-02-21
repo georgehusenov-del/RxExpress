@@ -1,0 +1,100 @@
+{
+  "summary": "Completed testing of Druglift-style gig management workflow. All 5 requested features verified working: Per-order unassign driver (POST /api/routes/{gigId}/orders/{orderId}/unassign), Split gig keeps assigned driver with moved orders, QR code display in order detail modal using qrserver.com API, Admin login and Routes page navigation, Gig detail with unassign button for assigned orders.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_gig_management_druglift.py",
+    "/app/test_reports/pytest/pytest_druglift.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_gig_management_druglift.py"
+  ],
+  "success_rate": {
+    "backend": "100% (8 passed, 1 skipped)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "Admin": {"email": "admin@rxexpresss.com", "password": "Admin@123"}
+  },
+  "seed_data_creation": "Used existing gigs (Brooklyn - 2026-02-21, Queens - Part 2) for testing. Created test split gig 'Brooklyn Part 2 - Test Split' during testing.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All Druglift-style gig management features working. Per-order unassign endpoint at POST /api/routes/{gigId}/orders/{orderId}/unassign. Split gig preserves driver assignment. QR codes displayed using qrserver.com API. Unassign button only appears for orders with status 'assigned'.",
+  "features_tested": {
+    "Per-order unassign driver - POST /api/routes/{gigId}/orders/{orderId}/unassign": {
+      "status": "PASS",
+      "evidence": [
+        "API endpoint returns 200 with message 'Driver unassigned from order {orderNumber}'",
+        "Order status changes from 'assigned' to 'new'",
+        "Order remains in gig after unassign (not removed)",
+        "Gig status changes to 'draft' when all orders are unassigned",
+        "Returns 400 when trying to unassign non-assigned order"
+      ]
+    },
+    "Split gig keeps assigned driver with moved orders": {
+      "status": "PASS",
+      "evidence": [
+        "POST /api/routes/{id}/split moves orders to new gig",
+        "Moved orders retain their DriverId and DriverName",
+        "Driver is automatically added to new gig's driver list",
+        "New gig status set to 'assigned' when orders have drivers",
+        "Order's RoutePlanId updated to new gig ID"
+      ]
+    },
+    "QR code display in order detail modal": {
+      "status": "PASS",
+      "evidence": [
+        "QR code image displayed using qrserver.com API",
+        "URL format: https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={qrCode}",
+        "QR code text displayed below image",
+        "Print QR Label button available in modal"
+      ]
+    },
+    "Login as admin and navigate to Routes page": {
+      "status": "PASS",
+      "evidence": [
+        "Login at /home/login with admin credentials",
+        "Dashboard loads at /Admin/Index",
+        "Routes page accessible at /Admin/Routes via sidebar navigation",
+        "8 gig cards displayed on Routes page"
+      ]
+    },
+    "View gig detail with unassign button for assigned orders": {
+      "status": "PASS",
+      "evidence": [
+        "Gig detail modal shows orders table with columns: #, ORDER, QR, RECIPIENT, CITY, STATUS, DRIVER",
+        "Unassign button visible for orders with status 'assigned' and driverName set",
+        "Unassign button triggers per-order unassign API",
+        "Toast notification 'Driver unassigned from order {orderNumber}' shown after unassign",
+        "Modal refreshes to show updated order status"
+      ]
+    }
+  },
+  "api_endpoints_tested": [
+    "POST /api/auth/login - PASS (authentication)",
+    "GET /api/routes - PASS (list all gigs)",
+    "GET /api/routes/{id} - PASS (gig detail with orders and drivers)",
+    "POST /api/routes/{id}/orders/{orderId}/unassign - PASS (per-order unassign)",
+    "POST /api/routes/{id}/split - PASS (split gig with driver preservation)",
+    "POST /api/routes/{id}/assign-orders-to-driver - PASS (assign orders to driver)",
+    "GET /api/admin/orders - PASS (orders list with QR codes)"
+  ],
+  "ui_flows_tested": [
+    "Admin login flow",
+    "Routes page with gig cards",
+    "Gig detail modal with orders table",
+    "Per-order unassign button click and confirmation",
+    "Order detail modal with QR code display",
+    "Print QR Label button visibility"
+  ],
+  "rca_of_the_issue": "N/A - All features working correctly as specified"
+}
