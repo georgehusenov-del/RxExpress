@@ -12,11 +12,241 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - RX Expresss</title>
-    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/site.css?v=20260221" />
+    <style>
+        /* Collapsible Sidebar Styles */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            color: var(--dark);
+        }
+        
+        .hamburger-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 45;
+        }
+        
+        .sidebar-close {
+            display: none;
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        .sidebar-close svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .sidebar-overlay.active {
+                display: block;
+            }
+            
+            .sidebar-close {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .hamburger-btn {
+                display: block;
+            }
+            
+            .topbar {
+                padding: 12px 16px;
+            }
+            
+            .topbar h1 {
+                font-size: 18px;
+            }
+            
+            .page-body {
+                padding: 16px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+            }
+            
+            .col, .col-2 {
+                min-width: 100%;
+            }
+            
+            .d-flex.gap-2 {
+                flex-wrap: wrap;
+            }
+            
+            .topbar {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .topbar > div:last-child {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            table th, table td {
+                padding: 8px 6px;
+            }
+            
+            .btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            
+            .modal {
+                width: 95%;
+                max-height: 85vh;
+            }
+            
+            .stat-card {
+                padding: 16px;
+            }
+            
+            .stat-card .stat-value {
+                font-size: 24px;
+            }
+            
+            .features-grid {
+                gap: 16px;
+            }
+            
+            .feature-card {
+                padding: 20px;
+            }
+            
+            .card-header {
+                padding: 12px 16px;
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+            
+            .card-body {
+                padding: 16px;
+            }
+            
+            /* Filter controls on mobile */
+            .form-control {
+                width: 100% !important;
+                min-width: unset !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .page-body {
+                padding: 12px;
+            }
+            
+            .card {
+                border-radius: 8px;
+            }
+            
+            .btn-sm {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+            
+            .delivery-card {
+                padding: 12px;
+            }
+            
+            .dc-header {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+            
+            .dc-details {
+                font-size: 13px;
+            }
+            
+            .dc-actions {
+                flex-direction: column;
+            }
+            
+            .dc-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .toggle-group {
+                width: 100%;
+            }
+            
+            .toggle-btn {
+                flex: 1;
+                text-align: center;
+            }
+            
+            .action-btns {
+                flex-wrap: wrap;
+            }
+            
+            /* Hide non-essential table columns on very small screens */
+            table th:nth-child(n+5),
+            table td:nth-child(n+5) {
+                display: none;
+            }
+            
+            .stat-card .stat-label {
+                font-size: 11px;
+            }
+        }
+    </style>
 </head>
 <body>
+<!-- Mobile Overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+        <button class="sidebar-close" onclick="closeSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
         <div class="sidebar-brand">
             <h2>RX Expresss</h2>
             <small>@portalName</small>
@@ -31,7 +261,16 @@
     </aside>
     <main class="main-content">
         <div class="topbar">
-            <h1>@ViewData["PageTitle"]</h1>
+            <div class="d-flex items-center gap-2">
+                <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <h1>@ViewData["PageTitle"]</h1>
+            </div>
             @await RenderSectionAsync("TopbarRight", required: false)
         </div>
         <div class="page-body">
@@ -49,6 +288,35 @@
     if (sf && user) {
         sf.innerHTML = `<div class="user-name">${user.firstName} ${user.lastName}</div><div class="user-role">${user.role}</div><button class="logout-btn" onclick="ApiService.logout()">Sign Out</button>`;
     }
+    
+    // Sidebar toggle functions
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
+        document.body.style.overflow = document.getElementById('sidebar').classList.contains('open') ? 'hidden' : '';
+    }
+    
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    
+    // Close sidebar when clicking on a nav link (mobile)
+    document.querySelectorAll('.sidebar-nav a').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 1024) {
+                closeSidebar();
+            }
+        });
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 1024) {
+            closeSidebar();
+        }
+    });
 </script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
