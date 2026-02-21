@@ -1,6 +1,10 @@
 {
   "Files": [
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/css/landing.css",
+      "PackagePath": "staticwebassets/css/landing.css"
+    },
+    {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/css/site.css",
       "PackagePath": "staticwebassets/css/site.css"
     },
@@ -11,6 +15,10 @@
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/js/api-service.js",
       "PackagePath": "staticwebassets/js/api-service.js"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/js/print-qr.js",
+      "PackagePath": "staticwebassets/js/print-qr.js"
     },
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/js/qr-scanner-patch.js",
