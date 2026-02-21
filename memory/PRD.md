@@ -76,6 +76,17 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 3. ✅ Actual QR code images using qrserver.com API
 4. ✅ Print labels with QRCode.js generated QR codes
 5. ✅ Removed status flow section from Driver portal
+6. ✅ **Druglift-style Gig Management** (Latest):
+   - Per-order driver unassignment (POST /api/routes/{id}/orders/{orderId}/unassign)
+   - Split gig preserves assigned driver with moved orders
+   - Orders remain in gig for tracking until delivery
+   - Unassign button visible in gig detail for assigned orders
+
+## Gig Management Workflow (Druglift Flow)
+- **Order stays in gig** - Orders remain in gig for tracking until delivery
+- **Split keeps driver** - When splitting a gig, orders keep their assigned driver
+- **Per-order unassign** - Can unassign driver from individual orders (not entire gig)
+- **One order = one gig** - Each order belongs to only one gig at a time
 
 ## Backlog
 1. (P1) Circuit Webhook implementation
@@ -84,6 +95,7 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 4. (P2) Cloud storage for POD images
 5. (P2) Stripe payment flow
 6. (P2) Forgot password
+7. (P2) QR code print page issue (if still occurring - need user verification)
 
 ## Deployment
 - DNS/SSL: Cloudflare
