@@ -1,299 +1,130 @@
 # RX Expresss - Product Requirements Document
 
-## Project Overview
-RX Expresss is a full-stack pharmacy delivery service application serving NYC boroughs. Migrated from Python/React/MongoDB to ASP.NET Core 8 with clean architecture.
+## Original Problem Statement
+Build a full-stack pharmacy delivery service application named "RX Expresss" based on ASP.NET Core 8. The application serves pharmacies, drivers, and administrators with features for order management, QR code tracking, route planning, and proof of delivery.
 
-## Tech Stack
-- **Backend:** ASP.NET Core 8 Web API, EF Core with SQLite (dev) / SQL Server (prod)
-- **Frontend:** ASP.NET Core MVC with Razor views (.cshtml)
-- **Authentication:** ASP.NET Identity with JWT tokens
-- **External:** Circuit API for route optimization (configurable)
+## Current Architecture
+```
+/app/rxexpresss-solution/
+├── RxExpresss.API/        # ASP.NET Core Web API project
+├── RxExpresss.Web/        # ASP.NET Core MVC project (frontend)
+├── RxExpresss.Core/       # Class library (entities, DTOs, services, interfaces)
+├── RxExpresss.Data/       # Class library (DbContext, repositories, migrations)
+├── RxExpresss.Identity/   # Class library (JWT service, auth logic)
+└── RxExpresss.sln         # Main solution file
+```
 
-## Deployment Configuration
-- **Production/Preview:** Uses `/api` prefix for API calls (Kubernetes ingress routing)
-- **Visual Studio Local:** Uses `http://localhost:5001/api` (Development appsettings)
+## Core Features Implemented
 
-## Completed Features (Feb 17, 2026)
+### Authentication & Authorization
+- JWT-based authentication
+- Role-based access: Admin, Pharmacy, Driver
+- Login, logout, session management
 
-### Landing Page (✓)
-- [x] Hero section with branding and CTA
-- [x] Features showcase grid
-- [x] Contact form section
-- [x] Smooth scrolling navigation (no new tabs)
-- [x] Navigation: Login, Add Pharmacy links
+### Landing Page
+- Responsive hero section
+- Features showcase
+- Contact form
+- Updated contact info: +1 (718) 799-4103, getfastdeliverywith@rxexpresss.com
+- Privacy Policy and Terms of Service pages
+- Separate CSS file (landing.css)
 
-### Authentication (✓)
-- [x] Login page with role-based redirect
-- [x] **Forgot Password link** on login page
-- [x] Forgot Password page
-- [x] Register Pharmacy page
-- [x] JWT token generation
+### Admin Dashboard
+- Dashboard with statistics
+- Order management with filters (date, status, pharmacy)
+- QR code printing functionality
+- Driver management
+- Pharmacy management
+- Route/Gig management
+- Service zones management
+- Pricing configuration
+- QR scanning page
+- POD viewing capability
 
-### Pharmacy Dashboard (✓)
-- [x] Pharmacy profile display
-- [x] Orders list with **Tracking URL column**
-- [x] **Popup modal for order creation** (replaces inline form)
-- [x] Delivery type tabs: Next-Day, Same-Day, Priority, Scheduled
-- [x] Price summary with refrigeration option
-- [x] Click-to-copy tracking URLs
-
-### Public Tracking Page (✓) - NEW
-- [x] `/Track/{code}` route for public order tracking
-- [x] Status timeline visualization
-- [x] Order details (recipient, address, delivery type)
-- [x] Driver information when assigned
-- [x] Search by order number or QR code
-
-### Admin Dashboard (✓)
-- [x] Overview statistics
-- [x] NYC borough breakdown
-- [x] Recent orders list
-- [x] Copay tracking
-
-### User Management - Admin (✓)
-- [x] List users with role filter
-- [x] Create new user
-- [x] Edit user details
-- [x] Delete user
-- [x] Toggle active/inactive status
-
-### Routes/Gigs Management - Admin (✓)
-- [x] Pending orders with checkboxes
-- [x] Create gig with driver selection
-- [x] Active/Completed gigs tabs
-- [x] Add orders to gig
-- [x] Assign driver modal
-- [x] Optimize route (Circuit placeholder)
-- [x] Distribute to drivers
-- [x] Google Maps route navigation
-
-### QR Code Scanning (✓)
-- [x] **Camera scanning** with html5-qrcode library
-- [x] Manual QR code entry
-- [x] Tab toggle between Camera Scan and Manual Entry
-- [x] Package verification with details
-
-### Driver Portal (✓)
-- [x] Active Deliveries tab
-- [x] **Delivery History tab** 
-- [x] Online/Offline status toggle
-- [x] **Camera QR scanning** for package verification
-- [x] **POD modal** with recipient name, photo, notes
-- [x] Status progression buttons
-- [x] Copay collection
-- [x] Google Maps navigation
-
-### Circuit Integration (✓) - NEW
-- [x] CircuitService class created
-- [x] Driver registration endpoint
-- [x] Plan creation/optimization endpoints
-- [x] Stop management
-- [x] CircuitDriverId field on Driver entity
-- [x] CircuitPlanId field on RoutePlan entity
-- [x] CircuitStopId field on Order entity
-- [x] **Note:** Requires CIRCUIT_API_KEY environment variable
-
-### Service Zones/Pricing (✓)
-- [x] CRUD for delivery zones
-- [x] CRUD for pricing models
-
-## API Endpoints
-
-### Public (No Auth)
-- `POST /api/auth/login` - Login
-- `POST /api/auth/forgot-password` - Password reset
-- `POST /api/auth/register-pharmacy` - Pharmacy registration
-- `GET /api/orders/track/{code}` - **Public order tracking**
-
-### Admin
-- User CRUD: `GET/POST/PUT/DELETE /api/admin/users`
-- `PUT /api/admin/users/{id}/toggle-active`
-- `GET /api/admin/dashboard-stats`
-- `POST /api/admin/scan/{code}` - QR scan
-
-### Orders
-- `GET /api/orders` - List orders
-- `POST /api/orders` - Create order
-
-### Routes
-- `GET/POST /api/routes` - Route plans
-- `POST /api/routes/{id}/add-orders`
-- `POST /api/routes/{id}/assign-driver`
+### Pharmacy Portal
+- Profile display
+- Order creation with delivery options
+- Order tracking
+- QR code printing functionality
+- POD viewing capability
 
 ### Driver Portal
-- `GET /api/driver-portal/deliveries` - Active deliveries
-- `GET /api/driver-portal/history` - **Delivery history**
-- `PUT /api/driver-portal/status` - Online/offline
-- `POST /api/driver-portal/deliveries/{id}/pod` - Submit POD
+- Status toggle (Online/Offline)
+- QR-scan-based status workflow:
+  - New → Picked Up (scan at pharmacy)
+  - Picked Up → In Transit (scan at office)
+  - In Transit → Out for Delivery (scan when dispatching)
+  - Out for Delivery → Delivering Now (scan when starting delivery)
+  - Delivering Now → Delivered (POD with mandatory photo)
+  - Delivering Now → Failed (if patient not home)
+- Delivery history
+- Route navigation (Google Maps)
+- Copay collection
 
-## Test Credentials
+### Order Status Flow
+| Status | Meaning |
+|--------|---------|
+| New | QR created, order placed |
+| Picked Up | Package picked up from pharmacy |
+| In Transit | Package arrived at office |
+| Out for Delivery | Package dispatched for route |
+| Delivering Now | Driver actively delivering this package |
+| Delivered | POD complete |
+| Failed | Patient not home / delivery issue |
+| Cancelled | Pharmacy cancelled or max attempts |
+
+### Tracking
+- Public tracking page with timeline
+- Case-insensitive search (Order #, Tracking #, QR Code)
+
+## Configuration Files
+
+### API appsettings.json
+- SQL Server connection to production database
+- JWT configuration
+- Circuit API keys
+
+### Web appsettings.Production.json
+- API base URL: https://backend.rxexpresss.com/api
+- Logging configuration
+
+## Test Accounts
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@rxexpresss.com | Admin@123 |
 | Pharmacy | pharmacy@test.com | Pharmacy@123 |
 | Driver | driver@test.com | Driver@123 |
 
-## Pending Tasks
+## Recent Changes (Feb 21, 2026)
+1. Added Privacy Policy page (/Home/PrivacyPolicy)
+2. Added Terms of Service page (/Home/TermsOfService)
+3. Updated landing page to use shared layout with separate CSS
+4. Commented out location from landing page contact section
+5. Updated contact info (phone and email)
+6. Commented out test accounts from login page
+7. Updated appsettings.json and appsettings.Production.json per user request
+8. Fixed pharmacy order tracking (case-insensitive search)
+9. Added QR code printing from Admin and Pharmacy portals
+10. Updated Driver portal to QR-scan-based status changes only
+11. Added "delivering_now" status to the workflow
+12. Added Failed Delivery modal for drivers
+13. Updated all status dropdowns and badges
 
-### P1 - High Priority
-- [ ] Circuit API key configuration
-- [ ] Twilio/SendGrid notifications
-- [ ] Email for forgot password
+## Backlog / Future Tasks
+1. **(P1)** Implement Circuit Spoke Webhook Logic
+2. **(P1)** Integrate Twilio/SendGrid Notifications
+3. **(P2)** Replace Circuit with Google Maps API for route optimization
+4. **(P2)** Cloud Storage for POD images (Azure Blob/AWS S3)
+5. **(P2)** Stripe Frontend Payment Flow
+6. **(P2)** Forgot Password implementation
+7. **(P3)** Pharmacy Software Integration (needs clarification)
 
-### P2 - Medium Priority
-- [ ] AWS S3/Azure Blob for POD photos
-- [ ] Stripe payment integration
-- [ ] Cancel time optimization
+## Known Issues
+- POD images stored locally in wwwroot/uploads (not production-ready)
+- Circuit webhook endpoint is placeholder
 
-## File Structure
-```
-/app/rxexpresss-solution/
-├── RxExpresss.API/        # Web API + CircuitService
-├── RxExpresss.Web/        # MVC frontend
-├── RxExpresss.Core/       # Entities, DTOs
-├── RxExpresss.Data/       # DbContext, Repos
-└── RxExpresss.Identity/   # JWT Service
-```
-
-## Database Migrations
-
-### Current State
-- **SQLite Development Database:** `/app/rxexpresss-solution/RxExpresss.API/RxExpresss.db`
-- **Migrations Applied:**
-  1. `20260217085512_Init` - Initial schema with all core tables
-  2. `20260217142736_AddCircuitFields` - Added Circuit integration fields
-
-### Circuit Integration Fields (Added Feb 17, 2026)
-- `DriverProfile.CircuitDriverId` (NVARCHAR) - Driver ID in Circuit system
-- `RoutePlan.CircuitPlanId` (NVARCHAR) - Route plan ID in Circuit system
-- `Order.CircuitStopId` (NVARCHAR) - Stop ID in Circuit system for tracking
-
-### SQL Server Production Script
-Location: `/app/sql_scripts/sqlserver_migrations.sql`
-
-This script:
-- Creates all tables with SQL Server data types
-- Includes both Init and AddCircuitFields migrations
-- Adds seed data for roles (Admin, Pharmacy, Driver)
-- Idempotent - can be run multiple times safely
-
-**To deploy to SQL Server:**
-1. Update `appsettings.json` with SQL Server connection string
-2. Run `/app/sql_scripts/sqlserver_migrations.sql` on target database
-3. Change connection string in production from SQLite to SQL Server
-
-## Known Notes
-1. Circuit API is configured but requires API key
-2. POD photos save locally (not cloud)
-3. CircuitDriverId column added manually to SQLite - needs proper migration for prod
-
-## Bug Fixes (Feb 17, 2026 - Session 2)
-
-### Bug 1: "Order Not Found" on Public Tracking Page - FIXED
-- **Symptom:** Tracking page showed "Order Not Found" even for valid QR codes
-- **Root Cause 1:** API_BASE URL was not properly constructed with full origin
-- **Root Cause 2:** Nginx wasn't configured to proxy /api requests to backend port 8001
-- **Fix:** 
-  - Updated Track.cshtml to construct API_BASE with window.location.origin
-  - Configured nginx at /etc/nginx/sites-enabled/default to proxy /api/* to port 8001
-
-### Bug 2: Driver Portal Manual QR Scan Not Working - FIXED
-- **Symptom:** Clicking "Verify" button did nothing, modal stayed open
-- **Root Cause 1:** JavaScript syntax error - extra closing brace in Driver/Index.cshtml
-- **Root Cause 2:** html5QrCode.stop() throws when scanner isn't running
-- **Fix:**
-  - Removed extra closing brace that was causing syntax errors
-  - Added `scannerRunning` flag to track scanner state
-  - Made closeScanModal and stopQrScanner async with proper error handling
-  - Created /wwwroot/js/qr-scanner-patch.js as fallback
-
-## Enhancements (Feb 18, 2026)
-
-### Gig Workflow Improvements
-- [x] **Auto-Create Gigs** - Creates gigs for all service zones based on date
-- [x] **Split Gig** - Admin can split gig into two if area has too many orders
-- [x] **Status Sync Bug Fix** - Orders assigned via Gig now show "assigned" in Order Management
-- [x] **Improved UI** - Gig cards with icons, stats, and action buttons
-- [x] **Service Zone Support** - Gigs can be linked to service zones (Manhattan, Brooklyn, Queens, Bronx, Staten Island)
-
-### Order Management Improvements
-- [x] **Filters Added** - Date, Pharmacy, Status filters
-- [x] **Status Icons** - Colored SVG icons for each status (New=blue, Assigned=purple, Delivered=green, etc.)
-- [x] **Action Icons** - View (eye), Edit (pencil), Map (location pin) icons replace text buttons
-
-### API Proxy Enhancement
-- [x] **Web Frontend Proxy** - /api requests from frontend now proxy to backend on port 8001
-- [x] **Seamless Integration** - No need for CORS or separate API URL configuration
-
-### New API Endpoints
-- `POST /api/routes/auto-create` - Auto-create gigs for all service zones
-- `POST /api/routes/{id}/split` - Split a gig into two
-- `POST /api/routes/{id}/optimize` - Trigger Circuit API route optimization
-- `GET /api/routes/service-zones` - Get active service zones
-- `GET /api/routes/pending-orders` - Get orders ready for routing (new, not in any gig)
-
-### Circuit API Integration
-- [x] **API Key Configured** - Circuit API key added to appsettings.json
-- [x] **Date Format Fix** - Fixed date format for Circuit API (day/month/year integers)
-- [x] **Optimization Working** - Route optimization marks gig as "optimized"
-
-## POD (Proof of Delivery) Enhancement (Feb 18, 2026)
-
-### Driver Portal POD Flow
-- [x] **Mandatory Photo** - Photo is required for delivery completion (validation on frontend + backend)
-- [x] **Optional Signature** - Signature pad available but optional (for "leave at door" instructions)
-- [x] **Photo Upload** - Photos saved as base64 to `/pod/` folder with order number timestamp
-- [x] **Signature Capture** - Canvas-based signature pad with clear button
-- [x] **POD Storage** - Files saved to `/wwwroot/pod/` with naming: `pod_{orderNumber}_{timestamp}.jpg`
-
-### POD Display for Admin & Pharmacy
-- [x] **Order Details Modal** - Shows POD section when order is delivered
-- [x] **Photo Display** - Clickable image that opens full-size in new tab
-- [x] **Signature Display** - Shows signature image if available
-- [x] **Recipient Name** - Shows who received the delivery
-- [x] **Delivery Time** - Shows actual delivery timestamp
-
-### Delivery Instructions
-- [x] **Order Creation** - Added "Delivery Instructions" field for special instructions
-- [x] **Driver View** - Instructions displayed in delivery card for driver
-- [x] **Signature Logic** - Helps driver know if signature should be collected
-
----
-*Last Updated: February 18, 2026 - Gig Workflow, Order Management & POD Enhancements*
-
-## SQL Server Migration
-
-The complete SQL Server migration script is available at:
-**`/app/sql_scripts/sqlserver_final_migration.sql`**
-
-### Deployment Steps for MS SQL Server:
-1. Create an empty database in SQL Server
-2. Update connection string in `appsettings.json`:
-   ```json
-   "ConnectionStrings": {
-     "DefaultConnection": "Server=your_server;Database=RxExpresss;User Id=your_user;Password=your_password;TrustServerCertificate=True"
-   }
-   ```
-3. Run the SQL script: `sqlserver_final_migration.sql`
-4. Or let EF Core auto-migrate: Set `"AutoMigrate": true` in settings
-
-### Key SQL Server Considerations:
-- Identity columns use `NVARCHAR(128)` for key fields (SQL Server index limit)
-- All tables created with proper indexes
-- Default roles and service zones seeded
-- Migration history recorded in `__EFMigrationsHistory`
-
-## Bug Fixes (Feb 18, 2026 - Session 3)
-
-### Bug 3: Logout Redirect to 404 Page - FIXED
-- **Symptom:** Logging out from any role redirected to `/Home/Index` which doesn't exist
-- **Root Cause:** `api-service.js` logout function redirected to wrong URL
-- **Fix:** Changed `window.location.replace('/')` in logout function (line 9)
-
-### Bug 4: Landing Page Button Text Invisible - FIXED
-- **Symptom:** "Partner With Us" outline button text was invisible on dark hero background
-- **Root Cause:** `.btn-outline` class had `color:var(--dark)` which is dark navy on dark background
-- **Fix:** Added `.hero-btns .btn-outline{border-color:white;color:white}` CSS rule to override in hero section
-
----
-*Last Updated: February 18, 2026 - UI Bug Fixes (Logout Redirect, Button Styling)*
+## Deployment
+- DNS and SSL managed via Cloudflare
+- Backend: backend.rxexpresss.com
+- Frontend: rxexpresss.com
+- SSL Mode: Full (Strict)
