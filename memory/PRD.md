@@ -61,7 +61,7 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 | Cancelled | Pharmacy cancelled |
 
 ## Preview URL
-- https://rx-express-rebuild-1.preview.emergentagent.com
+- https://order-tracking-demo-1.preview.emergentagent.com
 
 ## Test Accounts
 | Role | Email | Password |
