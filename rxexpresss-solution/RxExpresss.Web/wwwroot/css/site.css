@@ -1,5 +1,11 @@
 :root{--primary:#0d9488;--primary-dark:#0f766e;--primary-light:#ccfbf1;--sidebar-bg:#0f172a;--sidebar-hover:#1e293b;--sidebar-text:#94a3b8;--sidebar-width:240px;--success:#22c55e;--danger:#ef4444;--warning:#f59e0b;--info:#3b82f6;--light:#f8fafc;--dark:#0f172a;--gray:#64748b;--border:#e2e8f0;--shadow:0 1px 3px rgba(0,0,0,.1);--shadow-lg:0 10px 25px rgba(0,0,0,.1);--radius:8px}
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--light);color:var(--dark);line-height:1.6}
+*{margin:0;padding:0;box-sizing:border-box}
+
+/* Hide scrollbar but keep scroll functionality */
+*::-webkit-scrollbar{width:0;height:0;display:none}
+*{-ms-overflow-style:none;scrollbar-width:none}
+
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--light);color:var(--dark);line-height:1.6}
 .app-layout{display:flex;min-height:100vh}
 .sidebar{width:var(--sidebar-width);background:var(--sidebar-bg);color:white;position:fixed;top:0;left:0;bottom:0;z-index:50;display:flex;flex-direction:column}
 .sidebar-brand{padding:20px;border-bottom:1px solid #1e293b}.sidebar-brand h2{color:var(--primary);font-size:20px;font-weight:700}.sidebar-brand small{color:var(--sidebar-text);font-size:12px}
