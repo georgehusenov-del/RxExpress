@@ -121,15 +121,38 @@
         }
         
         function renderOrder(o) {
-            const statuses = ['new', 'assigned', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered'];
+            const statuses = ['new', 'picked_up', 'in_transit', 'out_for_delivery', 'delivering_now', 'delivered'];
             const statusLabels = {
-                'new': 'Order Placed',
+                'new': 'Order Placed (QR Created)',
                 'assigned': 'Driver Assigned',
                 'picked_up': 'Picked Up',
-                'in_transit': 'In Transit',
+                'in_transit': 'In Transit (At Office)',
                 'out_for_delivery': 'Out for Delivery',
-                'delivered': 'Delivered'
+                'delivering_now': 'Delivering Now',
+                'delivered': 'Delivered',
+                'failed': 'Failed',
+                'cancelled': 'Cancelled'
             };
+            
+            // Handle failed/cancelled separately
+            if (o.status === 'failed' || o.status === 'cancelled') {
+                document.getElementById('track-result').innerHTML = `
+                    <div class="order-info">
+                        <div class="d-flex justify-between items-center">
+                            <span class="order-num">#${o.orderNumber}</span>
+                            <span class="qr">${o.qrCode || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div class="status-box ${o.status}" style="text-align:center;padding:20px;margin:20px 0;border-radius:10px;background:${o.status === 'failed' ? '#fee2e2' : '#f1f5f9'}">
+                        <h3 style="color:${o.status === 'failed' ? '#b91c1c' : '#475569'}">${statusLabels[o.status]}</h3>
+                    </div>
+                    <div class="delivery-details">
+                        <div class="detail-row"><span class="label">Recipient</span><span class="value">${o.recipientName}</span></div>
+                        <div class="detail-row"><span class="label">Delivery Address</span><span class="value">${o.street}, ${o.city}</span></div>
+                    </div>`;
+                return;
+            }
+            
             const currentIdx = statuses.indexOf(o.status);
             
             const timeline = statuses.map((s, i) => {
