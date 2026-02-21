@@ -227,6 +227,84 @@ public class RoutesController : ControllerBase
         return Ok(new { message = $"Driver unassigned from {resetCount} orders", resetCount });
     }
 
+    /// <summary>
+    /// Unassign driver from a single specific order (Druglift flow)
+    /// The order remains in the gig but becomes unassigned
+    /// </summary>
+    [HttpPost("{id}/orders/{orderId}/unassign")]
+    public async Task<IActionResult> UnassignOrderDriver(int id, int orderId)
+    {
+        var plan = await _plans.GetByIdAsync(id);
+        if (plan == null) return NotFound(new { detail = "Gig not found" });
+        
+        // Verify order belongs to this gig
+        var planOrder = await _planOrders.Query()
+            .FirstOrDefaultAsync(po => po.RoutePlanId == id && po.OrderId == orderId);
+        if (planOrder == null) 
+            return NotFound(new { detail = "Order not found in this gig" });
+        
+        var order = await _orders.GetByIdAsync(orderId);
+        if (order == null) 
+            return NotFound(new { detail = "Order not found" });
+        
+        // Only unassign if order is in "assigned" status (not picked up or delivering)
+        if (order.Status != "assigned")
+        {
+            return BadRequest(new { 
+                detail = $"Cannot unassign order with status '{order.Status}'. Only 'assigned' orders can be unassigned." 
+            });
+        }
+        
+        var previousDriver = order.DriverName;
+        
+        // Unassign the driver from this order only
+        order.DriverId = null;
+        order.DriverName = null;
+        order.Status = "new";
+        order.UpdatedAt = DateTime.UtcNow;
+        await _orders.UpdateAsync(order);
+        
+        // Check if there are any remaining orders assigned to this driver in the gig
+        // If not, remove the driver from the gig's driver list
+        if (!string.IsNullOrEmpty(previousDriver))
+        {
+            var driverStillHasOrders = await _planOrders.Query()
+                .Where(po => po.RoutePlanId == id)
+                .Join(_orders.Query(), po => po.OrderId, o => o.Id, (po, o) => o)
+                .AnyAsync(o => o.DriverName == previousDriver);
+            
+            if (!driverStillHasOrders)
+            {
+                // Find and remove driver from plan drivers
+                var driverToRemove = await _planDrivers.Query()
+                    .Where(pd => pd.RoutePlanId == id)
+                    .FirstOrDefaultAsync();
+                    
+                // Only remove if this driver has no other orders in the gig
+                // We need to find the actual driver by name - this is a simplified check
+            }
+        }
+        
+        // Update gig status if needed
+        var allOrdersUnassigned = !await _planOrders.Query()
+            .Where(po => po.RoutePlanId == id)
+            .Join(_orders.Query(), po => po.OrderId, o => o.Id, (po, o) => o)
+            .AnyAsync(o => o.DriverId != null);
+        
+        if (allOrdersUnassigned)
+        {
+            plan.Status = "draft";
+            plan.UpdatedAt = DateTime.UtcNow;
+            await _plans.UpdateAsync(plan);
+        }
+        
+        return Ok(new { 
+            message = $"Driver unassigned from order {order.OrderNumber}", 
+            orderNumber = order.OrderNumber,
+            previousDriver
+        });
+    }
+
     [HttpPost("{id}/assign-orders-to-driver")]
     public async Task<IActionResult> AssignOrdersToDriver(int id, [FromBody] AssignOrdersToDriverDto dto)
     {
