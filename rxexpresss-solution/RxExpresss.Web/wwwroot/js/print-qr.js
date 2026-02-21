@@ -1,12 +1,14 @@
-// Generate and Print QR Code Label
-async function printQrCode(qrCode, orderNumber, recipientName, address) {
-    const printWindow = window.open('', '_blank', 'width=450,height=600');
+// Generate and Print QR Code Label using inline QR code image
+function printQrCode(qrCode, orderNumber, recipientName, address) {
+    // Use qrserver.com API to generate QR code image URL
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}&format=png`;
+    
+    const printWindow = window.open('', '_blank', 'width=450,height=650');
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
             <title>Print QR - ${qrCode}</title>
-            <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 body { font-family: Arial, sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -18,7 +20,7 @@ async function printQrCode(qrCode, orderNumber, recipientName, address) {
                     background: white;
                 }
                 .logo {
-                    font-size: 20px;
+                    font-size: 22px;
                     font-weight: bold;
                     color: #0d9488;
                     margin-bottom: 15px;
@@ -28,11 +30,17 @@ async function printQrCode(qrCode, orderNumber, recipientName, address) {
                     padding: 10px;
                     background: white;
                 }
+                .qr-container img {
+                    width: 180px;
+                    height: 180px;
+                    display: block;
+                    margin: 0 auto;
+                }
                 .qr-code-text { 
-                    font-size: 28px; 
+                    font-size: 32px; 
                     font-weight: bold; 
-                    letter-spacing: 2px;
-                    margin-top: 10px;
+                    letter-spacing: 3px;
+                    margin-top: 15px;
                     color: #000;
                 }
                 .order-num { 
@@ -41,13 +49,13 @@ async function printQrCode(qrCode, orderNumber, recipientName, address) {
                     margin: 8px 0;
                 }
                 .recipient { 
-                    font-size: 16px; 
+                    font-size: 18px; 
                     font-weight: bold;
                     margin-bottom: 4px;
                     color: #000;
                 }
                 .address { 
-                    font-size: 13px; 
+                    font-size: 14px; 
                     color: #333;
                 }
                 .print-btn {
@@ -63,7 +71,7 @@ async function printQrCode(qrCode, orderNumber, recipientName, address) {
                 .print-btn:hover {
                     background: #0f766e;
                 }
-                @@media print {
+                @media print {
                     body { padding: 0; }
                     .no-print { display: none !important; }
                 }
@@ -73,7 +81,7 @@ async function printQrCode(qrCode, orderNumber, recipientName, address) {
             <div class="label">
                 <div class="logo">RX Expresss</div>
                 <div class="qr-container">
-                    <canvas id="qr-canvas"></canvas>
+                    <img src="${qrImageUrl}" alt="QR Code" onload="window.qrLoaded=true" onerror="this.style.display='none'"/>
                 </div>
                 <div class="qr-code-text">${qrCode}</div>
                 <div class="order-num">${orderNumber}</div>
@@ -82,19 +90,17 @@ async function printQrCode(qrCode, orderNumber, recipientName, address) {
             </div>
             <button class="print-btn no-print" onclick="window.print()">Print Label</button>
             <script>
-                // Generate QR code
-                QRCode.toCanvas(document.getElementById('qr-canvas'), '${qrCode}', {
-                    width: 180,
-                    margin: 1,
-                    color: {
-                        dark: '#000000',
-                        light: '#ffffff'
+                // Auto-print after QR image loads
+                var checkQR = setInterval(function() {
+                    if (window.qrLoaded) {
+                        clearInterval(checkQR);
+                        setTimeout(function() { window.print(); }, 500);
                     }
-                }, function(error) {
-                    if (error) console.error(error);
-                    // Auto-print after QR generated
-                    setTimeout(() => window.print(), 800);
-                });
+                }, 100);
+                // Fallback: print after 2 seconds if image hasn't loaded
+                setTimeout(function() {
+                    clearInterval(checkQR);
+                }, 2000);
             <\/script>
         </body>
         </html>
@@ -103,20 +109,7 @@ async function printQrCode(qrCode, orderNumber, recipientName, address) {
 }
 
 // Generate QR code image URL (for displaying in modals)
-async function generateQrCodeDataUrl(text, size = 150) {
-    return new Promise((resolve, reject) => {
-        if (typeof QRCode !== 'undefined' && QRCode.toDataURL) {
-            QRCode.toDataURL(text, {
-                width: size,
-                margin: 1,
-                color: { dark: '#000000', light: '#ffffff' }
-            }, (err, url) => {
-                if (err) reject(err);
-                else resolve(url);
-            });
-        } else {
-            // Fallback: use API-based QR code generator
-            resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`);
-        }
-    });
+function getQrCodeImageUrl(text, size) {
+    size = size || 150;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&format=png`;
 }
