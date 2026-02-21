@@ -29,12 +29,15 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 - Privacy Policy and Terms of Service pages
 - Separate CSS file (landing.css) - no inline styles
 
-### Responsive Design
-- Collapsible sidebar with hamburger icon (3-line menu)
-- Mobile-first responsive styles
-- Breakpoints: 1024px (tablet), 768px (mobile), 480px (small mobile)
-- Touch-friendly navigation
-- Adaptive layouts for all screen sizes
+### Responsive Design (VERIFIED WORKING)
+- ✅ Collapsible sidebar with hamburger icon (3-line menu)
+- ✅ Mobile-first responsive styles
+- ✅ Breakpoints: 1024px (tablet), 768px (mobile), 480px (small mobile)
+- ✅ Touch-friendly navigation
+- ✅ Adaptive layouts for all screen sizes
+- ✅ Sidebar slides in from left on mobile
+- ✅ Dark overlay when sidebar is open
+- ✅ X button to close sidebar
 
 ### Admin Dashboard
 - Dashboard with statistics
@@ -86,14 +89,20 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ## Configuration Files
 
-### API appsettings.json
+### API appsettings.json (Production)
 - SQL Server connection to production database
 - JWT configuration
 - Circuit API keys
 
+### API appsettings.Development.json
+- SQLite for local development
+- JWT configuration
+
 ### Web appsettings.Production.json
 - API base URL: https://backend.rxexpresss.com/api
-- Logging configuration
+
+### Web appsettings.Development.json
+- API base URL: /api (relative for local dev)
 
 ## Test Accounts (Commented out in production)
 | Role | Email | Password |
@@ -103,20 +112,27 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 | Driver | driver@test.com | Driver@123 |
 
 ## Recent Changes (Feb 21, 2026)
-1. Added Privacy Policy page (/Home/PrivacyPolicy)
-2. Added Terms of Service page (/Home/TermsOfService)
-3. Updated landing page with mobile hamburger menu
-4. Implemented collapsible sidebar with hamburger icon
-5. Added comprehensive responsive styles for all screen sizes
-6. Commented out test accounts from login page
-7. Updated contact info (phone and email)
-8. Fixed pharmacy order tracking (case-insensitive search)
-9. Added QR code printing from Admin and Pharmacy portals
-10. Created shared print-qr.js for label printing
-11. Updated Driver portal to QR-scan-based status changes only
-12. Added "delivering_now" status to the workflow
-13. Added Failed Delivery modal for drivers
-14. Legal page styles moved to landing.css (no inline styles)
+1. ✅ Added Privacy Policy page (/Home/PrivacyPolicy)
+2. ✅ Added Terms of Service page (/Home/TermsOfService)
+3. ✅ Updated landing page with mobile hamburger menu
+4. ✅ Implemented collapsible sidebar with hamburger icon
+5. ✅ Added comprehensive responsive styles for all screen sizes
+6. ✅ Commented out test accounts from login page
+7. ✅ Updated contact info (phone and email)
+8. ✅ Fixed pharmacy order tracking (case-insensitive search)
+9. ✅ Added QR code printing from Admin and Pharmacy portals
+10. ✅ Created shared print-qr.js for label printing
+11. ✅ Updated Driver portal to QR-scan-based status changes only
+12. ✅ Added "delivering_now" status to the workflow
+13. ✅ Fixed @media syntax in Razor files (@@media)
+14. ✅ Installed .NET 8 SDK and enabled preview
+15. ✅ Legal page styles moved to landing.css (no inline styles)
+
+## Preview URL
+- **Landing Page**: https://rx-express-rebuild-1.preview.emergentagent.com
+- **Login**: https://rx-express-rebuild-1.preview.emergentagent.com/Home/Login
+- **Privacy Policy**: https://rx-express-rebuild-1.preview.emergentagent.com/Home/PrivacyPolicy
+- **Terms of Service**: https://rx-express-rebuild-1.preview.emergentagent.com/Home/TermsOfService
 
 ## File Structure for CSS/JS
 ```
@@ -141,7 +157,6 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 ## Known Issues
 - POD images stored locally in wwwroot/uploads (not production-ready)
 - Circuit webhook endpoint is placeholder
-- Preview environment doesn't have .NET runtime installed
 
 ## Deployment
 - DNS and SSL managed via Cloudflare
