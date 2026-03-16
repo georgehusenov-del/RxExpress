@@ -8,7 +8,7 @@ import os
 import time
 
 # Use the preview URL for testing
-BASE_URL = "https://order-tracking-demo-1.preview.emergentagent.com/api"
+BASE_URL = "https://rx-express-core.preview.emergentagent.com/api"
 
 def retry_request(method, url, max_retries=3, **kwargs):
     """Retry request with exponential backoff for transient 520 errors"""

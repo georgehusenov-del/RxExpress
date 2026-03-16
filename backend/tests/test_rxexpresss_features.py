@@ -7,7 +7,7 @@ import pytest
 import requests
 import time
 
-BASE_URL = "https://order-tracking-demo-1.preview.emergentagent.com/api"
+BASE_URL = "https://rx-express-core.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@rxexpresss.com"

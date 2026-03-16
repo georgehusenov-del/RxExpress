@@ -50,10 +50,12 @@ public class DriverPortalController : ControllerBase
     {
         var driver = await GetMyDriver();
         if (driver == null) return NotFound(new { detail = "Driver profile not found" });
+        
+        // Exclude "in_transit" - those packages are at office waiting for admin reassignment
         var orders = await _orders.Query()
-            .Where(o => o.DriverId == driver.Id && (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "in_transit" || o.Status == "out_for_delivery"))
+            .Where(o => o.DriverId == driver.Id && (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "out_for_delivery" || o.Status == "delivering_now"))
             .OrderBy(o => o.CreatedAt)
-            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.Status, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.DeliveryInstructions, o.RequiresSignature, o.CreatedAt })
+            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.Status, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.DeliveryInstructions, o.RequiresSignature, o.IsRefrigerated, o.CreatedAt })
             .ToListAsync();
         return Ok(new { deliveries = orders, count = orders.Count });
     }
@@ -63,11 +65,32 @@ public class DriverPortalController : ControllerBase
     {
         var driver = await GetMyDriver();
         if (driver == null) return NotFound(new { detail = "Driver profile not found" });
+        
+        // Get last 50 delivered orders by this driver
         var orders = await _orders.Query()
             .Where(o => o.DriverId == driver.Id && (o.Status == "delivered" || o.Status == "failed" || o.Status == "cancelled"))
             .OrderByDescending(o => o.ActualDeliveryTime ?? o.UpdatedAt)
             .Take(50)
-            .Select(o => new { o.Id, o.OrderNumber, o.QrCode, o.RecipientName, o.Street, o.City, o.Status, o.ActualDeliveryTime, o.CopayAmount, o.CopayCollected, o.PhotoUrl })
+            .Select(o => new { 
+                o.Id, 
+                o.OrderNumber, 
+                o.QrCode, 
+                o.RecipientName, 
+                o.RecipientPhone,
+                o.Street, 
+                o.City, 
+                o.State,
+                o.Status, 
+                o.ActualDeliveryTime, 
+                o.CopayAmount, 
+                o.CopayCollected, 
+                o.PhotoUrl,
+                o.SignatureUrl,
+                o.RecipientNameSigned,
+                o.IsRefrigerated,
+                o.DeliveryNotes,
+                o.UpdatedAt
+            })
             .ToListAsync();
         return Ok(new { deliveries = orders, count = orders.Count });
     }
@@ -79,10 +102,25 @@ public class DriverPortalController : ControllerBase
         if (driver == null) return NotFound();
         var order = await _orders.Query().FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driver.Id);
         if (order == null) return NotFound();
+        
         order.Status = status;
         order.UpdatedAt = DateTime.UtcNow;
-        if (status == "picked_up") order.ActualPickupTime = DateTime.UtcNow;
-        if (status == "delivered") order.ActualDeliveryTime = DateTime.UtcNow;
+        
+        if (status == "picked_up") 
+        {
+            order.ActualPickupTime = DateTime.UtcNow;
+        }
+        else if (status == "in_transit")
+        {
+            // Package arrived at office - unassign driver so admin can reassign to appropriate route driver
+            order.DriverId = null;
+            order.DriverName = null;
+        }
+        else if (status == "delivered") 
+        {
+            order.ActualDeliveryTime = DateTime.UtcNow;
+        }
+        
         await _orders.UpdateAsync(order);
         return Ok(new { message = $"Status updated to {status}" });
     }

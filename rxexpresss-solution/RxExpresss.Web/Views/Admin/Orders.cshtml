@@ -1,6 +1,10 @@
 @{ Layout = "_SidebarLayout"; }
 @section TopbarRight {
     <div class="d-flex gap-2 items-center">
+        <button class="btn btn-primary btn-sm" onclick="load()" title="Refresh Orders" data-testid="refresh-orders-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+        </button>
         <input type="date" class="form-control" style="width:150px" id="date-filter" onchange="load()"/>
         <select class="form-control" style="width:150px" id="pharmacy-filter" onchange="load()"><option value="">All Pharmacies</option></select>
         <select class="form-control" style="width:150px" id="status-filter" onchange="load()">
@@ -71,6 +75,13 @@
                 <select class="form-control" id="m-driver">
                     <option value="">-- No Change --</option>
                 </select>
+            </div>
+            <div class="form-group">
+                <label class="d-flex items-center gap-2">
+                    <input type="checkbox" id="m-refrigerated" style="width:18px;height:18px;accent-color:#0288d1"/>
+                    <span>❄️ Refrigerated Item (Keep Cold)</span>
+                </label>
+                <p class="text-sm text-gray mt-1">Mark items that require cold chain handling</p>
             </div>
         </div>
         <div class="modal-footer">
@@ -165,11 +176,12 @@ async function load() {
     }
     
     document.getElementById('tbl').innerHTML = orders.length ? orders.map(o => `
-        <tr>
+        <tr class="${o.isRefrigerated ? 'refrigerated-row' : ''}">
             <td>
                 <a href="#" onclick="showDetail(${o.id});return false" style="color:var(--primary);font-weight:600" data-testid="order-link-${o.id}">
                     ${o.orderNumber}
                 </a>
+                ${o.isRefrigerated ? '<span class="badge-refrigerated" title="Refrigerated Item">❄️</span>' : ''}
             </td>
             <td><strong style="color:var(--primary)">${o.qrCode || '-'}</strong></td>
             <td>${o.pharmacyName || '-'}</td>
@@ -182,7 +194,7 @@ async function load() {
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="showDetail(${o.id})" title="View Details" data-testid="view-order-${o.id}">${actionIcons.view}</button>
-                    <button class="icon-btn" onclick="openEdit(${o.id},'${o.status}')" title="Edit" data-testid="edit-order-${o.id}">${actionIcons.edit}</button>
+                    <button class="icon-btn" onclick="openEdit(${o.id},'${o.status}',${o.isRefrigerated || false})" title="Edit" data-testid="edit-order-${o.id}">${actionIcons.edit}</button>
                     <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.street + ', ' + o.city + ', ' + o.state)}" target="_blank" class="icon-btn" title="Open in Maps">${actionIcons.map}</a>
                 </div>
             </td>
@@ -190,9 +202,10 @@ async function load() {
     `).join('') : '<tr><td colspan="10" class="text-center text-gray">No orders found</td></tr>';
 }
 
-function openEdit(id, s) {
+function openEdit(id, s, isRefrigerated) {
     document.getElementById('m-id').value = id;
     document.getElementById('m-status').value = s;
+    document.getElementById('m-refrigerated').checked = isRefrigerated || false;
     const sel = document.getElementById('m-driver');
     sel.innerHTML = '<option value="">-- No Change --</option>' + 
         drivers.map(d => `<option value="${d.id}">${d.user?.firstName || ''} ${d.user?.lastName || ''}</option>`).join('');
@@ -203,6 +216,7 @@ async function doUpdate() {
     const id = document.getElementById('m-id').value;
     const newStatus = document.getElementById('m-status').value;
     const did = document.getElementById('m-driver').value;
+    const isRefrigerated = document.getElementById('m-refrigerated').checked;
     
     // Prevent setting status to "assigned" without selecting a driver
     if (newStatus === 'assigned' && !did) {
@@ -210,7 +224,7 @@ async function doUpdate() {
         return;
     }
     
-    await ApiService.put(`/admin/orders/${id}/status`, { status: newStatus });
+    await ApiService.put(`/admin/orders/${id}/status`, { status: newStatus, isRefrigerated: isRefrigerated });
     if (did) await ApiService.put(`/admin/orders/${id}/assign`, { driverId: parseInt(did) });
     
     closeModal('modal');
@@ -309,5 +323,25 @@ load();
 }
 .od-row:last-child { border: none; }
 .status-pill { text-transform: capitalize; }
+
+/* Refrigerated items styling - blue/frost effect */
+.refrigerated-row {
+    background: linear-gradient(135deg, #e0f7ff 0%, #b3e5fc 100%) !important;
+    border-left: 4px solid #0288d1;
+}
+.refrigerated-row:hover {
+    background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%) !important;
+}
+.badge-refrigerated {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    padding: 2px 6px;
+    background: #0288d1;
+    color: white;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
 </style>
 }

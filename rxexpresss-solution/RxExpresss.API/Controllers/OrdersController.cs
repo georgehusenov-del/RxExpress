@@ -143,7 +143,7 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> Get(int id)
     {
         var order = await _orders.Query().Where(o => o.Id == id)
-            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyId, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.ScheduledDate, o.RecipientName, o.RecipientPhone, o.RecipientEmail, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.DeliveryInstructions, o.DriverId, o.DriverName, o.Status, o.DeliveryNotes, o.RequiresSignature, o.RequiresPhotoProof, o.SignatureUrl, o.PhotoUrl, o.RecipientNameSigned, o.DeliveryFee, o.TotalAmount, o.CopayAmount, o.CopayCollected, o.ActualPickupTime, o.ActualDeliveryTime, o.CreatedAt, o.UpdatedAt })
+            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyId, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.ScheduledDate, o.RecipientName, o.RecipientPhone, o.RecipientEmail, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.DeliveryInstructions, o.DriverId, o.DriverName, o.Status, o.DeliveryNotes, o.RequiresSignature, o.RequiresPhotoProof, o.IsRefrigerated, o.SignatureUrl, o.PhotoUrl, o.RecipientNameSigned, o.DeliveryFee, o.TotalAmount, o.CopayAmount, o.CopayCollected, o.ActualPickupTime, o.ActualDeliveryTime, o.CreatedAt, o.UpdatedAt })
             .FirstOrDefaultAsync();
         if (order == null) return NotFound();
         return Ok(order);

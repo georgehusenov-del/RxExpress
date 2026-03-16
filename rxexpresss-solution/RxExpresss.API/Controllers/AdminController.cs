@@ -89,7 +89,15 @@ public class AdminController : ControllerBase
             query = query.Where(o => o.CreatedAt.Date == targetDate);
         }
         var total = await query.CountAsync();
-        var orders = await query.OrderByDescending(o => o.CreatedAt).Skip(skip).Take(limit).ToListAsync();
+        var orders = await query.OrderByDescending(o => o.CreatedAt).Skip(skip).Take(limit)
+            .Select(o => new {
+                o.Id, o.OrderNumber, o.QrCode, o.PharmacyId, o.PharmacyName,
+                o.RecipientName, o.RecipientPhone, o.Street, o.City, o.State, o.PostalCode,
+                o.DeliveryType, o.Status, o.DriverId, o.DriverName,
+                o.CopayAmount, o.CopayCollected, o.DeliveryFee,
+                o.IsRefrigerated, o.CreatedAt, o.UpdatedAt
+            })
+            .ToListAsync();
         return Ok(new { orders, total });
     }
 
@@ -102,6 +110,7 @@ public class AdminController : ControllerBase
         order.UpdatedAt = DateTime.UtcNow;
         if (dto.Status == "picked_up") order.ActualPickupTime = DateTime.UtcNow;
         if (dto.Status == "delivered") order.ActualDeliveryTime = DateTime.UtcNow;
+        if (dto.IsRefrigerated.HasValue) order.IsRefrigerated = dto.IsRefrigerated.Value;
         await _orders.UpdateAsync(order);
         return Ok(new { message = $"Status updated to {dto.Status}" });
     }

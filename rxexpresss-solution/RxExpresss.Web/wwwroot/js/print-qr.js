@@ -72,8 +72,9 @@ function printQrCode(qrCode, orderNumber, recipientName, address) {
                     background: #0f766e;
                 }
                 @media print {
-                    body { padding: 0; }
+                    body { padding: 0; margin: 0; }
                     .no-print { display: none !important; }
+                    .label { border: 2px solid #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
             </style>
         </head>
@@ -81,26 +82,33 @@ function printQrCode(qrCode, orderNumber, recipientName, address) {
             <div class="label">
                 <div class="logo">RX Expresss</div>
                 <div class="qr-container">
-                    <img src="${qrImageUrl}" alt="QR Code" onload="window.qrLoaded=true" onerror="this.style.display='none'"/>
+                    <img src="${qrImageUrl}" alt="QR Code" id="qr-img"/>
                 </div>
                 <div class="qr-code-text">${qrCode}</div>
                 <div class="order-num">${orderNumber}</div>
                 <div class="recipient">${recipientName}</div>
                 <div class="address">${address}</div>
             </div>
-            <button class="print-btn no-print" onclick="window.print()">Print Label</button>
+            <button class="print-btn no-print" onclick="doPrint()">Print Label</button>
             <script>
-                // Auto-print after QR image loads
-                var checkQR = setInterval(function() {
-                    if (window.qrLoaded) {
-                        clearInterval(checkQR);
-                        setTimeout(function() { window.print(); }, 500);
-                    }
-                }, 100);
-                // Fallback: print after 2 seconds if image hasn't loaded
-                setTimeout(function() {
-                    clearInterval(checkQR);
-                }, 2000);
+                function doPrint() {
+                    window.focus();
+                    window.print();
+                }
+                
+                // Wait for QR image to load then auto-print
+                var qrImg = document.getElementById('qr-img');
+                if (qrImg.complete) {
+                    setTimeout(doPrint, 300);
+                } else {
+                    qrImg.onload = function() {
+                        setTimeout(doPrint, 300);
+                    };
+                    qrImg.onerror = function() {
+                        // Print anyway even if image fails
+                        setTimeout(doPrint, 500);
+                    };
+                }
             <\/script>
         </body>
         </html>

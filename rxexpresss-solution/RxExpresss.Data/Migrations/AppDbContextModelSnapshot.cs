@@ -390,6 +390,9 @@ namespace RxExpresss.Data.Migrations
                     b.Property<string>("DriverName")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsRefrigerated")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double?>("Latitude")
                         .HasColumnType("REAL");
 

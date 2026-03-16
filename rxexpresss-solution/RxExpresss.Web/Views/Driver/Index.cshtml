@@ -12,6 +12,33 @@
 .status-info{background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px}
 .status-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .status-legend span{padding:2px 8px;border-radius:4px;font-size:11px}
+
+/* Refrigerated items - Blue/Frost styling */
+.refrigerated-card {
+    background: linear-gradient(135deg, #e0f7ff 0%, #b3e5fc 100%) !important;
+    border: 2px solid #0288d1 !important;
+    box-shadow: 0 0 12px rgba(2, 136, 209, 0.3);
+}
+.refrigerated-card:hover {
+    background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%) !important;
+}
+.frost-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 3px 10px;
+    background: linear-gradient(135deg, #0288d1 0%, #039be5 100%);
+    color: white;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    animation: frost-pulse 2s ease-in-out infinite;
+}
+@@keyframes frost-pulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(2, 136, 209, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(2, 136, 209, 0.8); }
+}
 </style>
 
 @section TopbarRight {
@@ -187,11 +214,14 @@ function getNextAction(status, isScanned) {
         case 'picked_up':
             return { action: 'intransit', label: 'Scan at Office', icon: '🏢', color: 'btn-info' };
         case 'in_transit':
-            return { action: 'outfordelivery', label: 'Scan to Dispatch', icon: '🚗', color: 'btn-primary' };
+            // After in_transit, package goes back to admin for reassignment
+            // Driver should NOT see this - will be filtered out by API
+            return null;
         case 'out_for_delivery':
             return { action: 'delivering', label: 'Scan - Delivering Now', icon: '📍', color: 'btn-success' };
         case 'delivering_now':
-            return isScanned ? { action: 'pod', label: 'Complete Delivery', icon: '✅', color: 'btn-success' } : null;
+            // After scanning for delivering_now, show POD buttons directly
+            return { action: 'pod', label: 'Complete Delivery', icon: '✅', color: 'btn-success' };
         default:
             return null;
     }
@@ -218,10 +248,15 @@ async function loadDeliveries(){
             const addr=`${o.street}, ${o.city}, ${o.state} ${o.postalCode}`;
             const isS=scannedSet.has(o.id);
             const nextAction = getNextAction(o.status, isS);
+            const isRefrigerated = o.isRefrigerated || false;
             
-            return `<div class="delivery-card">
+            return `<div class="delivery-card ${isRefrigerated ? 'refrigerated-card' : ''}">
                 <div class="dc-header">
-                    <div><span class="stop-badge">${i+1}</span><span class="dc-qr">${o.qrCode||o.orderNumber}</span></div>
+                    <div>
+                        <span class="stop-badge">${i+1}</span>
+                        <span class="dc-qr">${o.qrCode||o.orderNumber}</span>
+                        ${isRefrigerated ? '<span class="frost-badge" title="Refrigerated - Keep Cold!">❄️ COLD</span>' : ''}
+                    </div>
                     <div class="d-flex gap-2 items-center">
                         ${isS?'<span class="scan-badge">✓ Verified</span>':''}
                         ${statusBadge(o.status)}
@@ -237,10 +272,10 @@ async function loadDeliveries(){
                 </div>
                 ${o.deliveryNotes?`<div class="mt-1 text-sm text-gray">Notes: ${o.deliveryNotes}</div>`:''}
                 <div class="dc-actions">
-                    ${nextAction ? `<button class="btn btn-sm ${nextAction.color}" onclick="openScanModal(${o.id},'${o.qrCode||''}','${nextAction.action}')">${nextAction.icon} ${nextAction.label}</button>` : ''}
-                    ${o.status==='delivering_now' && isS ? `<button class="btn btn-sm btn-success" onclick="openPodModal(${o.id})">✅ Complete Delivery (POD)</button>` : ''}
-                    ${o.status==='delivering_now' && isS ? `<button class="btn btn-sm btn-danger" onclick="openFailedModal(${o.id})">❌ Failed Delivery</button>` : ''}
-                    ${o.copayAmount>0&&!o.copayCollected&&isS?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">💵 Collect $${o.copayAmount.toFixed(2)}</button>`:''}
+                    ${nextAction && nextAction.action !== 'pod' ? `<button class="btn btn-sm ${nextAction.color}" onclick="openScanModal(${o.id},'${o.qrCode||''}','${nextAction.action}')">${nextAction.icon} ${nextAction.label}</button>` : ''}
+                    ${o.status==='delivering_now' ? `<button class="btn btn-sm btn-success" onclick="openPodModal(${o.id})">✅ Complete Delivery (POD)</button>` : ''}
+                    ${o.status==='delivering_now' ? `<button class="btn btn-sm btn-danger" onclick="openFailedModal(${o.id})">❌ Failed Delivery</button>` : ''}
+                    ${o.copayAmount>0&&!o.copayCollected?`<button class="btn btn-sm btn-outline" onclick="copay(${o.id})">💵 Collect $${o.copayAmount.toFixed(2)}</button>`:''}
                 </div>
             </div>`;
         }).join('');
@@ -251,19 +286,27 @@ async function loadHistory(){
     try{
         const d=await ApiService.get('/driver-portal/history');
         document.getElementById('history-list').innerHTML=d.deliveries.length?d.deliveries.map(o=>`
-            <div class="delivery-card" style="opacity:0.9">
+            <div class="delivery-card ${o.isRefrigerated ? 'refrigerated-card' : ''}" style="opacity:0.95">
                 <div class="dc-header">
-                    <div><span class="dc-qr">${o.qrCode||o.orderNumber}</span></div>
+                    <div>
+                        <span class="dc-qr">${o.qrCode||o.orderNumber}</span>
+                        ${o.isRefrigerated ? '<span class="frost-badge">❄️ COLD</span>' : ''}
+                    </div>
                     <div class="d-flex gap-2 items-center">
                         ${statusBadge(o.status)}
                         ${o.photoUrl?`<span class="scan-badge">📷 POD</span>`:''}
+                        ${o.signatureUrl?`<span class="scan-badge">✍️ Signed</span>`:''}
                     </div>
                 </div>
                 <div class="dc-details">
                     <div><strong>To:</strong> ${o.recipientName}</div>
-                    <div><strong>Address:</strong> ${o.street}, ${o.city}</div>
-                    <div><strong>Delivered:</strong> ${o.actualDeliveryTime?formatDate(o.actualDeliveryTime):'-'}</div>
+                    <div><strong>Phone:</strong> ${o.recipientPhone || '-'}</div>
+                    <div><strong>Address:</strong> ${o.street}, ${o.city}, ${o.state || ''}</div>
+                    <div><strong>Delivered:</strong> ${o.actualDeliveryTime?formatDate(o.actualDeliveryTime):(o.updatedAt?formatDate(o.updatedAt):'-')}</div>
+                    ${o.recipientNameSigned?`<div><strong>Received by:</strong> ${o.recipientNameSigned}</div>`:''}
+                    ${o.copayAmount>0?`<div><strong>Copay:</strong> $${o.copayAmount.toFixed(2)} ${o.copayCollected?'<span class="text-success">(Collected)</span>':''}</div>`:''}
                 </div>
+                ${o.deliveryNotes?`<div class="mt-1 text-sm text-gray">Notes: ${o.deliveryNotes}</div>`:''}
             </div>
         `).join(''):'<div class="text-center text-gray py-3">No delivery history yet</div>';
     }catch{

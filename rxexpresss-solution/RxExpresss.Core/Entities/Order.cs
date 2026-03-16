@@ -44,6 +44,7 @@ public class Order
     public string? DeliveryNotes { get; set; }
     public bool RequiresSignature { get; set; } = true;
     public bool RequiresPhotoProof { get; set; } = true;
+    public bool IsRefrigerated { get; set; } = false; // Blue/frost highlight for cold chain items
 
     // POD
     public string? SignatureUrl { get; set; }
