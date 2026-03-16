@@ -109,16 +109,16 @@ function closeOrderModal(){
     document.getElementById('order-modal').classList.remove('active');
 }
 
-// Pharmacy-friendly status display
+// Pharmacy status display - short labels
 function pharmacyStatusBadge(s) {
     const labels = {
-        'new': 'Coming to Pick Up',
-        'assigned': 'Driver Assigned',
-        'picked_up': 'Going to Office',
-        'in_transit': 'At Office',
-        'dispatched': 'Left Office',
+        'new': 'New',
+        'assigned': 'Assigned',
+        'picked_up': 'Picked Up',
+        'in_transit': 'In Transit',
+        'dispatched': 'Dispatched',
         'out_for_delivery': 'Out for Delivery',
-        'delivering_now': 'At Location',
+        'delivering_now': 'Delivering Now',
         'delivered': 'Delivered',
         'failed': 'Failed',
         'cancelled': 'Cancelled'

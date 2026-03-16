@@ -11,14 +11,14 @@ const ApiService={
     requireAuth(r){if(!this.isLoggedIn()){window.location.replace('/');return false}if(r&&!this.hasRole(r)){window.location.replace('/');return false}return true}
 };
 function statusBadge(s){
-    // Driver-friendly status labels
+    // Short status labels
     const labels = {
         'assigned': 'Assigned',
         'picked_up': 'Picked Up',
-        'in_transit': 'At Office',
+        'in_transit': 'In Transit',
         'dispatched': 'Dispatched',
         'out_for_delivery': 'Out for Delivery',
-        'delivering_now': 'At Location',
+        'delivering_now': 'Delivering Now',
         'delivered': 'Delivered',
         'failed': 'Failed',
         'cancelled': 'Cancelled',
