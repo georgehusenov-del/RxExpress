@@ -51,9 +51,15 @@ public class DriverPortalController : ControllerBase
         var driver = await GetMyDriver();
         if (driver == null) return NotFound(new { detail = "Driver profile not found" });
         
-        // Exclude "in_transit" - those packages are at office waiting for admin reassignment
+        // Show orders for this driver at these statuses:
+        // - assigned: pickup from pharmacy
+        // - picked_up: going to office
+        // - dispatched: leaving office for delivery
+        // - out_for_delivery: on route
+        // - delivering_now: at location
+        // Exclude "in_transit" - those are at office waiting for reassignment
         var orders = await _orders.Query()
-            .Where(o => o.DriverId == driver.Id && (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "out_for_delivery" || o.Status == "delivering_now"))
+            .Where(o => o.DriverId == driver.Id && (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "dispatched" || o.Status == "out_for_delivery" || o.Status == "delivering_now"))
             .OrderBy(o => o.CreatedAt)
             .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.Status, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.DeliveryInstructions, o.RequiresSignature, o.IsRefrigerated, o.CreatedAt })
             .ToListAsync();

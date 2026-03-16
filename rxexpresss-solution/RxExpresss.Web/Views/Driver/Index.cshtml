@@ -184,18 +184,22 @@ function mapsUrl(addr){return `https://www.google.com/maps/search/?api=1&query=$
 function getNextAction(status, isScanned) {
     switch(status) {
         case 'assigned':
-        case 'new':
+            // Driver assigned for pickup from pharmacy
             return { action: 'pickup', label: 'Scan to Pick Up', icon: '📦', color: 'btn-warning' };
         case 'picked_up':
+            // Going to office
             return { action: 'intransit', label: 'Scan at Office', icon: '🏢', color: 'btn-info' };
         case 'in_transit':
-            // After in_transit, package goes back to admin for reassignment
-            // Driver should NOT see this - will be filtered out by API
+            // At office - driver shouldn't see this (will be unassigned)
             return null;
+        case 'dispatched':
+            // Driver assigned for delivery - leaving office
+            return { action: 'outfordelivery', label: 'Scan - Out for Delivery', icon: '🚗', color: 'btn-primary' };
         case 'out_for_delivery':
-            return { action: 'delivering', label: 'Scan - Delivering Now', icon: '📍', color: 'btn-success' };
+            // On route to stop
+            return { action: 'delivering', label: 'Scan - At Location', icon: '📍', color: 'btn-success' };
         case 'delivering_now':
-            // After scanning for delivering_now, show POD buttons directly
+            // At location - show POD buttons
             return { action: 'pod', label: 'Complete Delivery', icon: '✅', color: 'btn-success' };
         default:
             return null;

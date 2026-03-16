@@ -10,7 +10,23 @@ const ApiService={
     isLoggedIn(){return!!this.getToken()},hasRole(r){const u=this.getUser();return u&&u.role===r},
     requireAuth(r){if(!this.isLoggedIn()){window.location.replace('/');return false}if(r&&!this.hasRole(r)){window.location.replace('/');return false}return true}
 };
-function statusBadge(s){return`<span class="badge badge-${s}">${(s||'').replace(/_/g,' ')}</span>`}
+function statusBadge(s){
+    // Driver-friendly status labels
+    const labels = {
+        'assigned': 'Assigned',
+        'picked_up': 'Picked Up',
+        'in_transit': 'At Office',
+        'dispatched': 'Dispatched',
+        'out_for_delivery': 'Out for Delivery',
+        'delivering_now': 'At Location',
+        'delivered': 'Delivered',
+        'failed': 'Failed',
+        'cancelled': 'Cancelled',
+        'new': 'New'
+    };
+    const label = labels[s] || (s||'').replace(/_/g,' ');
+    return`<span class="badge badge-${s}">${label}</span>`;
+}
 function formatDate(d){if(!d)return'-';return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
 
 // Toast Notification System

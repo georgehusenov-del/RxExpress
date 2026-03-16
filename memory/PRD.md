@@ -26,27 +26,27 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 - ✅ **Pharmacy Refrigeration Checkbox** - Now properly saves to database when creating orders
 - ✅ **Driver Delivery History** - Enhanced to show detailed completed deliveries with POD info
 
-### Order Status Flow
-| Status | Meaning |
-|--------|---------|
-| New | QR created |
-| Assigned | Driver assigned to new order |
-| Picked Up | From pharmacy |
-| In Transit | At office (driver unassigned for reassignment) |
-| **Out for Delivery** | Assigned to route driver (from in_transit) |
-| Delivering Now | Active delivery (POD buttons visible) |
-| Delivered | POD complete |
-| Failed | Patient not home |
-| Cancelled | Pharmacy cancelled |
+### Order Status Flow (Admin/Pharmacy View)
+| Status | Label | Meaning |
+|--------|-------|---------|
+| new | Coming to Pick Up | Order placed, waiting for pickup |
+| assigned | Assigned to Driver | Driver assigned for pharmacy pickup |
+| picked_up | Going to Office | Package picked up, en route to office |
+| in_transit | At Office | Arrived at office, preparing for dispatch |
+| **dispatched** | Left Office | Driver assigned, left office for delivery |
+| out_for_delivery | Out for Delivery | On route to delivery location |
+| delivering_now | At Location | Driver at delivery location |
+| delivered | Delivered | Successfully delivered with POD |
+| failed | Failed | Delivery attempt failed (with reason) |
+| cancelled | Cancelled | Cancelled by pharmacy or patient |
 
-**Key Workflow:**
-1. Pharmacy creates order → "new"
-2. Admin assigns pickup driver → "assigned"
-3. Driver picks up → "picked_up"
-4. Driver scans at office → "in_transit" (driver unassigned)
-5. Admin assigns delivery driver → **"out_for_delivery"** (NOT back to assigned/picked_up)
-6. Driver at location → "delivering_now"
-7. POD completed → "delivered"
+### Driver View
+- Driver always sees "Assigned" for both pickup and delivery assignments
+- After pickup scan → "Picked Up" (going to office)
+- After office scan → Package removed from driver's view (admin reassigns)
+- After dispatch assignment → "Dispatched" (leaving office for delivery)
+- After out_for_delivery scan → "Out for Delivery"
+- After at_location scan → "At Location" (POD buttons appear)
 
 ### UI/UX Improvements
 - ✅ **Invisible scrollbar** - Scrollbars hidden but scrolling works

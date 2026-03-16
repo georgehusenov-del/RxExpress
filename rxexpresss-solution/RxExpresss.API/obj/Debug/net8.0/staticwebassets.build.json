@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "dHPPvQtG2hWCQzOiIaLxRzpDzkSqgU9iq/0zapIZC30=",
+  "Hash": "vfJaykkRCcD/bu1rAf98Ukfe10f1p0xNA8He6yfQVU8=",
   "Source": "RxExpresss.API",
   "BasePath": "_content/RxExpresss.API",
   "Mode": "Default",
@@ -53,6 +53,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/pod/pod_RX-EB0AAB40_20260218093239.jpg"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pod_RX-QNS00001_20260316121414.jpg",
+      "SourceId": "RxExpresss.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/",
+      "BasePath": "_content/RxExpresss.API",
+      "RelativePath": "pod/pod_RX-QNS00001_20260316121414.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/pod_RX-QNS00001_20260316121414.jpg"
     },
     {
       "Identity": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/sig_RX-EB0AAB40_20260218093239.png",

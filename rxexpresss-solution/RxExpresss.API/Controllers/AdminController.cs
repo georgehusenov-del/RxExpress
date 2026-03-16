@@ -127,11 +127,12 @@ public class AdminController : ControllerBase
         order.DriverId = driverId;
         order.DriverName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
         
-        // If order is in_transit (at office), assigning driver means it's ready for delivery
-        // Set status to out_for_delivery, not back to assigned/picked_up
+        // Status logic:
+        // - If "new" order → "assigned" (driver assigned for pickup from pharmacy)
+        // - If "in_transit" (at office) → "dispatched" (driver assigned for delivery, leaving office)
         if (order.Status == "in_transit")
         {
-            order.Status = "out_for_delivery";
+            order.Status = "dispatched";
         }
         else if (order.Status == "new" || string.IsNullOrEmpty(order.Status))
         {
