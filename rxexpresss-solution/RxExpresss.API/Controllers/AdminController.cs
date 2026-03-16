@@ -126,10 +126,22 @@ public class AdminController : ControllerBase
         var user = await _userManager.FindByIdAsync(driver.UserId);
         order.DriverId = driverId;
         order.DriverName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown";
-        order.Status = "assigned";
+        
+        // If order is in_transit (at office), assigning driver means it's ready for delivery
+        // Set status to out_for_delivery, not back to assigned/picked_up
+        if (order.Status == "in_transit")
+        {
+            order.Status = "out_for_delivery";
+        }
+        else if (order.Status == "new" || string.IsNullOrEmpty(order.Status))
+        {
+            order.Status = "assigned";
+        }
+        // Don't change status if already out_for_delivery, delivering_now, etc.
+        
         order.UpdatedAt = DateTime.UtcNow;
         await _orders.UpdateAsync(order);
-        return Ok(new { message = "Driver assigned", driverName = order.DriverName });
+        return Ok(new { message = "Driver assigned", driverName = order.DriverName, newStatus = order.Status });
     }
 
     [HttpPost("scan/{qrCode}")]

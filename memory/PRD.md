@@ -18,16 +18,40 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ### Latest Updates (March 16, 2026)
 - ✅ **Admin Orders Refresh Button** - Quick data reload without page refresh
-- ✅ **Refrigerated Items (Blue/Frost)** - Cold chain items highlighted with blue gradient background and ❄️ badge
-- ✅ **Print Label Fix** - Opens print dialog directly instead of save-to-file
-- ✅ **In Transit → Office Reassignment Flow** - Packages at office are unassigned from driver for admin reassignment to appropriate route
-- ✅ **Out for Delivery → POD Fix** - Delivering Now shows POD buttons directly without requiring additional scan
+- ✅ **Blue QR Codes for Refrigerated Items** - QR code IMAGE is blue (using qrserver.com color parameter), not just text
+- ✅ **Print Label** - Opens print dialog (user must select physical printer, not "Save as PDF")
+- ✅ **In Transit → Office Reassignment Flow**:
+  - When package scanned "In Transit" arrives at office → driver unassigned
+  - When admin assigns NEW driver to in_transit order → status changes to "out_for_delivery" (not back to picked_up)
+- ✅ **Pharmacy Refrigeration Checkbox** - Now properly saves to database when creating orders
 - ✅ **Driver Delivery History** - Enhanced to show detailed completed deliveries with POD info
+
+### Order Status Flow
+| Status | Meaning |
+|--------|---------|
+| New | QR created |
+| Assigned | Driver assigned to new order |
+| Picked Up | From pharmacy |
+| In Transit | At office (driver unassigned for reassignment) |
+| **Out for Delivery** | Assigned to route driver (from in_transit) |
+| Delivering Now | Active delivery (POD buttons visible) |
+| Delivered | POD complete |
+| Failed | Patient not home |
+| Cancelled | Pharmacy cancelled |
+
+**Key Workflow:**
+1. Pharmacy creates order → "new"
+2. Admin assigns pickup driver → "assigned"
+3. Driver picks up → "picked_up"
+4. Driver scans at office → "in_transit" (driver unassigned)
+5. Admin assigns delivery driver → **"out_for_delivery"** (NOT back to assigned/picked_up)
+6. Driver at location → "delivering_now"
+7. POD completed → "delivered"
 
 ### UI/UX Improvements
 - ✅ **Invisible scrollbar** - Scrollbars hidden but scrolling works
 - ✅ **Collapsible sidebar** - Fixed toggle button (teal) on mobile/tablet
-- ✅ **Actual QR codes** - Black/white box pattern QR images in order details and printing
+- ✅ **Blue QR code images** - Refrigerated items have blue QR codes using `&color=0288d1`
 - ✅ **Removed status flow from Driver page**
 - ✅ Responsive design for all screen sizes
 
@@ -41,36 +65,23 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 - Contact: +1 (718) 799-4103, getfastdeliverywith@rxexpresss.com
 
 ### Admin Dashboard
-- QR code display in order details (actual QR image)
-- Print QR labels with actual QR codes
-- Order management with filters
+- Blue QR code images for refrigerated items
+- Print QR labels with blue QR codes for refrigerated
 - Refrigerated checkbox in edit modal
+- Order management with filters and refresh button
 - Driver/Pharmacy/Route management
 
 ### Pharmacy Portal
-- QR code display in order details
-- Print QR labels with actual QR codes
+- "Requires Refrigeration" checkbox saves to database
+- Blue QR codes in order list for refrigerated items
 - Order creation and tracking
 
 ### Driver Portal
 - Clean interface (no status flow legend)
 - QR-scan-based status workflow
 - POD with mandatory photo
-- Refrigerated items highlighted in blue
+- Blue QR codes for refrigerated items
 - Enhanced delivery history with POD details
-
-### Order Status Flow
-| Status | Meaning |
-|--------|---------|
-| New | QR created |
-| Assigned | Driver assigned |
-| Picked Up | From pharmacy |
-| In Transit | At office (driver unassigned for reassignment) |
-| Out for Delivery | Dispatched to route |
-| Delivering Now | Active delivery (POD buttons visible) |
-| Delivered | POD complete |
-| Failed | Patient not home |
-| Cancelled | Pharmacy cancelled |
 
 ## Preview URL
 - https://rx-express-core.preview.emergentagent.com
@@ -82,19 +93,14 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 | Pharmacy | pharmacy@test.com | Pharmacy@123 |
 | Driver | driver@test.com | Driver@123 |
 
-## Recent Changes (March 16, 2026)
-1. ✅ **Refresh Button** - Admin Orders page has quick refresh in topbar
-2. ✅ **Refrigerated Items** - IsRefrigerated field added to Order entity, blue/frost styling
-3. ✅ **Print Dialog** - Print Label now triggers print dialog using window.print()
-4. ✅ **In Transit Workflow** - Driver scans at office → order unassigned → admin reassigns to route driver
-5. ✅ **POD Flow** - Delivering Now status shows POD buttons directly (no scan required)
-6. ✅ **History Enhanced** - Driver history shows phone, state, POD photos, signatures
-
 ## Gig Management Workflow (Druglift Flow)
 - **Order stays in gig** - Orders remain in gig for tracking until delivery
 - **Split keeps driver** - When splitting a gig, orders keep their assigned driver
 - **Per-order unassign** - Can unassign driver from individual orders (not entire gig)
 - **One order = one gig** - Each order belongs to only one gig at a time
+
+## Known Limitations
+- **Print Dialog** - Shows system print dialog. If user's default printer is "Save as PDF", it will show save dialog. User needs to select physical printer in the dialog.
 
 ## Backlog
 1. (P1) Circuit Webhook implementation

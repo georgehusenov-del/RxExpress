@@ -1,9 +1,12 @@
 // Generate and Print QR Code Label using inline QR code image
-function printQrCode(qrCode, orderNumber, recipientName, address) {
-    // Use qrserver.com API to generate QR code image URL
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}&format=png`;
+// isRefrigerated: if true, QR code will be blue color
+function printQrCode(qrCode, orderNumber, recipientName, address, isRefrigerated) {
+    // Use qrserver.com API - add blue color for refrigerated items
+    const qrColor = isRefrigerated ? '0288d1' : '000000'; // Blue for refrigerated, black for normal
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}&format=png&color=${qrColor}`;
+    const textColor = isRefrigerated ? '#0288d1' : '#000';
     
-    const printWindow = window.open('', '_blank', 'width=450,height=650');
+    const printWindow = window.open('', '_blank', 'width=450,height=700');
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -13,7 +16,7 @@ function printQrCode(qrCode, orderNumber, recipientName, address) {
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 body { font-family: Arial, sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }
                 .label { 
-                    border: 2px solid #000; 
+                    border: 2px solid ${isRefrigerated ? '#0288d1' : '#000'}; 
                     padding: 20px; 
                     width: 350px; 
                     text-align: center;
@@ -24,6 +27,16 @@ function printQrCode(qrCode, orderNumber, recipientName, address) {
                     font-weight: bold;
                     color: #0d9488;
                     margin-bottom: 15px;
+                }
+                .refrigerated-badge {
+                    background: linear-gradient(135deg, #0288d1, #039be5);
+                    color: white;
+                    padding: 5px 15px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                    display: ${isRefrigerated ? 'inline-block' : 'none'};
                 }
                 .qr-container {
                     margin: 15px auto;
@@ -41,7 +54,7 @@ function printQrCode(qrCode, orderNumber, recipientName, address) {
                     font-weight: bold; 
                     letter-spacing: 3px;
                     margin-top: 15px;
-                    color: #000;
+                    color: ${textColor};
                 }
                 .order-num { 
                     font-size: 14px; 
@@ -71,16 +84,22 @@ function printQrCode(qrCode, orderNumber, recipientName, address) {
                 .print-btn:hover {
                     background: #0f766e;
                 }
+                .print-note {
+                    margin-top: 10px;
+                    font-size: 12px;
+                    color: #666;
+                }
                 @media print {
                     body { padding: 0; margin: 0; }
                     .no-print { display: none !important; }
-                    .label { border: 2px solid #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .label { border: 2px solid ${isRefrigerated ? '#0288d1' : '#000'} !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
             </style>
         </head>
         <body>
             <div class="label">
                 <div class="logo">RX Expresss</div>
+                <div class="refrigerated-badge">❄️ REFRIGERATED - KEEP COLD</div>
                 <div class="qr-container">
                     <img src="${qrImageUrl}" alt="QR Code" id="qr-img"/>
                 </div>
@@ -89,23 +108,20 @@ function printQrCode(qrCode, orderNumber, recipientName, address) {
                 <div class="recipient">${recipientName}</div>
                 <div class="address">${address}</div>
             </div>
-            <button class="print-btn no-print" onclick="doPrint()">Print Label</button>
+            <button class="print-btn no-print" onclick="doPrint()">🖨️ Print Label</button>
+            <p class="print-note no-print">Select your physical printer (not "Save as PDF") to print directly</p>
             <script>
                 function doPrint() {
                     window.focus();
                     window.print();
                 }
                 
-                // Wait for QR image to load then auto-print
+                // Auto-trigger print after QR loads
                 var qrImg = document.getElementById('qr-img');
                 if (qrImg.complete) {
-                    setTimeout(doPrint, 300);
+                    setTimeout(doPrint, 500);
                 } else {
                     qrImg.onload = function() {
-                        setTimeout(doPrint, 300);
-                    };
-                    qrImg.onerror = function() {
-                        // Print anyway even if image fails
                         setTimeout(doPrint, 500);
                     };
                 }
@@ -117,7 +133,9 @@ function printQrCode(qrCode, orderNumber, recipientName, address) {
 }
 
 // Generate QR code image URL (for displaying in modals)
-function getQrCodeImageUrl(text, size) {
+// isRefrigerated: if true, returns blue QR code
+function getQrCodeImageUrl(text, size, isRefrigerated) {
     size = size || 150;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&format=png`;
+    const color = isRefrigerated ? '0288d1' : '000000';
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&format=png&color=${color}`;
 }
