@@ -143,7 +143,10 @@ async function loadOrders(){
         const trackUrl=`${PREVIEW_URL}/Track/${o.trackingNumber||o.orderNumber}`;
         return `<tr>
             <td><a href="#" onclick="showDetail(${o.id});return false" style="color:var(--primary);font-weight:600">${o.orderNumber}</a></td>
-            <td>${o.qrCode||'-'}</td>
+            <td>
+                <span style="${o.isRefrigerated ? 'color:#0288d1;background:linear-gradient(135deg,#e0f7ff,#b3e5fc);padding:4px 8px;border-radius:6px;' : ''}">${o.qrCode||'-'}</span>
+                ${o.isRefrigerated ? '<span style="color:#0288d1;margin-left:4px" title="Refrigerated">❄️</span>' : ''}
+            </td>
             <td>${o.recipientName}</td>
             <td>${o.city}</td>
             <td>${o.deliveryType}</td>
@@ -239,7 +242,8 @@ async function submitOrder(){
             state:document.getElementById('a-state').value,
             postalCode:document.getElementById('a-zip').value,
             copayAmount:parseFloat(document.getElementById('d-copay').value)||0,
-            deliveryNotes:document.getElementById('d-notes').value||null
+            deliveryNotes:document.getElementById('d-notes').value||null,
+            isRefrigerated:document.getElementById('d-refrig').checked
         });
         closeOrderModal();
         showAlert('alert-area','success',`Order created! #${d.order_number} | QR: ${d.qr_code}`);

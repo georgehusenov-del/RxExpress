@@ -13,32 +13,7 @@
 .status-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .status-legend span{padding:2px 8px;border-radius:4px;font-size:11px}
 
-/* Refrigerated items - Blue/Frost styling */
-.refrigerated-card {
-    background: linear-gradient(135deg, #e0f7ff 0%, #b3e5fc 100%) !important;
-    border: 2px solid #0288d1 !important;
-    box-shadow: 0 0 12px rgba(2, 136, 209, 0.3);
-}
-.refrigerated-card:hover {
-    background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%) !important;
-}
-.frost-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: 8px;
-    padding: 3px 10px;
-    background: linear-gradient(135deg, #0288d1 0%, #039be5 100%);
-    color: white;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    animation: frost-pulse 2s ease-in-out infinite;
-}
-@@keyframes frost-pulse {
-    0%, 100% { box-shadow: 0 0 5px rgba(2, 136, 209, 0.5); }
-    50% { box-shadow: 0 0 15px rgba(2, 136, 209, 0.8); }
-}
+/* Refrigerated items - Blue QR code styling is inline */
 </style>
 
 @section TopbarRight {
@@ -250,12 +225,12 @@ async function loadDeliveries(){
             const nextAction = getNextAction(o.status, isS);
             const isRefrigerated = o.isRefrigerated || false;
             
-            return `<div class="delivery-card ${isRefrigerated ? 'refrigerated-card' : ''}">
+            return `<div class="delivery-card">
                 <div class="dc-header">
                     <div>
                         <span class="stop-badge">${i+1}</span>
-                        <span class="dc-qr">${o.qrCode||o.orderNumber}</span>
-                        ${isRefrigerated ? '<span class="frost-badge" title="Refrigerated - Keep Cold!">❄️ COLD</span>' : ''}
+                        <span class="dc-qr" style="${isRefrigerated ? 'color:#0288d1;background:linear-gradient(135deg,#e0f7ff,#b3e5fc);padding:4px 8px;border-radius:6px;' : ''}">${o.qrCode||o.orderNumber}</span>
+                        ${isRefrigerated ? '<span style="color:#0288d1;margin-left:4px;font-size:14px" title="Refrigerated - Keep Cold!">❄️</span>' : ''}
                     </div>
                     <div class="d-flex gap-2 items-center">
                         ${isS?'<span class="scan-badge">✓ Verified</span>':''}
@@ -286,11 +261,11 @@ async function loadHistory(){
     try{
         const d=await ApiService.get('/driver-portal/history');
         document.getElementById('history-list').innerHTML=d.deliveries.length?d.deliveries.map(o=>`
-            <div class="delivery-card ${o.isRefrigerated ? 'refrigerated-card' : ''}" style="opacity:0.95">
+            <div class="delivery-card" style="opacity:0.95">
                 <div class="dc-header">
                     <div>
-                        <span class="dc-qr">${o.qrCode||o.orderNumber}</span>
-                        ${o.isRefrigerated ? '<span class="frost-badge">❄️ COLD</span>' : ''}
+                        <span class="dc-qr" style="${o.isRefrigerated ? 'color:#0288d1;background:linear-gradient(135deg,#e0f7ff,#b3e5fc);padding:4px 8px;border-radius:6px;' : ''}">${o.qrCode||o.orderNumber}</span>
+                        ${o.isRefrigerated ? '<span style="color:#0288d1;margin-left:4px" title="Refrigerated">❄️</span>' : ''}
                     </div>
                     <div class="d-flex gap-2 items-center">
                         ${statusBadge(o.status)}

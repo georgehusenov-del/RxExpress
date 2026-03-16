@@ -51,6 +51,7 @@ public class OrdersController : ControllerBase
             DeliveryNotes = dto.DeliveryNotes, 
             DeliveryInstructions = dto.DeliveryInstructions,
             CopayAmount = dto.CopayAmount,
+            IsRefrigerated = dto.IsRefrigerated,
             QrCode = QrCodeGenerator.Generate(dto.City), 
             Status = "new"
         };

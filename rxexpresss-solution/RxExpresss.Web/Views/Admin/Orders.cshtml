@@ -176,14 +176,16 @@ async function load() {
     }
     
     document.getElementById('tbl').innerHTML = orders.length ? orders.map(o => `
-        <tr class="${o.isRefrigerated ? 'refrigerated-row' : ''}">
+        <tr>
             <td>
                 <a href="#" onclick="showDetail(${o.id});return false" style="color:var(--primary);font-weight:600" data-testid="order-link-${o.id}">
                     ${o.orderNumber}
                 </a>
-                ${o.isRefrigerated ? '<span class="badge-refrigerated" title="Refrigerated Item">❄️</span>' : ''}
             </td>
-            <td><strong style="color:var(--primary)">${o.qrCode || '-'}</strong></td>
+            <td>
+                <strong style="color:${o.isRefrigerated ? '#0288d1' : 'var(--primary)'};${o.isRefrigerated ? 'background:linear-gradient(135deg,#e0f7ff,#b3e5fc);padding:4px 8px;border-radius:6px;' : ''}">${o.qrCode || '-'}</strong>
+                ${o.isRefrigerated ? '<span style="color:#0288d1;margin-left:4px" title="Refrigerated">❄️</span>' : ''}
+            </td>
             <td>${o.pharmacyName || '-'}</td>
             <td>${o.recipientName}</td>
             <td>${o.city}</td>
@@ -323,25 +325,6 @@ load();
 }
 .od-row:last-child { border: none; }
 .status-pill { text-transform: capitalize; }
-
-/* Refrigerated items styling - blue/frost effect */
-.refrigerated-row {
-    background: linear-gradient(135deg, #e0f7ff 0%, #b3e5fc 100%) !important;
-    border-left: 4px solid #0288d1;
-}
-.refrigerated-row:hover {
-    background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%) !important;
-}
-.badge-refrigerated {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 6px;
-    padding: 2px 6px;
-    background: #0288d1;
-    color: white;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-}
+/* Refrigerated items - blue QR code styling is inline */
 </style>
 }

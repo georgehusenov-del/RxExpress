@@ -54,6 +54,7 @@ public class CreateOrderDto
     public string? DeliveryNotes { get; set; }
     public string? DeliveryInstructions { get; set; }
     public decimal CopayAmount { get; set; } = 0;
+    public bool IsRefrigerated { get; set; } = false;
 }
 
 public class UpdateOrderStatusDto
