@@ -18,6 +18,10 @@ build_property.GenerateRazorMetadataSourceChecksumAttributes = true
 build_property.MSBuildProjectDirectory = /app/rxexpresss-solution/RxExpresss.Web
 build_property._RazorSourceGeneratorDebug = 
 
+[/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/ApiKeys.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWRtaW4vQXBpS2V5cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Drivers.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWRtaW4vRHJpdmVycy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

@@ -15,6 +15,7 @@ public class AdminController : Controller
         ("pricing", "Pricing", "/Admin/Pricing", SvgIcons.Dollar),
         ("scanning", "QR Scanning", "/Admin/Scanning", SvgIcons.QrCode),
         ("zones", "Service Zones", "/Admin/Zones", SvgIcons.MapPin),
+        ("api-keys", "API Keys", "/Admin/ApiKeys", SvgIcons.Key),
         ("reports", "Reports", "/Admin/Reports", SvgIcons.BarChart),
     };
 
@@ -38,4 +39,5 @@ public class AdminController : Controller
     public IActionResult Scanning() { SetNav("scanning", "QR Code Scanning"); return View(); }
     public IActionResult Zones() { SetNav("zones", "Service Zones"); return View(); }
     public IActionResult Reports() { SetNav("reports", "Reports"); return View(); }
+    public IActionResult ApiKeys() { SetNav("api-keys", "API Keys Management"); return View(); }
 }
