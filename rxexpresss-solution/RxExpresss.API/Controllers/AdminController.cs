@@ -17,13 +17,14 @@ public class AdminController : ControllerBase
     private readonly IRepository<Order> _orders;
     private readonly IRepository<Pharmacy> _pharmacies;
     private readonly IRepository<DriverProfile> _drivers;
+    private readonly IRepository<ApiKey> _apiKeys;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public AdminController(IRepository<Order> orders, IRepository<Pharmacy> pharmacies,
-        IRepository<DriverProfile> drivers, UserManager<ApplicationUser> userManager)
+        IRepository<DriverProfile> drivers, IRepository<ApiKey> apiKeys, UserManager<ApplicationUser> userManager)
     {
         _orders = orders; _pharmacies = pharmacies;
-        _drivers = drivers; _userManager = userManager;
+        _drivers = drivers; _apiKeys = apiKeys; _userManager = userManager;
     }
 
     [HttpGet("dashboard")]
@@ -95,7 +96,8 @@ public class AdminController : ControllerBase
                 o.RecipientName, o.RecipientPhone, o.Street, o.City, o.State, o.PostalCode,
                 o.DeliveryType, o.Status, o.DriverId, o.DriverName,
                 o.CopayAmount, o.CopayCollected, o.DeliveryFee,
-                o.IsRefrigerated, o.CreatedAt, o.UpdatedAt
+                o.IsRefrigerated, o.CreatedAt, o.UpdatedAt,
+                o.PhotoUrl, o.SignatureUrl, o.RecipientNameSigned, o.DeliveryNotes, o.ActualDeliveryTime
             })
             .ToListAsync();
         return Ok(new { orders, total });
@@ -312,4 +314,73 @@ public class AdminController : ControllerBase
 
         return Ok(new { message = $"User {(user.IsActive ? "activated" : "deactivated")}", isActive = user.IsActive });
     }
+
+    #region API Key Management
+
+    [HttpGet("api-keys")]
+    public async Task<IActionResult> ListApiKeys([FromQuery] int? pharmacyId)
+    {
+        var baseQuery = _apiKeys.Query().Include(k => k.Pharmacy);
+        IQueryable<ApiKey> query = baseQuery;
+        if (pharmacyId.HasValue)
+            query = baseQuery.Where(k => k.PharmacyId == pharmacyId.Value);
+        
+        var keys = await query.Select(k => new {
+            k.Id, k.PharmacyId, PharmacyName = k.Pharmacy.Name, k.Name, k.Key,
+            Secret = "****" + k.Secret.Substring(k.Secret.Length - 4), // Masked
+            k.IsActive, k.CreatedAt, k.LastUsedAt, k.RequestCount
+        }).ToListAsync();
+        
+        return Ok(new { apiKeys = keys });
+    }
+
+    [HttpPost("api-keys")]
+    public async Task<IActionResult> CreateApiKey([FromBody] CreateApiKeyForPharmacyDto dto)
+    {
+        var pharmacy = await _pharmacies.GetByIdAsync(dto.PharmacyId);
+        if (pharmacy == null) return NotFound(new { detail = "Pharmacy not found" });
+        
+        var apiKey = new ApiKey
+        {
+            PharmacyId = dto.PharmacyId,
+            Name = dto.Name ?? "Default API Key"
+        };
+        
+        await _apiKeys.AddAsync(apiKey);
+        
+        // Return full key and secret ONLY on creation (never shown again)
+        return Ok(new {
+            message = "API key created. Save the secret now - it won't be shown again!",
+            id = apiKey.Id,
+            key = apiKey.Key,
+            secret = apiKey.Secret,
+            name = apiKey.Name,
+            pharmacyId = apiKey.PharmacyId,
+            pharmacyName = pharmacy.Name
+        });
+    }
+
+    [HttpDelete("api-keys/{id}")]
+    public async Task<IActionResult> DeleteApiKey(int id)
+    {
+        var apiKey = await _apiKeys.GetByIdAsync(id);
+        if (apiKey == null) return NotFound(new { detail = "API key not found" });
+        
+        await _apiKeys.DeleteAsync(apiKey);
+        return Ok(new { message = "API key deleted" });
+    }
+
+    [HttpPut("api-keys/{id}/toggle")]
+    public async Task<IActionResult> ToggleApiKey(int id)
+    {
+        var apiKey = await _apiKeys.GetByIdAsync(id);
+        if (apiKey == null) return NotFound(new { detail = "API key not found" });
+        
+        apiKey.IsActive = !apiKey.IsActive;
+        await _apiKeys.UpdateAsync(apiKey);
+        
+        return Ok(new { message = $"API key {(apiKey.IsActive ? "activated" : "deactivated")}", isActive = apiKey.IsActive });
+    }
+
+    #endregion
 }

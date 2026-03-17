@@ -38,6 +38,9 @@ public class Order
     
     // Gig/Route Plan
     public int? RoutePlanId { get; set; } // Which gig this order belongs to
+    
+    // External Integration
+    public string? ExternalOrderId { get; set; } // Pharmacy's internal order ID for integration
 
     // Status
     public string Status { get; set; } = "new";

@@ -1,0 +1,566 @@
+@{
+    ViewData["Title"] = "API Documentation";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RX Expresss - Integration API Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0d9488;
+            --primary-dark: #0f766e;
+            --bg-dark: #1e293b;
+            --bg-darker: #0f172a;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --code-bg: #1e293b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-darker);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+            padding: 3rem 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        header h1 span { color: var(--primary); }
+        header p { color: var(--text-muted); font-size: 1.1rem; }
+        
+        /* Navigation */
+        nav {
+            background: var(--bg-dark);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+        }
+        nav ul { list-style: none; display: flex; gap: 2rem; flex-wrap: wrap; }
+        nav a { 
+            color: var(--text-muted); 
+            text-decoration: none; 
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        nav a:hover { color: var(--primary); }
+        
+        /* Sections */
+        section { padding: 3rem 0; border-bottom: 1px solid var(--border); }
+        section:last-child { border-bottom: none; }
+        h2 { font-size: 1.75rem; margin-bottom: 1rem; color: var(--primary); }
+        h3 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
+        p { margin-bottom: 1rem; color: var(--text-muted); }
+        
+        /* Code blocks */
+        pre {
+            background: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+        }
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        /* Endpoint cards */
+        .endpoint {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            overflow: hidden;
+        }
+        .endpoint-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .method {
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        .method.get { background: #3b82f6; }
+        .method.post { background: #22c55e; }
+        .method.put { background: #f59e0b; }
+        .method.delete { background: #ef4444; }
+        .endpoint-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+        }
+        .endpoint-body { padding: 1.5rem; }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th { 
+            color: var(--text-muted); 
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        td { color: var(--text); }
+        td code { background: transparent; padding: 0; }
+        
+        /* Status badges */
+        .status {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .status.required { background: var(--error); }
+        .status.optional { background: var(--border); color: var(--text-muted); }
+        
+        /* Response blocks */
+        .response { margin-top: 1rem; }
+        .response-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+        .alert.info { background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; }
+        .alert.warning { background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; }
+        .alert.success { background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; }
+        
+        /* Tab-like sections */
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .tab {
+            padding: 0.5rem 1rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .tab.active { background: var(--primary); border-color: var(--primary); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>RX <span>Expresss</span> Integration API</h1>
+            <p>Connect your pharmacy software to our delivery platform</p>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="#authentication">Authentication</a></li>
+                <li><a href="#orders">Orders</a></li>
+                <li><a href="#tracking">Tracking</a></li>
+                <li><a href="#webhooks">Webhooks</a></li>
+                <li><a href="#errors">Errors</a></li>
+                <li><a href="#examples">Examples</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <!-- Authentication Section -->
+        <section id="authentication">
+            <h2>Authentication</h2>
+            <p>All API requests require authentication using your API Key and Secret. Include these in the request headers:</p>
+            
+            <pre><code>X-API-Key: your_api_key_here
+X-API-Secret: your_api_secret_here</code></pre>
+            
+            <div class="alert info">
+                <strong>Note:</strong> Contact RX Expresss admin to get your API credentials. Keep your secret secure - it's only shown once during creation.
+            </div>
+            
+            <h3>Base URL</h3>
+            <pre><code>https://api.rxexpresss.com/api/v1</code></pre>
+        </section>
+        
+        <!-- Orders Section -->
+        <section id="orders">
+            <h2>Orders</h2>
+            
+            <!-- Create Order -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/orders</span>
+                </div>
+                <div class="endpoint-body">
+                    <p>Create a new delivery order.</p>
+                    
+                    <h4>Request Body</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Field</th><th>Type</th><th>Status</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>patientName</code></td><td>string</td><td><span class="status required">Required</span></td><td>Recipient's full name</td></tr>
+                            <tr><td><code>patientPhone</code></td><td>string</td><td><span class="status required">Required</span></td><td>Recipient's phone number</td></tr>
+                            <tr><td><code>patientEmail</code></td><td>string</td><td><span class="status optional">Optional</span></td><td>Recipient's email</td></tr>
+                            <tr><td><code>street</code></td><td>string</td><td><span class="status required">Required</span></td><td>Street address</td></tr>
+                            <tr><td><code>aptUnit</code></td><td>string</td><td><span class="status optional">Optional</span></td><td>Apartment/Unit number</td></tr>
+                            <tr><td><code>city</code></td><td>string</td><td><span class="status required">Required</span></td><td>City name</td></tr>
+                            <tr><td><code>state</code></td><td>string</td><td><span class="status optional">Optional</span></td><td>State (defaults to NY)</td></tr>
+                            <tr><td><code>postalCode</code></td><td>string</td><td><span class="status required">Required</span></td><td>ZIP/Postal code</td></tr>
+                            <tr><td><code>deliveryType</code></td><td>string</td><td><span class="status optional">Optional</span></td><td>same_day, next_day, scheduled</td></tr>
+                            <tr><td><code>timeWindow</code></td><td>string</td><td><span class="status optional">Optional</span></td><td>morning, afternoon, evening</td></tr>
+                            <tr><td><code>copayAmount</code></td><td>decimal</td><td><span class="status optional">Optional</span></td><td>Copay to collect</td></tr>
+                            <tr><td><code>requiresRefrigeration</code></td><td>boolean</td><td><span class="status optional">Optional</span></td><td>Cold chain required</td></tr>
+                            <tr><td><code>externalOrderId</code></td><td>string</td><td><span class="status optional">Optional</span></td><td>Your internal order ID</td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="response">
+                        <div class="response-label">Response (201 Created)</div>
+                        <pre><code>{
+  "success": true,
+  "order": {
+    "id": 123,
+    "orderNumber": "RX-ABC12345",
+    "trackingNumber": "TRK-DEF67890",
+    "qrCode": "Q12345",
+    "status": "new",
+    "statusLabel": "New",
+    "recipientName": "Jane Smith",
+    "deliveryAddress": "456 Oak Ave, Queens, NY 11101",
+    "createdAt": "2026-03-17T10:30:00Z"
+  }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Get Order -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/orders/{identifier}</span>
+                </div>
+                <div class="endpoint-body">
+                    <p>Get order details by ID, order number, tracking number, or external order ID.</p>
+                </div>
+            </div>
+            
+            <!-- List Orders -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/orders</span>
+                </div>
+                <div class="endpoint-body">
+                    <p>List all orders for your pharmacy.</p>
+                    <h4>Query Parameters</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>status</code></td><td>string</td><td>Filter by status</td></tr>
+                            <tr><td><code>date</code></td><td>string</td><td>Filter by date (YYYY-MM-DD)</td></tr>
+                            <tr><td><code>page</code></td><td>integer</td><td>Page number (default: 1)</td></tr>
+                            <tr><td><code>limit</code></td><td>integer</td><td>Items per page (max: 100)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Cancel Order -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method delete">DELETE</span>
+                    <span class="endpoint-path">/orders/{identifier}</span>
+                </div>
+                <div class="endpoint-body">
+                    <p>Cancel an order. Only works for orders in "new" or "assigned" status.</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Tracking Section -->
+        <section id="tracking">
+            <h2>Real-Time Tracking</h2>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/orders/{identifier}/tracking</span>
+                </div>
+                <div class="endpoint-body">
+                    <p>Get real-time tracking information including driver location (when available).</p>
+                    
+                    <div class="response">
+                        <div class="response-label">Response</div>
+                        <pre><code>{
+  "orderNumber": "RX-ABC12345",
+  "trackingNumber": "TRK-DEF67890",
+  "status": "out_for_delivery",
+  "statusLabel": "Out for Delivery",
+  "events": [
+    {"status": "new", "description": "Order placed", "timestamp": "2026-03-17T10:30:00Z"},
+    {"status": "picked_up", "description": "Picked up from pharmacy", "timestamp": "2026-03-17T11:00:00Z"},
+    {"status": "out_for_delivery", "description": "Out for delivery", "timestamp": "2026-03-17T14:00:00Z"}
+  ],
+  "driverLocation": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "updatedAt": "2026-03-17T14:15:00Z"
+  }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <h3>Order Status Flow</h3>
+            <table>
+                <thead>
+                    <tr><th>Status</th><th>Label</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>new</code></td><td>New</td><td>Order created, awaiting pickup</td></tr>
+                    <tr><td><code>assigned</code></td><td>Assigned</td><td>Driver assigned for pickup</td></tr>
+                    <tr><td><code>picked_up</code></td><td>Picked Up</td><td>Package picked up from pharmacy</td></tr>
+                    <tr><td><code>in_transit</code></td><td>In Transit</td><td>At dispatch center</td></tr>
+                    <tr><td><code>dispatched</code></td><td>Dispatched</td><td>Left dispatch center</td></tr>
+                    <tr><td><code>out_for_delivery</code></td><td>Out for Delivery</td><td>On the way to recipient</td></tr>
+                    <tr><td><code>delivering_now</code></td><td>At Location</td><td>Driver at delivery address</td></tr>
+                    <tr><td><code>delivered</code></td><td>Delivered</td><td>Successfully delivered</td></tr>
+                    <tr><td><code>failed</code></td><td>Failed</td><td>Delivery attempt failed</td></tr>
+                    <tr><td><code>cancelled</code></td><td>Cancelled</td><td>Order cancelled</td></tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <!-- Webhooks Section -->
+        <section id="webhooks">
+            <h2>Webhooks</h2>
+            <p>Register webhooks to receive real-time notifications when order status changes.</p>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/webhooks</span>
+                </div>
+                <div class="endpoint-body">
+                    <p>Register a new webhook endpoint.</p>
+                    
+                    <h4>Request Body</h4>
+                    <pre><code>{
+  "url": "https://your-server.com/webhook",
+  "events": ["order.status_changed", "order.delivered"]
+}</code></pre>
+                    
+                    <h4>Available Events</h4>
+                    <table>
+                        <tbody>
+                            <tr><td><code>order.status_changed</code></td><td>Triggered when any order status changes</td></tr>
+                            <tr><td><code>order.delivered</code></td><td>Triggered when delivery is completed (includes POD)</td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Webhook Payload</h4>
+                    <pre><code>{
+  "event": "order.delivered",
+  "timestamp": "2026-03-17T15:30:00Z",
+  "data": {
+    "orderNumber": "RX-ABC12345",
+    "status": "delivered",
+    "statusLabel": "Delivered",
+    "externalOrderId": "YOUR-ORDER-123",
+    "photoUrl": "/pod/pod_RX-ABC12345.jpg",
+    "recipientNameSigned": "J. Smith",
+    "deliveredAt": "2026-03-17T15:30:00Z"
+  }
+}</code></pre>
+                    
+                    <div class="alert warning">
+                        <strong>Security:</strong> Use the webhook secret to verify payloads. Compute HMAC-SHA256 of the raw body using the secret and compare with the X-Webhook-Signature header.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/webhooks</span>
+                </div>
+                <div class="endpoint-body">
+                    <p>List all registered webhooks.</p>
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method delete">DELETE</span>
+                    <span class="endpoint-path">/webhooks/{id}</span>
+                </div>
+                <div class="endpoint-body">
+                    <p>Delete a webhook registration.</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Errors Section -->
+        <section id="errors">
+            <h2>Error Handling</h2>
+            <p>The API uses standard HTTP status codes and returns error details in JSON format.</p>
+            
+            <table>
+                <thead>
+                    <tr><th>Code</th><th>Meaning</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>200</td><td>Success</td></tr>
+                    <tr><td>400</td><td>Bad Request - Invalid parameters</td></tr>
+                    <tr><td>401</td><td>Unauthorized - Invalid API credentials</td></tr>
+                    <tr><td>404</td><td>Not Found - Resource doesn't exist</td></tr>
+                    <tr><td>500</td><td>Server Error - Try again later</td></tr>
+                </tbody>
+            </table>
+            
+            <h4>Error Response Format</h4>
+            <pre><code>{
+  "error": "Order not found",
+  "code": "ORDER_NOT_FOUND"
+}</code></pre>
+        </section>
+        
+        <!-- Examples Section -->
+        <section id="examples">
+            <h2>Code Examples</h2>
+            
+            <h3>Python</h3>
+            <pre><code>import requests
+
+API_KEY = "your_api_key"
+API_SECRET = "your_api_secret"
+BASE_URL = "https://api.rxexpresss.com/api/v1"
+
+headers = {
+    "X-API-Key": API_KEY,
+    "X-API-Secret": API_SECRET,
+    "Content-Type": "application/json"
+}
+
+# Create an order
+order_data = {
+    "patientName": "Jane Smith",
+    "patientPhone": "555-123-4567",
+    "street": "456 Oak Avenue",
+    "city": "Queens",
+    "state": "NY",
+    "postalCode": "11101",
+    "deliveryType": "same_day",
+    "externalOrderId": "PRIMERX-12345"
+}
+
+response = requests.post(f"{BASE_URL}/orders", json=order_data, headers=headers)
+order = response.json()
+print(f"Created order: {order['order']['orderNumber']}")</code></pre>
+            
+            <h3>JavaScript (Node.js)</h3>
+            <pre><code>const axios = require('axios');
+
+const API_KEY = 'your_api_key';
+const API_SECRET = 'your_api_secret';
+const BASE_URL = 'https://api.rxexpresss.com/api/v1';
+
+const headers = {
+    'X-API-Key': API_KEY,
+    'X-API-Secret': API_SECRET,
+    'Content-Type': 'application/json'
+};
+
+// Create an order
+async function createOrder() {
+    const response = await axios.post(`${BASE_URL}/orders`, {
+        patientName: 'Jane Smith',
+        patientPhone: '555-123-4567',
+        street: '456 Oak Avenue',
+        city: 'Queens',
+        state: 'NY',
+        postalCode: '11101',
+        deliveryType: 'same_day',
+        externalOrderId: 'PRIMERX-12345'
+    }, { headers });
+    
+    console.log(`Created order: ${response.data.order.orderNumber}`);
+}
+
+createOrder();</code></pre>
+            
+            <h3>C# (.NET)</h3>
+            <pre><code>using System.Net.Http;
+using System.Net.Http.Json;
+
+var client = new HttpClient();
+client.DefaultRequestHeaders.Add("X-API-Key", "your_api_key");
+client.DefaultRequestHeaders.Add("X-API-Secret", "your_api_secret");
+
+var order = new {
+    patientName = "Jane Smith",
+    patientPhone = "555-123-4567",
+    street = "456 Oak Avenue",
+    city = "Queens",
+    state = "NY",
+    postalCode = "11101",
+    deliveryType = "same_day",
+    externalOrderId = "PRIMERX-12345"
+};
+
+var response = await client.PostAsJsonAsync("https://api.rxexpresss.com/api/v1/orders", order);
+var result = await response.Content.ReadFromJsonAsync&lt;dynamic&gt;();
+Console.WriteLine($"Created order: {result.order.orderNumber}");</code></pre>
+        </section>
+    </main>
+    
+    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); border-top: 1px solid var(--border);">
+        <p>RX Expresss Integration API v1.0 | Contact: <a href="mailto:api@rxexpresss.com" style="color: var(--primary);">api@rxexpresss.com</a></p>
+    </footer>
+</body>
+</html>

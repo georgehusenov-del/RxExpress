@@ -165,3 +165,10 @@ public class UpdatePlanDto
     public string? OptimizationStatus { get; set; }
     public bool? Distributed { get; set; }
 }
+
+// Admin API Key Management
+public class CreateApiKeyForPharmacyDto
+{
+    public int PharmacyId { get; set; }
+    public string? Name { get; set; }
+}

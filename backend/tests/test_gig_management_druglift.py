@@ -7,7 +7,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rx-express-core.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://driver-portal-52.preview.emergentagent.com')
 
 class TestGigManagementDruglift:
     """Test Druglift-style gig management workflow"""

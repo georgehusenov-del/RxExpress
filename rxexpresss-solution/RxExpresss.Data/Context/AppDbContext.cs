@@ -18,6 +18,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RoutePlanDriver> RoutePlanDrivers => Set<RoutePlanDriver>();
     public DbSet<RoutePlanOrder> RoutePlanOrders => Set<RoutePlanOrder>();
     public DbSet<ServiceZone> ServiceZones => Set<ServiceZone>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<Webhook> Webhooks => Set<Webhook>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -126,5 +128,25 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.HasOne(r => r.Order).WithMany().HasForeignKey(r => r.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
         builder.Entity<ServiceZone>(e => { e.HasKey(z => z.Id); });
+
+        // Integration API entities
+        builder.Entity<ApiKey>(e =>
+        {
+            e.HasKey(a => a.Id);
+            e.HasOne(a => a.Pharmacy).WithMany().HasForeignKey(a => a.PharmacyId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(a => a.Key).IsUnique();
+            e.Property(a => a.Key).HasMaxLength(64);
+            e.Property(a => a.Secret).HasMaxLength(128);
+            e.Property(a => a.Name).HasMaxLength(200);
+        });
+
+        builder.Entity<Webhook>(e =>
+        {
+            e.HasKey(w => w.Id);
+            e.HasOne(w => w.Pharmacy).WithMany().HasForeignKey(w => w.PharmacyId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(w => w.Url).HasMaxLength(500);
+            e.Property(w => w.Events).HasMaxLength(500);
+            e.Property(w => w.Secret).HasMaxLength(128);
+        });
     }
 }

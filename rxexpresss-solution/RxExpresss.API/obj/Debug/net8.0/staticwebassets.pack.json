@@ -5,6 +5,10 @@
       "PackagePath": "staticwebassets/.gitkeep"
     },
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pod_RX-BKN00001_20260317111835.jpg",
+      "PackagePath": "staticwebassets/pod/pod_RX-BKN00001_20260317111835.jpg"
+    },
+    {
       "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pod_RX-EB0AAB40_20260218093239.jpg",
       "PackagePath": "staticwebassets/pod/pod_RX-EB0AAB40_20260218093239.jpg"
     },

@@ -55,4 +55,11 @@ public class HomeController : Controller
         ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? _config["ApiBaseUrl"] ?? "/api";
         return View("TermsOfService");
     }
+
+    [HttpGet("/api-docs")]
+    [HttpGet("/developers")]
+    public IActionResult ApiDocs()
+    {
+        return View("ApiDocs");
+    }
 }

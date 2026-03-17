@@ -16,75 +16,56 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ## Core Features Implemented
 
-### Latest Updates (March 16, 2026)
-- ✅ **Admin Orders Refresh Button** - Quick data reload without page refresh
-- ✅ **Blue QR Codes for Refrigerated Items** - QR code IMAGE is blue (using qrserver.com color parameter), not just text
-- ✅ **Print Label** - Opens print dialog (user must select physical printer, not "Save as PDF")
-- ✅ **In Transit → Office Reassignment Flow**:
-  - When package scanned "In Transit" arrives at office → driver unassigned
-  - When admin assigns NEW driver to in_transit order → status changes to "out_for_delivery" (not back to picked_up)
-- ✅ **Pharmacy Refrigeration Checkbox** - Now properly saves to database when creating orders
-- ✅ **Driver Delivery History** - Enhanced to show detailed completed deliveries with POD info
+### Latest Updates (March 17, 2026)
+- ✅ **POD (Proof of Delivery) Fix** - PhotoUrl now properly returned in Admin and Pharmacy order lists
+- ✅ **Pharmacy Integration API v1** - Complete REST API for pharmacy software systems to connect
+  - `POST /api/v1/orders` - Create delivery orders
+  - `GET /api/v1/orders` - List orders with pagination
+  - `GET /api/v1/orders/{identifier}` - Get by ID, order number, tracking number, or external ID
+  - `GET /api/v1/orders/{identifier}/tracking` - Real-time tracking with driver location
+  - `DELETE /api/v1/orders/{identifier}` - Cancel orders
+  - `POST /api/v1/webhooks` - Register status update webhooks
+  - `GET /api/v1/webhooks` - List registered webhooks
+  - `DELETE /api/v1/webhooks/{id}` - Delete webhooks
+- ✅ **API Key Management** - Admin endpoints to create/manage API credentials for pharmacies
+- ✅ **API Documentation Page** - Available at `/developers`
+- ✅ **External Order ID Support** - Pharmacies can reference their internal order IDs
 
-### Order Status Flow (Admin/Pharmacy View)
+### Previous Updates (March 16, 2026)
+- ✅ **Admin Orders Refresh Button** - Quick data reload without page refresh
+- ✅ **Blue QR Codes for Refrigerated Items** - QR code IMAGE is blue (using qrserver.com color parameter)
+- ✅ **Print Label** - Opens print dialog (user must select physical printer, not "Save as PDF")
+- ✅ **In Transit → Office Reassignment Flow**
+- ✅ **Pharmacy Refrigeration Checkbox** - Now properly saves to database
+- ✅ **Driver Delivery History** - Enhanced with POD details
+
+### Order Status Flow
 | Status | Label | Meaning |
 |--------|-------|---------|
-| new | Coming to Pick Up | Order placed, waiting for pickup |
-| assigned | Assigned to Driver | Driver assigned for pharmacy pickup |
-| picked_up | Going to Office | Package picked up, en route to office |
-| in_transit | At Office | Arrived at office, preparing for dispatch |
-| **dispatched** | Left Office | Driver assigned, left office for delivery |
+| new | New | Order placed, waiting for pickup |
+| assigned | Assigned | Driver assigned for pharmacy pickup |
+| picked_up | Picked Up | Package picked up, en route to office |
+| in_transit | In Transit | At office, preparing for dispatch |
+| dispatched | Dispatched | Left office with delivery driver |
 | out_for_delivery | Out for Delivery | On route to delivery location |
 | delivering_now | At Location | Driver at delivery location |
 | delivered | Delivered | Successfully delivered with POD |
-| failed | Failed | Delivery attempt failed (with reason) |
-| cancelled | Cancelled | Cancelled by pharmacy or patient |
+| failed | Failed | Delivery attempt failed |
+| cancelled | Cancelled | Order cancelled |
 
-### Driver View
-- Driver always sees "Assigned" for both pickup and delivery assignments
-- After pickup scan → "Picked Up" (going to office)
-- After office scan → Package removed from driver's view (admin reassigns)
-- After dispatch assignment → "Dispatched" (leaving office for delivery)
-- After out_for_delivery scan → "Out for Delivery"
-- After at_location scan → "At Location" (POD buttons appear)
+### Integration API Authentication
+- API Key + Secret header authentication
+- Headers: `X-API-Key` and `X-API-Secret`
+- Admin creates API keys via `/api/admin/api-keys`
 
-### UI/UX Improvements
-- ✅ **Invisible scrollbar** - Scrollbars hidden but scrolling works
-- ✅ **Collapsible sidebar** - Fixed toggle button (teal) on mobile/tablet
-- ✅ **Blue QR code images** - Refrigerated items have blue QR codes using `&color=0288d1`
-- ✅ **Removed status flow from Driver page**
-- ✅ Responsive design for all screen sizes
-
-### Authentication & Authorization
-- JWT-based authentication
-- Role-based access: Admin, Pharmacy, Driver
-
-### Landing Page
-- Mobile hamburger menu navigation
-- Privacy Policy and Terms of Service pages
-- Contact: +1 (718) 799-4103, getfastdeliverywith@rxexpresss.com
-
-### Admin Dashboard
-- Blue QR code images for refrigerated items
-- Print QR labels with blue QR codes for refrigerated
-- Refrigerated checkbox in edit modal
-- Order management with filters and refresh button
-- Driver/Pharmacy/Route management
-
-### Pharmacy Portal
-- "Requires Refrigeration" checkbox saves to database
-- Blue QR codes in order list for refrigerated items
-- Order creation and tracking
-
-### Driver Portal
-- Clean interface (no status flow legend)
-- QR-scan-based status workflow
-- POD with mandatory photo
-- Blue QR codes for refrigerated items
-- Enhanced delivery history with POD details
+### Database Entities Added
+- `ApiKey` - Stores pharmacy API credentials
+- `Webhook` - Stores webhook registrations
+- `Order.ExternalOrderId` - External system reference
 
 ## Preview URL
-- https://rx-express-core.preview.emergentagent.com
+- https://driver-portal-52.preview.emergentagent.com
+- API Docs: https://driver-portal-52.preview.emergentagent.com/developers
 
 ## Test Accounts
 | Role | Email | Password |
@@ -93,25 +74,28 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 | Pharmacy | pharmacy@test.com | Pharmacy@123 |
 | Driver | driver@test.com | Driver@123 |
 
-## Gig Management Workflow (Druglift Flow)
-- **Order stays in gig** - Orders remain in gig for tracking until delivery
-- **Split keeps driver** - When splitting a gig, orders keep their assigned driver
-- **Per-order unassign** - Can unassign driver from individual orders (not entire gig)
-- **One order = one gig** - Each order belongs to only one gig at a time
-
-## Known Limitations
-- **Print Dialog** - Shows system print dialog. If user's default printer is "Save as PDF", it will show save dialog. User needs to select physical printer in the dialog.
+## Test API Key (for HealthFirst Pharmacy)
+- Key: `a4b4800042b34202b746e1213f1c77c6`
+- Secret: `111369031c114d7a942869f49c66584e2a09f404f35c4453a03120faa8f7627e`
 
 ## Backlog
 1. (P1) Circuit Webhook implementation
 2. (P1) Twilio/SendGrid notifications
-3. (P2) Google Maps route optimization
-4. (P2) Cloud storage for POD images
-5. (P2) Stripe payment flow
-6. (P2) Forgot password
+3. (P1) Webhook delivery implementation (trigger webhooks on status changes)
+4. (P2) Google Maps route optimization
+5. (P2) Cloud storage for POD images
+6. (P2) Stripe payment flow
+7. (P2) Forgot password
 
 ## Deployment
 - DNS/SSL: Cloudflare
 - Backend: backend.rxexpresss.com
 - Frontend: rxexpresss.com
 - Hosting: Hoster.pk (IIS)
+
+## Key Files Reference
+- `/app/rxexpresss-solution/RxExpresss.API/Controllers/IntegrationController.cs` - Integration API
+- `/app/rxexpresss-solution/RxExpresss.Core/Entities/ApiKey.cs` - API Key entity
+- `/app/rxexpresss-solution/RxExpresss.Core/Entities/Webhook.cs` - Webhook entity
+- `/app/rxexpresss-solution/RxExpresss.Core/DTOs/IntegrationDtos.cs` - Integration DTOs
+- `/app/rxexpresss-solution/RxExpresss.Web/Views/Home/ApiDocs.cshtml` - API Documentation
