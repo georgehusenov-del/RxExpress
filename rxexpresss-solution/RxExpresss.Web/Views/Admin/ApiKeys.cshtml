@@ -4,6 +4,7 @@
         <select class="form-control" style="width:200px" id="pharmacyFilter" onchange="load()">
             <option value="">All Pharmacies</option>
         </select>
+        <button class="btn btn-outline" onclick="load()" title="Refresh" data-testid="refresh-btn">🔄 Refresh</button>
         <button class="btn btn-primary" onclick="openCreateModal()" data-testid="create-api-key-btn">+ Create API Key</button>
     </div>
 }
@@ -116,7 +117,7 @@
             
             <div style="background: var(--bg-dark); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
                 <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Usage Example:</p>
-                <pre style="margin: 0; font-size: 0.85rem; overflow-x: auto;"><code>curl -X POST https://api.rxexpresss.com/api/v1/orders \
+                <pre style="margin: 0; font-size: 0.85rem; overflow-x: auto;"><code>curl -X POST https://backend.rxexpresss.com/api/v1/orders \
   -H "X-API-Key: <span id="example-key"></span>" \
   -H "X-API-Secret: <span id="example-secret"></span>" \
   -H "Content-Type: application/json" \
@@ -221,7 +222,7 @@ async function createKey() {
         document.getElementById('credentials-modal').classList.add('active');
         
         toastr.success('API key created successfully!');
-        load();
+        await load(); // Await the load
     } catch (err) {
         toastr.error(err.message || 'Failed to create API key');
     }
@@ -244,7 +245,7 @@ async function toggleKey(id, currentStatus) {
     try {
         await ApiService.put(`/admin/api-keys/${id}/toggle`);
         toastr.success(`API key ${currentStatus ? 'disabled' : 'enabled'}`);
-        load();
+        await load(); // Await the load
     } catch (err) {
         toastr.error(err.message || 'Failed to toggle API key');
     }
@@ -256,7 +257,7 @@ async function deleteKey(id) {
     try {
         await ApiService.delete(`/admin/api-keys/${id}`);
         toastr.success('API key deleted');
-        load();
+        await load(); // Await the load
     } catch (err) {
         toastr.error(err.message || 'Failed to delete API key');
     }

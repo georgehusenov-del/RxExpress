@@ -218,7 +218,7 @@ X-API-Secret: your_api_secret_here</code></pre>
             </div>
             
             <h3>Base URL</h3>
-            <pre><code>https://api.rxexpresss.com/api/v1</code></pre>
+            <pre><code>https://backend.rxexpresss.com/api/v1</code></pre>
         </section>
         
         <!-- Orders Section -->
@@ -479,7 +479,7 @@ X-API-Secret: your_api_secret_here</code></pre>
 
 API_KEY = "your_api_key"
 API_SECRET = "your_api_secret"
-BASE_URL = "https://api.rxexpresss.com/api/v1"
+BASE_URL = "https://backend.rxexpresss.com/api/v1"
 
 headers = {
     "X-API-Key": API_KEY,
@@ -508,7 +508,7 @@ print(f"Created order: {order['order']['orderNumber']}")</code></pre>
 
 const API_KEY = 'your_api_key';
 const API_SECRET = 'your_api_secret';
-const BASE_URL = 'https://api.rxexpresss.com/api/v1';
+const BASE_URL = 'https://backend.rxexpresss.com/api/v1';
 
 const headers = {
     'X-API-Key': API_KEY,
@@ -553,7 +553,7 @@ var order = new {
     externalOrderId = "PRIMERX-12345"
 };
 
-var response = await client.PostAsJsonAsync("https://api.rxexpresss.com/api/v1/orders", order);
+var response = await client.PostAsJsonAsync("https://backend.rxexpresss.com/api/v1/orders", order);
 var result = await response.Content.ReadFromJsonAsync&lt;dynamic&gt;();
 Console.WriteLine($"Created order: {result.order.orderNumber}");</code></pre>
         </section>
