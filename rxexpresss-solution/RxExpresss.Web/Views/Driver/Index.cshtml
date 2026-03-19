@@ -502,7 +502,7 @@ function closePodModal(){
     closeCamera();
 }
 
-// Camera Functions
+// Camera Functions - Opens camera on ALL devices
 async function openCamera(photoType) {
     currentPhotoType = photoType;
     
@@ -514,10 +514,15 @@ async function openCamera(photoType) {
     document.getElementById('camera-title').textContent = titles[photoType] || '📷 Take Photo';
     
     try {
-        // Request camera access - rear camera preferred
+        // Check if getUserMedia is supported
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Camera not supported on this browser');
+        }
+        
+        // Request camera access - rear camera preferred on mobile
         cameraStream = await navigator.mediaDevices.getUserMedia({
             video: { 
-                facingMode: { ideal: 'environment' }, // Use rear camera
+                facingMode: { ideal: 'environment' }, // Use rear camera on mobile
                 width: { ideal: 1280 },
                 height: { ideal: 720 }
             },
@@ -531,7 +536,19 @@ async function openCamera(photoType) {
         document.getElementById('camera-modal').classList.add('active');
     } catch (err) {
         console.error('Camera error:', err);
-        showAlert('alert-area', 'danger', 'Camera access denied or not available. Please allow camera permissions.');
+        
+        let errorMsg = '';
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            errorMsg = `⚠️ Camera permission denied!\n\nTo enable camera:\n• Click the camera/lock icon in your browser's address bar\n• Allow camera access for this site\n• Then click the button again`;
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            errorMsg = '⚠️ No camera found on this device. Please use a device with a camera.';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            errorMsg = '⚠️ Camera is in use by another application. Please close other apps using the camera and try again.';
+        } else {
+            errorMsg = `⚠️ Camera error: ${err.message || 'Unknown error'}. Please ensure camera permissions are enabled.`;
+        }
+        
+        showAlert('alert-area', 'danger', errorMsg);
     }
 }
 
