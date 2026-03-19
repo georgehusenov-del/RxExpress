@@ -14,7 +14,7 @@ android {
         versionName "1.0.0"
 
         // Change this to your production URL before building release APK
-        buildConfigField "String", "BASE_URL", "\"https://driver-portal-52.preview.emergentagent.com\""
+        buildConfigField "String", "BASE_URL", "\"https://driver-pod-camera.preview.emergentagent.com\""
     }
 
     buildTypes {

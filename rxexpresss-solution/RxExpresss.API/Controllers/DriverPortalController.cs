@@ -237,8 +237,11 @@ public class DriverPortalController : ControllerBase
         var bytes = Convert.FromBase64String(base64);
         var fileName = $"{photoType}_{orderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.jpg";
         
-        // Save to wwwroot/pod folder
-        var podFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "pod");
+        // Save to Web project's wwwroot/pod folder (not API's wwwroot)
+        // This ensures images are served by the Web static file middleware
+        var webProjectRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "RxExpresss.Web"));
+        var podFolder = Path.Combine(webProjectRoot, "wwwroot", "pod");
+        
         if (!Directory.Exists(podFolder))
         {
             Directory.CreateDirectory(podFolder);
@@ -246,6 +249,8 @@ public class DriverPortalController : ControllerBase
         
         var filePath = Path.Combine(podFolder, fileName);
         await System.IO.File.WriteAllBytesAsync(filePath, bytes);
+        
+        _logger.LogInformation("POD photo saved to Web wwwroot: {FilePath}", filePath);
         
         return $"/pod/{fileName}";
     }
@@ -261,7 +266,10 @@ public class DriverPortalController : ControllerBase
         var bytes = Convert.FromBase64String(base64);
         var fileName = $"sig_{orderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.png";
         
-        var podFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "pod");
+        // Save to Web project's wwwroot/pod folder (not API's wwwroot)
+        var webProjectRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "RxExpresss.Web"));
+        var podFolder = Path.Combine(webProjectRoot, "wwwroot", "pod");
+        
         if (!Directory.Exists(podFolder))
         {
             Directory.CreateDirectory(podFolder);
@@ -269,6 +277,8 @@ public class DriverPortalController : ControllerBase
         
         var filePath = Path.Combine(podFolder, fileName);
         await System.IO.File.WriteAllBytesAsync(filePath, bytes);
+        
+        _logger.LogInformation("Signature saved to Web wwwroot: {FilePath}", filePath);
         
         return $"/pod/{fileName}";
     }

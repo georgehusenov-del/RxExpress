@@ -64,8 +64,8 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 - `Order.ExternalOrderId` - External system reference
 
 ## Preview URL
-- https://driver-portal-52.preview.emergentagent.com
-- API Docs: https://driver-portal-52.preview.emergentagent.com/developers
+- https://driver-pod-camera.preview.emergentagent.com
+- API Docs: https://driver-pod-camera.preview.emergentagent.com/developers
 
 ## Test Accounts
 | Role | Email | Password |

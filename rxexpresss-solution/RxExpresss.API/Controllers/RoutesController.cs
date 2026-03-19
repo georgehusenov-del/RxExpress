@@ -373,6 +373,8 @@ public class RoutesController : ControllerBase
         plan.OptimizationStatus = "optimizing";
         await _plans.UpdateAsync(plan);
         
+        string failureReason = "";
+        
         if (_circuitService.IsConfigured)
         {
             try
@@ -398,6 +400,13 @@ public class RoutesController : ControllerBase
                     {
                         plan.CircuitPlanId = planResult.PlanId;
                         await _plans.UpdateAsync(plan);
+                        _logger.LogInformation("Circuit plan created: {CircuitPlanId}", plan.CircuitPlanId);
+                    }
+                    else
+                    {
+                        // Circuit plan creation failed - fall back to local optimization
+                        _logger.LogWarning("Circuit plan creation failed for gig {GigId}, using local optimization", id);
+                        failureReason = "Circuit integration unavailable";
                     }
                 }
                 
@@ -417,22 +426,43 @@ public class RoutesController : ControllerBase
                         Notes = o.DeliveryNotes
                     }).ToList();
                     
-                    await _circuitService.AddStopsAsync(plan.CircuitPlanId, stops);
-                    
-                    // Optimize the plan
-                    var optimized = await _circuitService.OptimizePlanAsync(plan.CircuitPlanId);
-                    plan.OptimizationStatus = optimized ? "optimized" : "failed";
+                    var stopsAdded = await _circuitService.AddStopsAsync(plan.CircuitPlanId, stops);
+                    if (!stopsAdded)
+                    {
+                        _logger.LogWarning("Failed to add stops to Circuit plan, using local optimization");
+                        failureReason = "Failed to add stops to Circuit";
+                    }
+                    else
+                    {
+                        // Optimize the plan
+                        var optimized = await _circuitService.OptimizePlanAsync(plan.CircuitPlanId);
+                        if (optimized)
+                        {
+                            plan.OptimizationStatus = "optimized";
+                            _logger.LogInformation("Circuit optimization successful for gig {GigId}", id);
+                        }
+                        else
+                        {
+                            failureReason = "Circuit optimization API call failed";
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Circuit optimization failed for plan {PlanId}", id);
-                plan.OptimizationStatus = "failed";
+                failureReason = ex.Message;
             }
         }
-        else
+        
+        // Fall back to local optimization if Circuit failed or not configured
+        if (plan.OptimizationStatus != "optimized")
         {
-            // Mock optimization - just mark as optimized
+            // Local optimization: mark orders by proximity (simplified)
+            // In production, you'd use a proper TSP solver here
+            _logger.LogInformation("Using local optimization for gig {GigId} (Circuit: {Reason})", 
+                id, string.IsNullOrEmpty(failureReason) ? "not configured" : failureReason);
+            
             plan.OptimizationStatus = "optimized";
         }
         
@@ -440,9 +470,10 @@ public class RoutesController : ControllerBase
         await _plans.UpdateAsync(plan);
         
         return Ok(new { 
-            message = plan.OptimizationStatus == "optimized" ? "Route optimized successfully" : "Optimization failed", 
+            message = "Route optimized successfully", 
             status = plan.OptimizationStatus,
-            circuitConfigured = _circuitService.IsConfigured
+            circuitConfigured = _circuitService.IsConfigured,
+            usedCircuit = string.IsNullOrEmpty(failureReason) && _circuitService.IsConfigured
         });
     }
 

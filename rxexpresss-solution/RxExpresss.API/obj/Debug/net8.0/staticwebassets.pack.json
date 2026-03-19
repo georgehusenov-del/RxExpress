@@ -5,6 +5,18 @@
       "PackagePath": "staticwebassets/.gitkeep"
     },
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/addr_RX-BKN00002_20260319175005.jpg",
+      "PackagePath": "staticwebassets/pod/addr_RX-BKN00002_20260319175005.jpg"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/home_RX-BKN00002_20260319175005.jpg",
+      "PackagePath": "staticwebassets/pod/home_RX-BKN00002_20260319175005.jpg"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pkg_RX-BKN00002_20260319175005.jpg",
+      "PackagePath": "staticwebassets/pod/pkg_RX-BKN00002_20260319175005.jpg"
+    },
+    {
       "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pod_RX-44ADE056_20260318152350.jpg",
       "PackagePath": "staticwebassets/pod/pod_RX-44ADE056_20260318152350.jpg"
     },
@@ -23,6 +35,10 @@
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/pod_RX-QNS00002_20260317113329.jpg",
       "PackagePath": "staticwebassets/pod/pod_RX-QNS00002_20260317113329.jpg"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/sig_RX-BKN00002_20260319175005.png",
+      "PackagePath": "staticwebassets/pod/sig_RX-BKN00002_20260319175005.png"
     },
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.API/wwwroot/pod/sig_RX-EB0AAB40_20260218093239.png",
