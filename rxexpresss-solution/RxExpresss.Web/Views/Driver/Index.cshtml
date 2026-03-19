@@ -13,6 +13,14 @@
 .status-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .status-legend span{padding:2px 8px;border-radius:4px;font-size:11px}
 
+/* Camera capture styles */
+.photo-container{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;border:2px dashed var(--border);border-radius:8px;background:#f8fafc}
+.photo-preview-large{max-width:100%;max-height:200px;border-radius:8px;border:2px solid var(--primary)}
+.btn-camera{padding:16px 24px;font-size:16px;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.btn-camera:hover{background:linear-gradient(135deg,#16a34a,#15803d)}
+.retake-btn{margin-top:8px}
+.photo-captured .photo-container{border-color:#22c55e;background:#f0fdf4}
+
 /* Refrigerated items - Blue QR code styling is inline */
 </style>
 
@@ -65,9 +73,9 @@
     </div>
 </div>
 
-<!-- POD Modal - 3 Required Photos via Camera -->
+<!-- POD Modal - 3 Required Photos via Direct Camera Capture -->
 <div class="modal-overlay" id="pod-modal">
-    <div class="modal" style="max-width:500px">
+    <div class="modal" style="max-width:500px;max-height:90vh;overflow-y:auto">
         <div class="modal-header">
             <h3>Complete Delivery (POD)</h3>
             <button class="close-btn" onclick="closePodModal()">&times;</button>
@@ -81,27 +89,51 @@
             </div>
             
             <!-- Photo 1: Home -->
-            <div class="form-group">
+            <div class="form-group photo-capture-group">
                 <label>📸 Photo 1: Picture of Home <span style="color:#ef4444">*</span></label>
-                <input type="file" class="form-control" id="pod-photo-home" accept="image/*" capture="environment" onchange="previewPhoto(this, 'preview-home')" data-testid="pod-photo-home"/>
-                <img id="preview-home" class="photo-preview" alt="Home Preview"/>
+                <div id="photo-container-home" class="photo-container">
+                    <img id="preview-home" class="photo-preview-large" style="display:none" alt="Home Preview"/>
+                    <button type="button" class="btn btn-camera" onclick="openCamera('home')" id="btn-capture-home" data-testid="capture-home-btn">
+                        📷 Open Camera & Take Photo
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline retake-btn" onclick="openCamera('home')" id="btn-retake-home" style="display:none">
+                        🔄 Retake Photo
+                    </button>
+                </div>
                 <p class="text-sm text-gray">Take a clear photo of the customer's home/building</p>
+                <input type="hidden" id="pod-photo-home-data"/>
             </div>
             
             <!-- Photo 2: Address -->
-            <div class="form-group">
+            <div class="form-group photo-capture-group">
                 <label>📸 Photo 2: Picture of Address <span style="color:#ef4444">*</span></label>
-                <input type="file" class="form-control" id="pod-photo-address" accept="image/*" capture="environment" onchange="previewPhoto(this, 'preview-address')" data-testid="pod-photo-address"/>
-                <img id="preview-address" class="photo-preview" alt="Address Preview"/>
+                <div id="photo-container-address" class="photo-container">
+                    <img id="preview-address" class="photo-preview-large" style="display:none" alt="Address Preview"/>
+                    <button type="button" class="btn btn-camera" onclick="openCamera('address')" id="btn-capture-address" data-testid="capture-address-btn">
+                        📷 Open Camera & Take Photo
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline retake-btn" onclick="openCamera('address')" id="btn-retake-address" style="display:none">
+                        🔄 Retake Photo
+                    </button>
+                </div>
                 <p class="text-sm text-gray">Capture visible house number or address sign</p>
+                <input type="hidden" id="pod-photo-address-data"/>
             </div>
             
             <!-- Photo 3: Package at Door -->
-            <div class="form-group">
+            <div class="form-group photo-capture-group">
                 <label>📸 Photo 3: Package at Door <span style="color:#ef4444">*</span></label>
-                <input type="file" class="form-control" id="pod-photo-package" accept="image/*" capture="environment" onchange="previewPhoto(this, 'preview-package')" data-testid="pod-photo-package"/>
-                <img id="preview-package" class="photo-preview" alt="Package Preview"/>
+                <div id="photo-container-package" class="photo-container">
+                    <img id="preview-package" class="photo-preview-large" style="display:none" alt="Package Preview"/>
+                    <button type="button" class="btn btn-camera" onclick="openCamera('package')" id="btn-capture-package" data-testid="capture-package-btn">
+                        📷 Open Camera & Take Photo
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline retake-btn" onclick="openCamera('package')" id="btn-retake-package" style="display:none">
+                        🔄 Retake Photo
+                    </button>
+                </div>
                 <p class="text-sm text-gray">Show package placed at the door/entrance</p>
+                <input type="hidden" id="pod-photo-package-data"/>
             </div>
             
             <div class="form-group" id="signature-group">
@@ -121,6 +153,25 @@
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closePodModal()">Cancel</button>
             <button class="btn btn-success" onclick="submitPod()" data-testid="submit-pod-btn">Complete Delivery</button>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Capture Modal (Full Screen) -->
+<div class="modal-overlay" id="camera-modal" style="background:black;z-index:2000">
+    <div style="width:100%;height:100%;display:flex;flex-direction:column">
+        <div style="padding:10px;background:rgba(0,0,0,0.8);color:white;display:flex;justify-content:space-between;align-items:center">
+            <span id="camera-title">📷 Take Photo</span>
+            <button onclick="closeCamera()" style="background:none;border:none;color:white;font-size:24px;cursor:pointer">&times;</button>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+            <video id="camera-video" autoplay playsinline style="max-width:100%;max-height:100%;object-fit:contain"></video>
+            <canvas id="camera-canvas" style="display:none"></canvas>
+        </div>
+        <div style="padding:20px;background:rgba(0,0,0,0.8);display:flex;justify-content:center;gap:20px">
+            <button onclick="capturePhoto()" class="btn" style="width:70px;height:70px;border-radius:50%;background:white;border:4px solid #22c55e;font-size:24px" data-testid="shutter-btn">
+                📸
+            </button>
         </div>
     </div>
 </div>
@@ -423,38 +474,110 @@ async function verifyQrCode(code){
     }
 }
 
-// POD with 3 mandatory photos
+// POD with 3 mandatory camera photos
+let currentPhotoType = null;
+let cameraStream = null;
+
 function openPodModal(orderId){
     document.getElementById('pod-order-id').value=orderId;
     document.getElementById('pod-name').value='';
     document.getElementById('pod-notes').value='';
-    // Reset all 3 photo inputs
-    document.getElementById('pod-photo-home').value='';
-    document.getElementById('pod-photo-address').value='';
-    document.getElementById('pod-photo-package').value='';
-    document.getElementById('preview-home').style.display='none';
-    document.getElementById('preview-address').style.display='none';
-    document.getElementById('preview-package').style.display='none';
+    
+    // Reset all 3 photos
+    ['home', 'address', 'package'].forEach(type => {
+        document.getElementById(`preview-${type}`).style.display='none';
+        document.getElementById(`preview-${type}`).src='';
+        document.getElementById(`pod-photo-${type}-data`).value='';
+        document.getElementById(`btn-capture-${type}`).style.display='flex';
+        document.getElementById(`btn-retake-${type}`).style.display='none';
+        document.getElementById(`photo-container-${type}`).parentElement.classList.remove('photo-captured');
+    });
+    
     document.getElementById('pod-modal').classList.add('active');
     initSignaturePad();
 }
 
 function closePodModal(){
     document.getElementById('pod-modal').classList.remove('active');
+    closeCamera();
 }
 
-function previewPhoto(input, previewId){
-    const preview=document.getElementById(previewId);
-    if(input.files && input.files[0]){
-        const reader=new FileReader();
-        reader.onload=function(e){
-            preview.src=e.target.result;
-            preview.style.display='block';
-        };
-        reader.readAsDataURL(input.files[0]);
-    }else{
-        preview.style.display='none';
+// Camera Functions
+async function openCamera(photoType) {
+    currentPhotoType = photoType;
+    
+    const titles = {
+        'home': '📸 Photo 1: Picture of Home',
+        'address': '📸 Photo 2: Picture of Address', 
+        'package': '📸 Photo 3: Package at Door'
+    };
+    document.getElementById('camera-title').textContent = titles[photoType] || '📷 Take Photo';
+    
+    try {
+        // Request camera access - rear camera preferred
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: { ideal: 'environment' }, // Use rear camera
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+        
+        const video = document.getElementById('camera-video');
+        video.srcObject = cameraStream;
+        await video.play();
+        
+        document.getElementById('camera-modal').classList.add('active');
+    } catch (err) {
+        console.error('Camera error:', err);
+        showAlert('alert-area', 'danger', 'Camera access denied or not available. Please allow camera permissions.');
     }
+}
+
+function closeCamera() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    document.getElementById('camera-modal').classList.remove('active');
+    currentPhotoType = null;
+}
+
+function capturePhoto() {
+    const video = document.getElementById('camera-video');
+    const canvas = document.getElementById('camera-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size to video size
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get image as base64
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Store the captured image
+    document.getElementById(`pod-photo-${currentPhotoType}-data`).value = imageData;
+    
+    // Show preview
+    const preview = document.getElementById(`preview-${currentPhotoType}`);
+    preview.src = imageData;
+    preview.style.display = 'block';
+    
+    // Hide capture button, show retake button
+    document.getElementById(`btn-capture-${currentPhotoType}`).style.display = 'none';
+    document.getElementById(`btn-retake-${currentPhotoType}`).style.display = 'inline-block';
+    
+    // Mark as captured
+    document.getElementById(`photo-container-${currentPhotoType}`).parentElement.classList.add('photo-captured');
+    
+    // Close camera
+    closeCamera();
+    
+    showAlert('alert-area', 'success', `✓ Photo captured!`);
 }
 
 // Failed Delivery Modal
@@ -565,42 +688,27 @@ async function submitPod(){
     const name=document.getElementById('pod-name').value;
     const notes=document.getElementById('pod-notes').value;
     
-    // Get all 3 photo inputs
-    const photoHomeInput=document.getElementById('pod-photo-home');
-    const photoAddressInput=document.getElementById('pod-photo-address');
-    const photoPackageInput=document.getElementById('pod-photo-package');
+    // Get captured photos from hidden inputs
+    const photoHomeBase64 = document.getElementById('pod-photo-home-data').value;
+    const photoAddressBase64 = document.getElementById('pod-photo-address-data').value;
+    const photoPackageBase64 = document.getElementById('pod-photo-package-data').value;
     
     // Validate all 3 photos - MANDATORY
-    if(!photoHomeInput.files || !photoHomeInput.files[0]){
-        showAlert('alert-area','danger','Photo of HOME is required! Please take a photo.');
+    if(!photoHomeBase64){
+        showAlert('alert-area','danger','Photo of HOME is required! Please use the camera to take a photo.');
         return;
     }
-    if(!photoAddressInput.files || !photoAddressInput.files[0]){
-        showAlert('alert-area','danger','Photo of ADDRESS is required! Please take a photo.');
+    if(!photoAddressBase64){
+        showAlert('alert-area','danger','Photo of ADDRESS is required! Please use the camera to take a photo.');
         return;
     }
-    if(!photoPackageInput.files || !photoPackageInput.files[0]){
-        showAlert('alert-area','danger','Photo of PACKAGE at door is required! Please take a photo.');
+    if(!photoPackageBase64){
+        showAlert('alert-area','danger','Photo of PACKAGE at door is required! Please use the camera to take a photo.');
         return;
     }
-    
-    // Helper to read file as base64
-    const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
     
     try {
         showAlert('alert-area','info','Uploading 3 photos... Please wait.');
-        
-        // Read all 3 photos as base64
-        const [photoHomeBase64, photoAddressBase64, photoPackageBase64] = await Promise.all([
-            readFileAsBase64(photoHomeInput.files[0]),
-            readFileAsBase64(photoAddressInput.files[0]),
-            readFileAsBase64(photoPackageInput.files[0])
-        ]);
         
         // Get signature (optional)
         const signatureBase64 = getSignatureData();
