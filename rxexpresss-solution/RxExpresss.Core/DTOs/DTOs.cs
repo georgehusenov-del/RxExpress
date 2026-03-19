@@ -105,11 +105,14 @@ public class CreatePricingDto
     public string? TimeWindowEnd { get; set; }
 }
 
-// POD
+// POD - Proof of Delivery with 3 required photos
 public class SubmitPodDto
 {
     public string? RecipientName { get; set; }
-    public string? PhotoBase64 { get; set; }  // Required - Base64 encoded photo
+    public string? PhotoBase64 { get; set; }  // Legacy - single photo (backward compatible)
+    public string? PhotoHomeBase64 { get; set; }  // Photo 1: Picture of the home/house
+    public string? PhotoAddressBase64 { get; set; }  // Photo 2: Picture showing address
+    public string? PhotoPackageBase64 { get; set; }  // Photo 3: Package in front of home
     public string? SignatureBase64 { get; set; }  // Optional - Base64 encoded signature
     public string? Notes { get; set; }  // Optional delivery notes
     public double? Latitude { get; set; }

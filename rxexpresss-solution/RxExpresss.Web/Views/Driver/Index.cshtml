@@ -65,7 +65,7 @@
     </div>
 </div>
 
-<!-- POD Modal - Enhanced with mandatory photo -->
+<!-- POD Modal - 3 Required Photos via Camera -->
 <div class="modal-overlay" id="pod-modal">
     <div class="modal" style="max-width:500px">
         <div class="modal-header">
@@ -80,11 +80,28 @@
                 <input type="text" class="form-control" id="pod-name" placeholder="Enter recipient name" data-testid="pod-name-input"/>
             </div>
             
+            <!-- Photo 1: Home -->
             <div class="form-group">
-                <label>Photo Proof <span style="color:#ef4444">*</span></label>
-                <input type="file" class="form-control" id="pod-photo" accept="image/*" capture="environment" onchange="previewPhoto(this)" data-testid="pod-photo-input"/>
-                <img id="photo-preview" class="photo-preview" alt="Preview"/>
-                <p class="pod-required">Photo is required for delivery completion</p>
+                <label>📸 Photo 1: Picture of Home <span style="color:#ef4444">*</span></label>
+                <input type="file" class="form-control" id="pod-photo-home" accept="image/*" capture="environment" onchange="previewPhoto(this, 'preview-home')" data-testid="pod-photo-home"/>
+                <img id="preview-home" class="photo-preview" alt="Home Preview"/>
+                <p class="text-sm text-gray">Take a clear photo of the customer's home/building</p>
+            </div>
+            
+            <!-- Photo 2: Address -->
+            <div class="form-group">
+                <label>📸 Photo 2: Picture of Address <span style="color:#ef4444">*</span></label>
+                <input type="file" class="form-control" id="pod-photo-address" accept="image/*" capture="environment" onchange="previewPhoto(this, 'preview-address')" data-testid="pod-photo-address"/>
+                <img id="preview-address" class="photo-preview" alt="Address Preview"/>
+                <p class="text-sm text-gray">Capture visible house number or address sign</p>
+            </div>
+            
+            <!-- Photo 3: Package at Door -->
+            <div class="form-group">
+                <label>📸 Photo 3: Package at Door <span style="color:#ef4444">*</span></label>
+                <input type="file" class="form-control" id="pod-photo-package" accept="image/*" capture="environment" onchange="previewPhoto(this, 'preview-package')" data-testid="pod-photo-package"/>
+                <img id="preview-package" class="photo-preview" alt="Package Preview"/>
+                <p class="text-sm text-gray">Show package placed at the door/entrance</p>
             </div>
             
             <div class="form-group" id="signature-group">
@@ -406,13 +423,18 @@ async function verifyQrCode(code){
     }
 }
 
-// POD with mandatory photo
+// POD with 3 mandatory photos
 function openPodModal(orderId){
     document.getElementById('pod-order-id').value=orderId;
     document.getElementById('pod-name').value='';
     document.getElementById('pod-notes').value='';
-    document.getElementById('pod-photo').value='';
-    document.getElementById('photo-preview').style.display='none';
+    // Reset all 3 photo inputs
+    document.getElementById('pod-photo-home').value='';
+    document.getElementById('pod-photo-address').value='';
+    document.getElementById('pod-photo-package').value='';
+    document.getElementById('preview-home').style.display='none';
+    document.getElementById('preview-address').style.display='none';
+    document.getElementById('preview-package').style.display='none';
     document.getElementById('pod-modal').classList.add('active');
     initSignaturePad();
 }
@@ -421,8 +443,8 @@ function closePodModal(){
     document.getElementById('pod-modal').classList.remove('active');
 }
 
-function previewPhoto(input){
-    const preview=document.getElementById('photo-preview');
+function previewPhoto(input, previewId){
+    const preview=document.getElementById(previewId);
     if(input.files && input.files[0]){
         const reader=new FileReader();
         reader.onload=function(e){
@@ -542,43 +564,64 @@ async function submitPod(){
     const orderId=document.getElementById('pod-order-id').value;
     const name=document.getElementById('pod-name').value;
     const notes=document.getElementById('pod-notes').value;
-    const photoInput=document.getElementById('pod-photo');
     
-    // Validate photo - MANDATORY
-    if(!photoInput.files || !photoInput.files[0]){
-        showAlert('alert-area','danger','Photo proof is required! Please take a photo.');
+    // Get all 3 photo inputs
+    const photoHomeInput=document.getElementById('pod-photo-home');
+    const photoAddressInput=document.getElementById('pod-photo-address');
+    const photoPackageInput=document.getElementById('pod-photo-package');
+    
+    // Validate all 3 photos - MANDATORY
+    if(!photoHomeInput.files || !photoHomeInput.files[0]){
+        showAlert('alert-area','danger','Photo of HOME is required! Please take a photo.');
+        return;
+    }
+    if(!photoAddressInput.files || !photoAddressInput.files[0]){
+        showAlert('alert-area','danger','Photo of ADDRESS is required! Please take a photo.');
+        return;
+    }
+    if(!photoPackageInput.files || !photoPackageInput.files[0]){
+        showAlert('alert-area','danger','Photo of PACKAGE at door is required! Please take a photo.');
         return;
     }
     
-    // Read photo as base64
-    const photoBase64=await new Promise((resolve,reject)=>{
-        const reader=new FileReader();
-        reader.onload=()=>resolve(reader.result);
-        reader.onerror=reject;
-        reader.readAsDataURL(photoInput.files[0]);
+    // Helper to read file as base64
+    const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
     });
     
-    // Get signature (optional)
-    const signatureBase64=getSignatureData();
-    
-    try{
-        showAlert('alert-area','info','Uploading proof of delivery...');
+    try {
+        showAlert('alert-area','info','Uploading 3 photos... Please wait.');
         
-        const payload={
-            recipientName:name || null,
-            photoBase64:photoBase64,
-            signatureBase64:signatureBase64,
-            notes:notes || null
+        // Read all 3 photos as base64
+        const [photoHomeBase64, photoAddressBase64, photoPackageBase64] = await Promise.all([
+            readFileAsBase64(photoHomeInput.files[0]),
+            readFileAsBase64(photoAddressInput.files[0]),
+            readFileAsBase64(photoPackageInput.files[0])
+        ]);
+        
+        // Get signature (optional)
+        const signatureBase64 = getSignatureData();
+        
+        const payload = {
+            recipientName: name || null,
+            photoHomeBase64: photoHomeBase64,
+            photoAddressBase64: photoAddressBase64,
+            photoPackageBase64: photoPackageBase64,
+            signatureBase64: signatureBase64,
+            notes: notes || null
         };
         
-        const result=await ApiService.post(`/driver-portal/deliveries/${orderId}/pod`,payload);
+        const result = await ApiService.post(`/driver-portal/deliveries/${orderId}/pod`, payload);
         
         scannedSet.delete(parseInt(orderId));
         closePodModal();
-        showAlert('alert-area','success','✓ Delivery completed! POD uploaded successfully.');
+        showAlert('alert-area','success','✓ Delivery completed! All 3 POD photos uploaded.');
         loadDeliveries();
-    }catch(e){
-        showAlert('alert-area','danger',e.message || 'Failed to submit POD');
+    } catch(e) {
+        showAlert('alert-area','danger', e.message || 'Failed to submit POD');
     }
 }
 

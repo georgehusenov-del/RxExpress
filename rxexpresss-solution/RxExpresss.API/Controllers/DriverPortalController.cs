@@ -140,22 +140,52 @@ public class DriverPortalController : ControllerBase
         var order = await _orders.Query().FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driver.Id);
         if (order == null) return NotFound(new { detail = "Order not found" });
         
-        // Photo is MANDATORY
-        if (string.IsNullOrEmpty(dto.PhotoBase64))
+        // Check for new 3-photo format or legacy single photo
+        bool hasNewPhotos = !string.IsNullOrEmpty(dto.PhotoHomeBase64) || 
+                           !string.IsNullOrEmpty(dto.PhotoAddressBase64) || 
+                           !string.IsNullOrEmpty(dto.PhotoPackageBase64);
+        
+        if (hasNewPhotos)
+        {
+            // New format: 3 required photos
+            if (string.IsNullOrEmpty(dto.PhotoHomeBase64))
+                return BadRequest(new { detail = "Photo of home is required" });
+            if (string.IsNullOrEmpty(dto.PhotoAddressBase64))
+                return BadRequest(new { detail = "Photo of address is required" });
+            if (string.IsNullOrEmpty(dto.PhotoPackageBase64))
+                return BadRequest(new { detail = "Photo of package at door is required" });
+            
+            try
+            {
+                order.PhotoHomeUrl = await SavePhotoAsync(dto.PhotoHomeBase64, order.OrderNumber, "home");
+                order.PhotoAddressUrl = await SavePhotoAsync(dto.PhotoAddressBase64, order.OrderNumber, "addr");
+                order.PhotoPackageUrl = await SavePhotoAsync(dto.PhotoPackageBase64, order.OrderNumber, "pkg");
+                // Set legacy PhotoUrl to package photo for backward compatibility
+                order.PhotoUrl = order.PhotoPackageUrl;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save POD photos for order {OrderId}", id);
+                return BadRequest(new { detail = "Failed to save photos. Please try again." });
+            }
+        }
+        else if (!string.IsNullOrEmpty(dto.PhotoBase64))
+        {
+            // Legacy single photo format
+            try
+            {
+                var photoPath = await SavePhotoAsync(dto.PhotoBase64, order.OrderNumber, "pod");
+                order.PhotoUrl = photoPath;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save POD photo for order {OrderId}", id);
+                return BadRequest(new { detail = "Failed to save photo. Please try again." });
+            }
+        }
+        else
         {
             return BadRequest(new { detail = "Photo proof is required for delivery completion" });
-        }
-        
-        // Save photo to filesystem
-        try
-        {
-            var photoPath = await SavePhotoAsync(dto.PhotoBase64, order.OrderNumber);
-            order.PhotoUrl = photoPath;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save POD photo for order {OrderId}", id);
-            return BadRequest(new { detail = "Failed to save photo. Please try again." });
         }
         
         // Signature is optional (based on delivery instructions like "leave at door")
@@ -184,10 +214,18 @@ public class DriverPortalController : ControllerBase
         await _orders.UpdateAsync(order);
         await _drivers.UpdateAsync(driver);
         
-        return Ok(new { success = true, message = "Delivery completed with POD", photoUrl = order.PhotoUrl, signatureUrl = order.SignatureUrl });
+        return Ok(new { 
+            success = true, 
+            message = "Delivery completed with POD", 
+            photoUrl = order.PhotoUrl,
+            photoHomeUrl = order.PhotoHomeUrl,
+            photoAddressUrl = order.PhotoAddressUrl,
+            photoPackageUrl = order.PhotoPackageUrl,
+            signatureUrl = order.SignatureUrl 
+        });
     }
     
-    private async Task<string> SavePhotoAsync(string base64Data, string orderNumber)
+    private async Task<string> SavePhotoAsync(string base64Data, string orderNumber, string photoType = "pod")
     {
         // Remove data URL prefix if present
         var base64 = base64Data;
@@ -197,7 +235,7 @@ public class DriverPortalController : ControllerBase
         }
         
         var bytes = Convert.FromBase64String(base64);
-        var fileName = $"pod_{orderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.jpg";
+        var fileName = $"{photoType}_{orderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.jpg";
         
         // Save to wwwroot/pod folder
         var podFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "pod");

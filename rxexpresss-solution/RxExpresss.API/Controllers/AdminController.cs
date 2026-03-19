@@ -97,7 +97,8 @@ public class AdminController : ControllerBase
                 o.DeliveryType, o.Status, o.DriverId, o.DriverName,
                 o.CopayAmount, o.CopayCollected, o.DeliveryFee,
                 o.IsRefrigerated, o.CreatedAt, o.UpdatedAt,
-                o.PhotoUrl, o.SignatureUrl, o.RecipientNameSigned, o.DeliveryNotes, o.ActualDeliveryTime
+                o.PhotoUrl, o.PhotoHomeUrl, o.PhotoAddressUrl, o.PhotoPackageUrl,
+                o.SignatureUrl, o.RecipientNameSigned, o.DeliveryNotes, o.ActualDeliveryTime
             })
             .ToListAsync();
         return Ok(new { orders, total });

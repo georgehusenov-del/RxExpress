@@ -202,12 +202,25 @@ async function showDetail(id){
     if (o.status === 'delivered') {
         podSection = `
             <div class="pod-section mt-3" style="padding-top:16px;border-top:1px solid var(--border)">
-                <h4 style="margin-bottom:12px;color:var(--primary)">📷 Proof of Delivery</h4>
+                <h4 style="margin-bottom:12px;color:var(--primary)">📷 Proof of Delivery (3 Photos)</h4>
                 <div class="d-flex gap-3" style="flex-wrap:wrap">
-                    ${o.photoUrl ? `<div>
+                    ${o.photoHomeUrl ? `<div>
+                        <p class="text-sm text-gray mb-1">📷 1. Home</p>
+                        <img src="${o.photoHomeUrl}" alt="Home Photo" style="max-width:150px;max-height:120px;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="window.open('${o.photoHomeUrl}','_blank')"/>
+                    </div>` : ''}
+                    ${o.photoAddressUrl ? `<div>
+                        <p class="text-sm text-gray mb-1">📷 2. Address</p>
+                        <img src="${o.photoAddressUrl}" alt="Address Photo" style="max-width:150px;max-height:120px;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="window.open('${o.photoAddressUrl}','_blank')"/>
+                    </div>` : ''}
+                    ${o.photoPackageUrl ? `<div>
+                        <p class="text-sm text-gray mb-1">📷 3. Package</p>
+                        <img src="${o.photoPackageUrl}" alt="Package Photo" style="max-width:150px;max-height:120px;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="window.open('${o.photoPackageUrl}','_blank')"/>
+                    </div>` : ''}
+                    ${!o.photoHomeUrl && !o.photoAddressUrl && !o.photoPackageUrl && o.photoUrl ? `<div>
                         <p class="text-sm text-gray mb-1">Delivery Photo</p>
                         <img src="${o.photoUrl}" alt="POD Photo" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="window.open('${o.photoUrl}','_blank')"/>
-                    </div>` : '<p class="text-gray">No photo available</p>'}
+                    </div>` : ''}
+                    ${!o.photoHomeUrl && !o.photoAddressUrl && !o.photoPackageUrl && !o.photoUrl ? '<p class="text-gray">No photos available</p>' : ''}
                     ${o.signatureUrl ? `<div>
                         <p class="text-sm text-gray mb-1">Signature</p>
                         <img src="${o.signatureUrl}" alt="Signature" style="max-width:200px;max-height:80px;border-radius:8px;border:1px solid var(--border);background:#fafafa"/>

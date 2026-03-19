@@ -135,7 +135,7 @@ public class OrdersController : ControllerBase
         if (pharmacyId.HasValue) query = query.Where(o => o.PharmacyId == pharmacyId.Value);
         var total = await query.CountAsync();
         var orders = await query.OrderByDescending(o => o.CreatedAt).Skip(skip).Take(limit)
-            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyId, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.City, o.State, o.PostalCode, o.DriverId, o.DriverName, o.Status, o.DeliveryFee, o.TotalAmount, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.IsRefrigerated, o.PhotoUrl, o.SignatureUrl, o.RecipientNameSigned, o.ActualDeliveryTime, o.CreatedAt, o.UpdatedAt })
+            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyId, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.City, o.State, o.PostalCode, o.DriverId, o.DriverName, o.Status, o.DeliveryFee, o.TotalAmount, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.IsRefrigerated, o.PhotoUrl, o.PhotoHomeUrl, o.PhotoAddressUrl, o.PhotoPackageUrl, o.SignatureUrl, o.RecipientNameSigned, o.ActualDeliveryTime, o.CreatedAt, o.UpdatedAt })
             .ToListAsync();
         return Ok(new { orders, total });
     }

@@ -49,9 +49,12 @@ public class Order
     public bool RequiresPhotoProof { get; set; } = true;
     public bool IsRefrigerated { get; set; } = false; // Blue/frost highlight for cold chain items
 
-    // POD
+    // POD - Proof of Delivery (3 required photos)
     public string? SignatureUrl { get; set; }
-    public string? PhotoUrl { get; set; }
+    public string? PhotoUrl { get; set; }  // Legacy - kept for backward compatibility
+    public string? PhotoHomeUrl { get; set; }  // Photo 1: Picture of the home/house
+    public string? PhotoAddressUrl { get; set; }  // Photo 2: Picture showing address
+    public string? PhotoPackageUrl { get; set; }  // Photo 3: Package in front of home
     public string? RecipientNameSigned { get; set; }
 
     // Pricing
