@@ -16,7 +16,12 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ## Core Features Implemented
 
-### Latest Updates (March 17, 2026)
+### Latest Updates (March 19, 2026)
+- ✅ **POD Folder Location Fix** - Photos now save to Web project's wwwroot/pod (not API), API only returns URLs
+- ✅ **Route Optimization Fix** - No longer returns "Optimization Failed"; gracefully falls back to local optimization when Circuit API fails
+- ✅ **3-Photo POD URLs in API** - All API endpoints now return photoHomeUrl, photoAddressUrl, photoPackageUrl fields
+
+### Updates (March 17, 2026)
 - ✅ **POD (Proof of Delivery) Fix** - PhotoUrl now properly returned in Admin and Pharmacy order lists
 - ✅ **Pharmacy Integration API v1** - Complete REST API for pharmacy software systems to connect
   - `POST /api/v1/orders` - Create delivery orders
@@ -95,7 +100,10 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ## Key Files Reference
 - `/app/rxexpresss-solution/RxExpresss.API/Controllers/IntegrationController.cs` - Integration API
+- `/app/rxexpresss-solution/RxExpresss.API/Controllers/DriverPortalController.cs` - POD submission (saves to Web wwwroot)
+- `/app/rxexpresss-solution/RxExpresss.API/Controllers/RoutesController.cs` - Route optimization with Circuit fallback
 - `/app/rxexpresss-solution/RxExpresss.Core/Entities/ApiKey.cs` - API Key entity
 - `/app/rxexpresss-solution/RxExpresss.Core/Entities/Webhook.cs` - Webhook entity
 - `/app/rxexpresss-solution/RxExpresss.Core/DTOs/IntegrationDtos.cs` - Integration DTOs
 - `/app/rxexpresss-solution/RxExpresss.Web/Views/Home/ApiDocs.cshtml` - API Documentation
+- `/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/` - POD photos storage location
