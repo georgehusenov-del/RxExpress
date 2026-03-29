@@ -232,8 +232,10 @@
             if (u && u.role === 'Driver') {
                 window.location.replace('/Driver/Index');
             } else if (u) {
-                // Logged in but not as driver - show error
-                showError('This login is for drivers only. You are logged in as ' + u.role);
+                // Logged in but not as driver - clear session and show error
+                localStorage.removeItem('rx_token');
+                localStorage.removeItem('rx_user');
+                showError('This login is for drivers only. You were logged in as ' + u.role + '. Please sign in with a driver account.');
             }
         }
 
@@ -268,8 +270,9 @@
                 
                 if (result && result.user) {
                     if (result.user.role !== 'Driver') {
-                        // Not a driver account
-                        ApiService.logout();
+                        // Not a driver account - clear session without redirect
+                        localStorage.removeItem('rx_token');
+                        localStorage.removeItem('rx_user');
                         showError('This login is for drivers only. Please use the main login page.');
                         btn.disabled = false;
                         btn.textContent = 'Sign In';
