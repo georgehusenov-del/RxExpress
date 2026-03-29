@@ -21,7 +21,57 @@
 .retake-btn{margin-top:8px}
 .photo-captured .photo-container{border-color:#22c55e;background:#f0fdf4}
 
+/* Geo-lock styles */
+.geo-lock-warning{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;border-radius:8px;padding:12px;margin-bottom:12px;color:#92400e;font-size:13px;display:flex;align-items:flex-start;gap:10px}
+.geo-lock-warning svg{flex-shrink:0;margin-top:2px}
+.geo-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:8px}
+.geo-status.at-office{background:#dcfce7;color:#15803d}
+.geo-status.away{background:#fef3c7;color:#92400e}
+.geo-status.error{background:#fee2e2;color:#dc2626}
+
 /* Refrigerated items - Blue QR code styling is inline */
+
+/* ========== MOBILE RESPONSIVE STYLES ========== */
+/* Delivery card mobile optimization */
+.delivery-card{background:white;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.dc-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px}
+.dc-details{font-size:14px;line-height:1.6}
+.dc-details > div{margin-bottom:4px}
+.dc-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.dc-qr{font-weight:700;font-size:14px}
+
+/* Mobile breakpoints */
+@@media (max-width: 768px) {
+    .dc-header{flex-direction:column}
+    .dc-header > div:first-child{width:100%}
+    .dc-actions{flex-direction:column}
+    .dc-actions .btn{width:100%;justify-content:center;padding:14px 16px;font-size:15px}
+    .nav-btn{padding:12px 16px;font-size:14px}
+    .stop-badge{width:32px;height:32px;font-size:14px}
+    .modal{margin:8px;max-height:calc(100vh - 16px);width:calc(100% - 16px)}
+    .modal-body{padding:16px}
+    #route-nav .btn{width:100%;justify-content:center}
+    .form-control{font-size:16px;padding:14px 12px} /* Prevent iOS zoom */
+    .btn{padding:14px 16px;font-size:15px}
+    .mb-2 .btn{width:auto;flex:1}
+    .text-sm{font-size:13px}
+}
+
+@@media (max-width: 480px) {
+    .dc-details{font-size:13px}
+    .scan-badge{font-size:10px;padding:2px 6px}
+    .status-legend{gap:4px}
+    .status-legend span{font-size:10px;padding:2px 6px}
+    .photo-container{padding:10px}
+    .btn-camera{padding:14px 20px;font-size:15px}
+    .signature-pad{width:100%}
+}
+
+/* Touch-friendly buttons */
+@@media (hover: none) and (pointer: coarse) {
+    .btn,.nav-btn,.toggle-btn{min-height:44px}
+    .btn-sm{min-height:40px;padding:10px 16px}
+}
 </style>
 
 @section TopbarRight {
@@ -39,9 +89,13 @@
 </div>
 
 <!-- Tabs -->
-<div class="mb-2">
+<div class="mb-2" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
     <button class="btn btn-primary" id="tab-active" onclick="showTab('active')">Active Deliveries</button>
-    <button class="btn btn-outline" id="tab-history" onclick="showTab('history')" style="margin-left:8px">Delivery History</button>
+    <button class="btn btn-outline" id="tab-history" onclick="showTab('history')">Delivery History</button>
+    <div id="geo-status" class="geo-status away" style="margin-left:auto">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 
+        Locating...
+    </div>
 </div>
 
 <div id="active-section">
@@ -219,6 +273,120 @@ let signaturePad=null;
 let isDrawing=false;
 let currentScanAction='verify'; // verify, pickup, intransit, outfordelivery, delivering
 
+// ========== GEO-LOCK FUNCTIONALITY ==========
+let officeLocations = [];
+let currentPosition = null;
+let watchId = null;
+let isAtOffice = false;
+
+// Load office locations for geo-lock
+async function loadOfficeLocations() {
+    try {
+        const result = await ApiService.get('/driver-portal/office-locations');
+        officeLocations = result.offices || [];
+        console.log('Office locations loaded:', officeLocations.length);
+    } catch (e) {
+        console.error('Failed to load office locations:', e);
+    }
+}
+
+// Calculate distance between two lat/lng points (Haversine formula)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in meters
+}
+
+// Check if driver is within radius of any office
+function checkOfficeProximity() {
+    if (!currentPosition || officeLocations.length === 0) {
+        return { isAtOffice: false, nearestOffice: null, distance: Infinity };
+    }
+    
+    let nearest = null;
+    let minDistance = Infinity;
+    
+    for (const office of officeLocations) {
+        const dist = calculateDistance(
+            currentPosition.latitude,
+            currentPosition.longitude,
+            office.latitude,
+            office.longitude
+        );
+        if (dist < minDistance) {
+            minDistance = dist;
+            nearest = office;
+        }
+    }
+    
+    const atOffice = nearest && minDistance <= nearest.radiusMeters;
+    return { isAtOffice: atOffice, nearestOffice: nearest, distance: Math.round(minDistance) };
+}
+
+// Start watching position
+function startGeoTracking() {
+    if (!navigator.geolocation) {
+        console.warn('Geolocation not supported');
+        return;
+    }
+    
+    watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+            currentPosition = {
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy
+            };
+            const result = checkOfficeProximity();
+            isAtOffice = result.isAtOffice;
+            updateGeoStatusUI(result);
+        },
+        (err) => {
+            console.warn('Geo error:', err.message);
+            updateGeoStatusUI({ error: err.message });
+        },
+        { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }
+    );
+}
+
+// Update UI with geo status
+function updateGeoStatusUI(result) {
+    const statusEl = document.getElementById('geo-status');
+    if (!statusEl) return;
+    
+    if (result.error) {
+        statusEl.className = 'geo-status error';
+        statusEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Location unavailable`;
+    } else if (result.isAtOffice) {
+        statusEl.className = 'geo-status at-office';
+        statusEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> At Office: ${result.nearestOffice?.name || 'Office'}`;
+    } else {
+        statusEl.className = 'geo-status away';
+        statusEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${result.distance}m from ${result.nearestOffice?.name || 'office'}`;
+    }
+}
+
+// Check if scan action is allowed based on geo-lock
+function canPerformScan(action, orderStatus) {
+    // Only lock "intransit" action (scan at office) - user requested only office geo-lock
+    if (action === 'intransit') {
+        if (!isAtOffice) {
+            const result = checkOfficeProximity();
+            const msg = result.nearestOffice 
+                ? `You must be at ${result.nearestOffice.name} to scan. Currently ${result.distance}m away.`
+                : 'You must be at the office to scan. Enable location services.';
+            showAlert('alert-area', 'warning', `📍 ${msg}`);
+            return false;
+        }
+    }
+    return true;
+}
+
 function showTab(tab){
     document.getElementById('tab-active').className='btn '+(tab==='active'?'btn-primary':'btn-outline');
     document.getElementById('tab-history').className='btn '+(tab==='history'?'btn-primary':'btn-outline');
@@ -361,8 +529,13 @@ async function loadHistory(){
     }
 }
 
-// QR Scanner - Updated for action-based scanning
+// QR Scanner - Updated for action-based scanning with geo-lock
 function openScanModal(orderId, expectedQr, action){
+    // Check geo-lock for office scan
+    if (!canPerformScan(action)) {
+        return; // Geo-lock prevented scan
+    }
+    
     document.getElementById('scan-order-id').value=orderId;
     document.getElementById('scan-expected-qr').value=expectedQr;
     document.getElementById('scan-action').value=action;
@@ -757,7 +930,14 @@ async function copay(id){
     loadDeliveries();
 }
 
-loadProfile();
-loadDeliveries();
+// Initialize geo-tracking and load data
+async function init() {
+    await loadOfficeLocations();
+    startGeoTracking();
+    loadProfile();
+    loadDeliveries();
+}
+
+init();
 </script>
 }

@@ -18,13 +18,16 @@ public class AdminController : ControllerBase
     private readonly IRepository<Pharmacy> _pharmacies;
     private readonly IRepository<DriverProfile> _drivers;
     private readonly IRepository<ApiKey> _apiKeys;
+    private readonly IRepository<OfficeLocation> _officeLocations;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public AdminController(IRepository<Order> orders, IRepository<Pharmacy> pharmacies,
-        IRepository<DriverProfile> drivers, IRepository<ApiKey> apiKeys, UserManager<ApplicationUser> userManager)
+        IRepository<DriverProfile> drivers, IRepository<ApiKey> apiKeys, 
+        IRepository<OfficeLocation> officeLocations, UserManager<ApplicationUser> userManager)
     {
         _orders = orders; _pharmacies = pharmacies;
-        _drivers = drivers; _apiKeys = apiKeys; _userManager = userManager;
+        _drivers = drivers; _apiKeys = apiKeys; 
+        _officeLocations = officeLocations; _userManager = userManager;
     }
 
     [HttpGet("dashboard")]
@@ -381,6 +384,98 @@ public class AdminController : ControllerBase
         await _apiKeys.UpdateAsync(apiKey);
         
         return Ok(new { message = $"API key {(apiKey.IsActive ? "activated" : "deactivated")}", isActive = apiKey.IsActive });
+    }
+
+    #endregion
+
+    #region Office Locations Management
+
+    [HttpGet("office-locations")]
+    public async Task<IActionResult> GetOfficeLocations()
+    {
+        var offices = await _officeLocations.Query()
+            .OrderByDescending(o => o.IsDefault)
+            .ThenBy(o => o.Name)
+            .Select(o => new { o.Id, o.Name, o.Address, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.RadiusMeters, o.IsActive, o.IsDefault, o.CreatedAt })
+            .ToListAsync();
+        return Ok(new { offices });
+    }
+
+    [HttpPost("office-locations")]
+    public async Task<IActionResult> CreateOfficeLocation([FromBody] CreateOfficeLocationDto dto)
+    {
+        var office = new OfficeLocation
+        {
+            Name = dto.Name,
+            Address = dto.Address,
+            City = dto.City,
+            State = dto.State,
+            PostalCode = dto.PostalCode,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
+            RadiusMeters = dto.RadiusMeters ?? 100,
+            IsActive = true,
+            IsDefault = dto.IsDefault ?? false
+        };
+
+        // If this is set as default, unset other defaults
+        if (office.IsDefault)
+        {
+            var existingDefaults = await _officeLocations.Query().Where(o => o.IsDefault).ToListAsync();
+            foreach (var existing in existingDefaults)
+            {
+                existing.IsDefault = false;
+                await _officeLocations.UpdateAsync(existing);
+            }
+        }
+
+        await _officeLocations.AddAsync(office);
+        return Ok(new { message = "Office location created", office = new { office.Id, office.Name, office.Address, office.Latitude, office.Longitude } });
+    }
+
+    [HttpPut("office-locations/{id}")]
+    public async Task<IActionResult> UpdateOfficeLocation(int id, [FromBody] UpdateOfficeLocationDto dto)
+    {
+        var office = await _officeLocations.GetByIdAsync(id);
+        if (office == null) return NotFound(new { detail = "Office location not found" });
+
+        if (!string.IsNullOrEmpty(dto.Name)) office.Name = dto.Name;
+        if (!string.IsNullOrEmpty(dto.Address)) office.Address = dto.Address;
+        if (!string.IsNullOrEmpty(dto.City)) office.City = dto.City;
+        if (!string.IsNullOrEmpty(dto.State)) office.State = dto.State;
+        if (!string.IsNullOrEmpty(dto.PostalCode)) office.PostalCode = dto.PostalCode;
+        if (dto.Latitude.HasValue) office.Latitude = dto.Latitude.Value;
+        if (dto.Longitude.HasValue) office.Longitude = dto.Longitude.Value;
+        if (dto.RadiusMeters.HasValue) office.RadiusMeters = dto.RadiusMeters.Value;
+        if (dto.IsActive.HasValue) office.IsActive = dto.IsActive.Value;
+        
+        if (dto.IsDefault == true)
+        {
+            var existingDefaults = await _officeLocations.Query().Where(o => o.IsDefault && o.Id != id).ToListAsync();
+            foreach (var existing in existingDefaults)
+            {
+                existing.IsDefault = false;
+                await _officeLocations.UpdateAsync(existing);
+            }
+            office.IsDefault = true;
+        }
+        
+        office.UpdatedAt = DateTime.UtcNow;
+        await _officeLocations.UpdateAsync(office);
+        return Ok(new { message = "Office location updated", office = new { office.Id, office.Name, office.Latitude, office.Longitude } });
+    }
+
+    [HttpDelete("office-locations/{id}")]
+    public async Task<IActionResult> DeleteOfficeLocation(int id)
+    {
+        var office = await _officeLocations.GetByIdAsync(id);
+        if (office == null) return NotFound(new { detail = "Office location not found" });
+        
+        if (office.IsDefault)
+            return BadRequest(new { detail = "Cannot delete default office. Set another office as default first." });
+        
+        await _officeLocations.DeleteAsync(office);
+        return Ok(new { message = "Office location deleted" });
     }
 
     #endregion

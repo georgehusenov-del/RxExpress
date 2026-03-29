@@ -1,0 +1,293 @@
+@{ 
+    ViewData["Title"] = "Driver Login"; 
+    Layout = null; // No layout - standalone mobile page
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="theme-color" content="#1e293b"/>
+    <title>RX Expresss - Driver Login</title>
+    <link rel="manifest" href="/manifest.json"/>
+    <style>
+        :root {
+            --primary: #14b8a6;
+            --primary-dark: #0d9488;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #22c55a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { 
+            height: 100%; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .logo p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .driver-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(20, 184, 166, 0.15);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+        }
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(20, 184, 166, 0.3);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .alert {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+        .alert.show { display: block; }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @@keyframes spin { to { transform: rotate(360deg); } }
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        /* Mobile optimizations */
+        @@media (max-width: 480px) {
+            .container { padding: 16px; }
+            .login-card { padding: 24px 20px; border-radius: 12px; }
+            .logo h1 { font-size: 24px; }
+        }
+        /* Add to homescreen prompt */
+        .install-prompt {
+            background: rgba(20, 184, 166, 0.1);
+            border: 1px dashed var(--primary);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-card">
+            <div class="logo">
+                <h1>RX Expresss</h1>
+                <p>Pharmacy Delivery Service</p>
+                <div class="driver-badge">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    Driver Portal
+                </div>
+            </div>
+
+            <div id="install-prompt" class="install-prompt" style="display:none">
+                <strong>Tip:</strong> Add to Home Screen for quick access!
+            </div>
+
+            <div id="alert" class="alert alert-danger"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" placeholder="Enter your email" required autocomplete="email" inputmode="email" data-testid="driver-login-email"/>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" placeholder="Enter your password" required autocomplete="current-password" data-testid="driver-login-password"/>
+                </div>
+                <button type="submit" class="btn btn-primary" id="login-btn" data-testid="driver-login-submit">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="footer">
+                <p>Need help? Contact your dispatcher</p>
+                <p style="margin-top:8px"><a href="/">Back to Main Site</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api-service.js"></script>
+    <script>
+        // Check if already logged in as driver
+        if (ApiService.isLoggedIn()) {
+            const u = ApiService.getUser();
+            if (u && u.role === 'Driver') {
+                window.location.replace('/Driver/Index');
+            } else if (u) {
+                // Logged in but not as driver - show error
+                showError('This login is for drivers only. You are logged in as ' + u.role);
+            }
+        }
+
+        // Show install prompt on mobile
+        if ('standalone' in navigator && !navigator.standalone && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            document.getElementById('install-prompt').style.display = 'block';
+        }
+
+        function showError(msg) {
+            const alert = document.getElementById('alert');
+            alert.textContent = msg;
+            alert.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('alert').classList.remove('show');
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+            
+            const btn = document.getElementById('login-btn');
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Signing in...';
+            
+            try {
+                const result = await ApiService.login(email, password);
+                
+                if (result && result.user) {
+                    if (result.user.role !== 'Driver') {
+                        // Not a driver account
+                        ApiService.logout();
+                        showError('This login is for drivers only. Please use the main login page.');
+                        btn.disabled = false;
+                        btn.textContent = 'Sign In';
+                        return;
+                    }
+                    // Success - redirect to driver dashboard
+                    window.location.replace('/Driver/Index');
+                } else {
+                    showError('Login failed. Please check your credentials.');
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In';
+                }
+            } catch (err) {
+                showError(err.message || 'Login failed. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        });
+    </script>
+</body>
+</html>

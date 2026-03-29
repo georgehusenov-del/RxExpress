@@ -15,17 +15,20 @@ public class DriverPortalController : ControllerBase
 {
     private readonly IRepository<DriverProfile> _drivers;
     private readonly IRepository<Order> _orders;
+    private readonly IRepository<OfficeLocation> _officeLocations;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<DriverPortalController> _logger;
 
     public DriverPortalController(
         IRepository<DriverProfile> drivers, 
         IRepository<Order> orders,
+        IRepository<OfficeLocation> officeLocations,
         IWebHostEnvironment env,
         ILogger<DriverPortalController> logger)
     {
         _drivers = drivers; 
         _orders = orders;
+        _officeLocations = officeLocations;
         _env = env;
         _logger = logger;
     }
@@ -35,6 +38,19 @@ public class DriverPortalController : ControllerBase
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
             ?? User.FindFirst("sub")?.Value;
         return await _drivers.Query().FirstOrDefaultAsync(d => d.UserId == userId);
+    }
+
+    /// <summary>
+    /// Get all active office locations for geo-lock verification
+    /// </summary>
+    [HttpGet("office-locations")]
+    public async Task<IActionResult> GetOfficeLocations()
+    {
+        var offices = await _officeLocations.Query()
+            .Where(o => o.IsActive)
+            .Select(o => new { o.Id, o.Name, o.Address, o.City, o.Latitude, o.Longitude, o.RadiusMeters, o.IsDefault })
+            .ToListAsync();
+        return Ok(new { offices });
     }
 
     [HttpGet("profile")]

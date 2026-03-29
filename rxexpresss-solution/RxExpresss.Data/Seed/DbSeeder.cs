@@ -175,6 +175,25 @@ public static class DbSeeder
             await context.SaveChangesAsync();
         }
 
+        // Seed Office Locations
+        if (!await context.OfficeLocations.AnyAsync())
+        {
+            context.OfficeLocations.Add(new OfficeLocation
+            {
+                Name = "Main Office - NYC Hub",
+                Address = "100 Broadway",
+                City = "New York",
+                State = "NY",
+                PostalCode = "10005",
+                Latitude = 40.7128,  // Downtown Manhattan - change this to your actual office
+                Longitude = -74.0060,
+                RadiusMeters = 100,
+                IsActive = true,
+                IsDefault = true
+            });
+            await context.SaveChangesAsync();
+        }
+
         // NOTE: Orders and Gigs are NOT seeded - they are created automatically:
         // - Orders are created by pharmacies via the Order Creation flow
         // - Gigs (Route Plans) are auto-created when orders are submitted based on service zone

@@ -20,6 +20,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ServiceZone> ServiceZones => Set<ServiceZone>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<Webhook> Webhooks => Set<Webhook>();
+    public DbSet<OfficeLocation> OfficeLocations => Set<OfficeLocation>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -147,6 +148,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.Property(w => w.Url).HasMaxLength(500);
             e.Property(w => w.Events).HasMaxLength(500);
             e.Property(w => w.Secret).HasMaxLength(128);
+        });
+
+        builder.Entity<OfficeLocation>(e =>
+        {
+            e.HasKey(o => o.Id);
+            e.Property(o => o.Name).HasMaxLength(200);
+            e.Property(o => o.Address).HasMaxLength(300);
+            e.Property(o => o.City).HasMaxLength(100);
+            e.Property(o => o.State).HasMaxLength(50);
+            e.Property(o => o.PostalCode).HasMaxLength(20);
         });
     }
 }

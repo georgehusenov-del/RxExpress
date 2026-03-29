@@ -175,3 +175,31 @@ public class CreateApiKeyForPharmacyDto
     public int PharmacyId { get; set; }
     public string? Name { get; set; }
 }
+
+// Office Location Management
+public class CreateOfficeLocationDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+    public int? RadiusMeters { get; set; }
+    public bool? IsDefault { get; set; }
+}
+
+public class UpdateOfficeLocationDto
+{
+    public string? Name { get; set; }
+    public string? Address { get; set; }
+    public string? City { get; set; }
+    public string? State { get; set; }
+    public string? PostalCode { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public int? RadiusMeters { get; set; }
+    public bool? IsActive { get; set; }
+    public bool? IsDefault { get; set; }
+}

@@ -1,0 +1,336 @@
+@{ Layout = "_SidebarLayout"; }
+<style>
+.office-card{background:white;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.office-card.default{border-left:4px solid var(--primary)}
+.office-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.office-name{font-weight:600;font-size:16px;display:flex;align-items:center;gap:8px}
+.default-badge{background:var(--primary);color:white;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.inactive-badge{background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.office-address{color:var(--text-muted);font-size:14px;margin-bottom:8px}
+.office-coords{font-size:12px;color:var(--text-muted);font-family:monospace;background:#f8fafc;padding:4px 8px;border-radius:4px;display:inline-block}
+.office-radius{font-size:13px;color:var(--text-muted);margin-top:8px}
+.action-btns{display:flex;gap:8px}
+.stat-row{display:flex;gap:16px;margin-bottom:24px}
+.stat-box{background:white;border:1px solid var(--border);border-radius:12px;padding:16px 20px;flex:1}
+.stat-box h4{margin:0;font-size:13px;color:var(--text-muted);font-weight:500}
+.stat-box .value{font-size:28px;font-weight:700;color:var(--primary);margin-top:4px}
+</style>
+
+<div id="alert-area"></div>
+
+<div class="d-flex justify-between items-center mb-3">
+    <div>
+        <p class="text-sm text-gray">Manage office/hub locations for driver geo-lock scanning</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline btn-sm" onclick="load()" data-testid="refresh-offices">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+            Refresh
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="showAddModal()" data-testid="add-office-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Office
+        </button>
+    </div>
+</div>
+
+<div class="stat-row">
+    <div class="stat-box">
+        <h4>Total Offices</h4>
+        <div class="value" id="total-offices">-</div>
+    </div>
+    <div class="stat-box">
+        <h4>Active Offices</h4>
+        <div class="value" id="active-offices">-</div>
+    </div>
+    <div class="stat-box">
+        <h4>Default Office</h4>
+        <div class="value" id="default-office" style="font-size:16px;color:var(--text)">-</div>
+    </div>
+</div>
+
+<div id="offices-list">
+    <div class="text-center py-3"><span class="spinner"></span> Loading...</div>
+</div>
+
+<!-- Add/Edit Office Modal -->
+<div class="modal-overlay" id="office-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modal-title">Add Office Location</h3>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="edit-id"/>
+            
+            <div class="form-group">
+                <label>Office Name *</label>
+                <input type="text" class="form-control" id="office-name" placeholder="e.g., Main Office - NYC Hub" required data-testid="office-name"/>
+            </div>
+            
+            <div class="form-group">
+                <label>Street Address *</label>
+                <input type="text" class="form-control" id="office-address" placeholder="e.g., 100 Broadway" required data-testid="office-address"/>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px">
+                <div class="form-group">
+                    <label>City *</label>
+                    <input type="text" class="form-control" id="office-city" placeholder="New York" required data-testid="office-city"/>
+                </div>
+                <div class="form-group">
+                    <label>State *</label>
+                    <input type="text" class="form-control" id="office-state" placeholder="NY" required data-testid="office-state"/>
+                </div>
+                <div class="form-group">
+                    <label>Postal Code</label>
+                    <input type="text" class="form-control" id="office-postal" placeholder="10005" data-testid="office-postal"/>
+                </div>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="form-group">
+                    <label>Latitude *</label>
+                    <input type="number" step="any" class="form-control" id="office-lat" placeholder="40.7128" required data-testid="office-lat"/>
+                </div>
+                <div class="form-group">
+                    <label>Longitude *</label>
+                    <input type="number" step="any" class="form-control" id="office-lng" placeholder="-74.0060" required data-testid="office-lng"/>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Geo-Lock Radius (meters)</label>
+                <input type="number" class="form-control" id="office-radius" value="100" min="10" max="500" data-testid="office-radius"/>
+                <small class="text-gray">Drivers must be within this radius to scan at office (default: 100m)</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="d-flex items-center gap-2">
+                    <input type="checkbox" id="office-default" data-testid="office-default"/>
+                    Set as default office
+                </label>
+            </div>
+            
+            <button class="btn btn-success" style="width:100%" id="geocode-btn" onclick="geocodeAddress()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Get Coordinates from Address
+            </button>
+            
+            <div class="mt-2 d-flex gap-2">
+                <button class="btn btn-outline" onclick="closeModal()" style="flex:1">Cancel</button>
+                <button class="btn btn-primary" onclick="saveOffice()" style="flex:1" id="save-btn" data-testid="save-office-btn">Save Office</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+if(!ApiService.requireAuth('Admin'))throw'';
+
+async function load() {
+    try {
+        const result = await ApiService.get('/admin/office-locations');
+        const offices = result.offices || [];
+        
+        document.getElementById('total-offices').textContent = offices.length;
+        document.getElementById('active-offices').textContent = offices.filter(o => o.isActive).length;
+        
+        const defaultOffice = offices.find(o => o.isDefault);
+        document.getElementById('default-office').textContent = defaultOffice?.name || 'None set';
+        
+        if (!offices.length) {
+            document.getElementById('offices-list').innerHTML = `
+                <div class="empty-state">
+                    <h3>No Office Locations</h3>
+                    <p>Add your first office location to enable geo-lock scanning for drivers.</p>
+                    <button class="btn btn-primary" onclick="showAddModal()">Add Office</button>
+                </div>
+            `;
+            return;
+        }
+        
+        document.getElementById('offices-list').innerHTML = offices.map(o => `
+            <div class="office-card ${o.isDefault ? 'default' : ''}">
+                <div class="office-header">
+                    <div>
+                        <div class="office-name">
+                            ${o.name}
+                            ${o.isDefault ? '<span class="default-badge">Default</span>' : ''}
+                            ${!o.isActive ? '<span class="inactive-badge">Inactive</span>' : ''}
+                        </div>
+                        <div class="office-address">${o.address}, ${o.city}, ${o.state} ${o.postalCode || ''}</div>
+                        <div class="office-coords">📍 ${o.latitude.toFixed(6)}, ${o.longitude.toFixed(6)}</div>
+                        <div class="office-radius">Geo-lock radius: ${o.radiusMeters}m</div>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn btn-outline btn-sm" onclick="editOffice(${o.id})" data-testid="edit-office-${o.id}">Edit</button>
+                        ${!o.isDefault ? `<button class="btn btn-danger btn-sm" onclick="deleteOffice(${o.id})" data-testid="delete-office-${o.id}">Delete</button>` : ''}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-2">
+                    <a href="https://www.google.com/maps?q=${o.latitude},${o.longitude}" target="_blank" class="btn btn-outline btn-sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        View on Map
+                    </a>
+                    ${!o.isDefault ? `<button class="btn btn-outline btn-sm" onclick="setDefault(${o.id})">Set as Default</button>` : ''}
+                    <button class="btn btn-outline btn-sm" onclick="toggleActive(${o.id}, ${o.isActive})">${o.isActive ? 'Deactivate' : 'Activate'}</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        showAlert('alert-area', 'danger', 'Failed to load offices: ' + e.message);
+    }
+}
+
+let officesCache = [];
+
+async function editOffice(id) {
+    try {
+        const result = await ApiService.get('/admin/office-locations');
+        const office = result.offices.find(o => o.id === id);
+        if (!office) return showAlert('alert-area', 'danger', 'Office not found');
+        
+        document.getElementById('modal-title').textContent = 'Edit Office Location';
+        document.getElementById('edit-id').value = id;
+        document.getElementById('office-name').value = office.name;
+        document.getElementById('office-address').value = office.address;
+        document.getElementById('office-city').value = office.city;
+        document.getElementById('office-state').value = office.state;
+        document.getElementById('office-postal').value = office.postalCode || '';
+        document.getElementById('office-lat').value = office.latitude;
+        document.getElementById('office-lng').value = office.longitude;
+        document.getElementById('office-radius').value = office.radiusMeters;
+        document.getElementById('office-default').checked = office.isDefault;
+        
+        document.getElementById('office-modal').classList.add('active');
+    } catch (e) {
+        showAlert('alert-area', 'danger', e.message);
+    }
+}
+
+function showAddModal() {
+    document.getElementById('modal-title').textContent = 'Add Office Location';
+    document.getElementById('edit-id').value = '';
+    document.getElementById('office-name').value = '';
+    document.getElementById('office-address').value = '';
+    document.getElementById('office-city').value = '';
+    document.getElementById('office-state').value = '';
+    document.getElementById('office-postal').value = '';
+    document.getElementById('office-lat').value = '';
+    document.getElementById('office-lng').value = '';
+    document.getElementById('office-radius').value = '100';
+    document.getElementById('office-default').checked = false;
+    document.getElementById('office-modal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('office-modal').classList.remove('active');
+}
+
+async function saveOffice() {
+    const id = document.getElementById('edit-id').value;
+    const data = {
+        name: document.getElementById('office-name').value.trim(),
+        address: document.getElementById('office-address').value.trim(),
+        city: document.getElementById('office-city').value.trim(),
+        state: document.getElementById('office-state').value.trim(),
+        postalCode: document.getElementById('office-postal').value.trim(),
+        latitude: parseFloat(document.getElementById('office-lat').value),
+        longitude: parseFloat(document.getElementById('office-lng').value),
+        radiusMeters: parseInt(document.getElementById('office-radius').value) || 100,
+        isDefault: document.getElementById('office-default').checked
+    };
+    
+    if (!data.name || !data.address || !data.city || !data.state || isNaN(data.latitude) || isNaN(data.longitude)) {
+        return showAlert('alert-area', 'warning', 'Please fill all required fields');
+    }
+    
+    try {
+        if (id) {
+            await ApiService.put(`/admin/office-locations/${id}`, data);
+            showAlert('alert-area', 'success', 'Office updated successfully');
+        } else {
+            await ApiService.post('/admin/office-locations', data);
+            showAlert('alert-area', 'success', 'Office created successfully');
+        }
+        closeModal();
+        await load();
+    } catch (e) {
+        showAlert('alert-area', 'danger', e.message);
+    }
+}
+
+async function deleteOffice(id) {
+    if (!confirm('Are you sure you want to delete this office?')) return;
+    try {
+        await ApiService.delete(`/admin/office-locations/${id}`);
+        showAlert('alert-area', 'success', 'Office deleted');
+        await load();
+    } catch (e) {
+        showAlert('alert-area', 'danger', e.message);
+    }
+}
+
+async function setDefault(id) {
+    try {
+        await ApiService.put(`/admin/office-locations/${id}`, { isDefault: true });
+        showAlert('alert-area', 'success', 'Default office updated');
+        await load();
+    } catch (e) {
+        showAlert('alert-area', 'danger', e.message);
+    }
+}
+
+async function toggleActive(id, isCurrentlyActive) {
+    try {
+        await ApiService.put(`/admin/office-locations/${id}`, { isActive: !isCurrentlyActive });
+        showAlert('alert-area', 'success', `Office ${isCurrentlyActive ? 'deactivated' : 'activated'}`);
+        await load();
+    } catch (e) {
+        showAlert('alert-area', 'danger', e.message);
+    }
+}
+
+// Simple geocoding using a free service
+async function geocodeAddress() {
+    const address = document.getElementById('office-address').value.trim();
+    const city = document.getElementById('office-city').value.trim();
+    const state = document.getElementById('office-state').value.trim();
+    
+    if (!address || !city) {
+        return showAlert('alert-area', 'warning', 'Please enter address and city first');
+    }
+    
+    const fullAddress = `${address}, ${city}, ${state}`;
+    
+    try {
+        const btn = document.getElementById('geocode-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="width:16px;height:16px"></span> Looking up...';
+        
+        // Using Nominatim (OpenStreetMap) free geocoding
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+        const results = await response.json();
+        
+        if (results && results.length > 0) {
+            document.getElementById('office-lat').value = parseFloat(results[0].lat).toFixed(6);
+            document.getElementById('office-lng').value = parseFloat(results[0].lon).toFixed(6);
+            showAlert('alert-area', 'success', 'Coordinates found! Please verify on map.');
+        } else {
+            showAlert('alert-area', 'warning', 'Could not find coordinates. Please enter manually.');
+        }
+        
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Get Coordinates from Address';
+    } catch (e) {
+        showAlert('alert-area', 'danger', 'Geocoding failed: ' + e.message);
+        document.getElementById('geocode-btn').disabled = false;
+        document.getElementById('geocode-btn').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Get Coordinates from Address';
+    }
+}
+
+load();
+</script>
+}

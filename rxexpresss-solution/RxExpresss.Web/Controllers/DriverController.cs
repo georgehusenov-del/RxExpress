@@ -19,5 +19,14 @@ public class DriverController : Controller
         ViewData["ApiBaseUrl"] = HttpContext.Items["ApiBaseUrl"]?.ToString() ?? "/api";
     }
 
+    /// <summary>
+    /// Separate mobile-friendly login page for drivers
+    /// </summary>
+    public IActionResult Login() 
+    { 
+        ViewData["Title"] = "Driver Login";
+        return View(); 
+    }
+
     public IActionResult Index() { SetNav("deliveries", "My Deliveries"); return View(); }
 }
