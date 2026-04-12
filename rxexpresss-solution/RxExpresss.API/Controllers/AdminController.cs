@@ -19,15 +19,18 @@ public class AdminController : ControllerBase
     private readonly IRepository<DriverProfile> _drivers;
     private readonly IRepository<ApiKey> _apiKeys;
     private readonly IRepository<OfficeLocation> _officeLocations;
+    private readonly IRepository<DriverLocationLog> _locationLogs;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public AdminController(IRepository<Order> orders, IRepository<Pharmacy> pharmacies,
         IRepository<DriverProfile> drivers, IRepository<ApiKey> apiKeys, 
-        IRepository<OfficeLocation> officeLocations, UserManager<ApplicationUser> userManager)
+        IRepository<OfficeLocation> officeLocations, IRepository<DriverLocationLog> locationLogs,
+        UserManager<ApplicationUser> userManager)
     {
         _orders = orders; _pharmacies = pharmacies;
         _drivers = drivers; _apiKeys = apiKeys; 
-        _officeLocations = officeLocations; _userManager = userManager;
+        _officeLocations = officeLocations; _locationLogs = locationLogs;
+        _userManager = userManager;
     }
 
     [HttpGet("dashboard")]
@@ -476,6 +479,73 @@ public class AdminController : ControllerBase
         
         await _officeLocations.DeleteAsync(office);
         return Ok(new { message = "Office location deleted" });
+    }
+
+    #endregion
+
+    #region Driver Tracking
+
+    /// <summary>
+    /// GET /api/admin/tracking/drivers — All drivers with current GPS positions
+    /// </summary>
+    [HttpGet("tracking/drivers")]
+    public async Task<IActionResult> GetDriverLocations()
+    {
+        var drivers = await _drivers.Query().ToListAsync();
+        var result = new List<object>();
+
+        foreach (var d in drivers)
+        {
+            var user = await _userManager.FindByIdAsync(d.UserId);
+            
+            // Count active deliveries for this driver
+            var activeDeliveries = await _orders.Query()
+                .CountAsync(o => o.DriverId == d.Id && 
+                    (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "dispatched" || 
+                     o.Status == "out_for_delivery" || o.Status == "delivering_now"));
+
+            result.Add(new
+            {
+                d.Id,
+                name = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown",
+                phone = user?.PhoneNumber,
+                d.Status,
+                d.VehicleType,
+                d.VehicleNumber,
+                latitude = d.CurrentLatitude,
+                longitude = d.CurrentLongitude,
+                speed = d.CurrentSpeed,
+                heading = d.CurrentHeading,
+                lastUpdate = d.LastLocationUpdate,
+                isOnline = d.LastLocationUpdate.HasValue && 
+                    (DateTime.UtcNow - d.LastLocationUpdate.Value).TotalMinutes < 5,
+                activeDeliveries
+            });
+        }
+
+        // Also return office locations for map display
+        var offices = await _officeLocations.Query()
+            .Where(o => o.IsActive)
+            .Select(o => new { o.Id, o.Name, o.Address, o.City, o.Latitude, o.Longitude, o.RadiusMeters, o.IsDefault })
+            .ToListAsync();
+
+        return Ok(new { drivers = result, offices });
+    }
+
+    /// <summary>
+    /// GET /api/admin/tracking/drivers/{id}/trail — Location history (last 2 hours) for trail/breadcrumb
+    /// </summary>
+    [HttpGet("tracking/drivers/{id}/trail")]
+    public async Task<IActionResult> GetDriverTrail(int id, [FromQuery] int hours = 2)
+    {
+        var cutoff = DateTime.UtcNow.AddHours(-hours);
+        var trail = await _locationLogs.Query()
+            .Where(l => l.DriverId == id && l.Timestamp >= cutoff)
+            .OrderBy(l => l.Timestamp)
+            .Select(l => new { l.Latitude, l.Longitude, l.Speed, l.Heading, l.Timestamp })
+            .ToListAsync();
+
+        return Ok(new { trail, count = trail.Count });
     }
 
     #endregion

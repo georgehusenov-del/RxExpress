@@ -21,6 +21,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<Webhook> Webhooks => Set<Webhook>();
     public DbSet<OfficeLocation> OfficeLocations => Set<OfficeLocation>();
+    public DbSet<DriverLocationLog> DriverLocationLogs => Set<DriverLocationLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

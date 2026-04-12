@@ -11,6 +11,9 @@ public class DriverProfile
     public string Status { get; set; } = "offline"; // available, on_route, on_break, offline
     public double? CurrentLatitude { get; set; }
     public double? CurrentLongitude { get; set; }
+    public double? CurrentSpeed { get; set; } // Speed in m/s
+    public double? CurrentHeading { get; set; } // Heading in degrees
+    public DateTime? LastLocationUpdate { get; set; } // When location was last reported
     public double Rating { get; set; } = 0.0;
     public int TotalDeliveries { get; set; } = 0;
     public bool IsVerified { get; set; } = false;

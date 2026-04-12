@@ -16,6 +16,7 @@ public class DriverPortalController : ControllerBase
     private readonly IRepository<DriverProfile> _drivers;
     private readonly IRepository<Order> _orders;
     private readonly IRepository<OfficeLocation> _officeLocations;
+    private readonly IRepository<DriverLocationLog> _locationLogs;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<DriverPortalController> _logger;
 
@@ -23,12 +24,14 @@ public class DriverPortalController : ControllerBase
         IRepository<DriverProfile> drivers, 
         IRepository<Order> orders,
         IRepository<OfficeLocation> officeLocations,
+        IRepository<DriverLocationLog> locationLogs,
         IWebHostEnvironment env,
         ILogger<DriverPortalController> logger)
     {
         _drivers = drivers; 
         _orders = orders;
         _officeLocations = officeLocations;
+        _locationLogs = locationLogs;
         _env = env;
         _logger = logger;
     }
@@ -321,4 +324,46 @@ public class DriverPortalController : ControllerBase
         await _drivers.UpdateAsync(driver);
         return Ok(new { message = $"Status updated to {driver.Status}" });
     }
+
+    /// <summary>
+    /// POST /api/driver-portal/location
+    /// Driver reports their current GPS position. Called every 10-15 seconds from driver app.
+    /// </summary>
+    [HttpPost("location")]
+    public async Task<IActionResult> ReportLocation([FromBody] LocationUpdateDto dto)
+    {
+        var driver = await GetMyDriver();
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+
+        // Update current position on driver profile
+        driver.CurrentLatitude = dto.Latitude;
+        driver.CurrentLongitude = dto.Longitude;
+        driver.CurrentSpeed = dto.Speed;
+        driver.CurrentHeading = dto.Heading;
+        driver.LastLocationUpdate = DateTime.UtcNow;
+        await _drivers.UpdateAsync(driver);
+
+        // Log location for trail/history
+        await _locationLogs.AddAsync(new DriverLocationLog
+        {
+            DriverId = driver.Id,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
+            Speed = dto.Speed,
+            Heading = dto.Heading,
+            Accuracy = dto.Accuracy,
+            Timestamp = DateTime.UtcNow
+        });
+
+        return Ok(new { success = true });
+    }
+}
+
+public class LocationUpdateDto
+{
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+    public double? Speed { get; set; }
+    public double? Heading { get; set; }
+    public double? Accuracy { get; set; }
 }

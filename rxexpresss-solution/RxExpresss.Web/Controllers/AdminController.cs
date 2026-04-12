@@ -4,12 +4,20 @@ namespace RxExpresss.Web.Controllers;
 
 public class AdminController : Controller
 {
+    private readonly IConfiguration _configuration;
+    
+    public AdminController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
     private static readonly List<(string Id, string Label, string Href, string Icon)> NavItems = new()
     {
         ("overview", "Overview", "/Admin", SvgIcons.Dashboard),
         ("users", "Users", "/Admin/Users", SvgIcons.Users),
         ("pharmacies", "Pharmacies", "/Admin/Pharmacies", SvgIcons.Pharmacy),
         ("drivers", "Drivers", "/Admin/Drivers", SvgIcons.Truck),
+        ("tracking", "Live Tracking", "/Admin/Tracking", SvgIcons.Crosshair),
         ("orders", "Orders", "/Admin/Orders", SvgIcons.Package),
         ("routes", "Routes", "/Admin/Routes", SvgIcons.Route),
         ("pricing", "Pricing", "/Admin/Pricing", SvgIcons.Dollar),
@@ -42,4 +50,9 @@ public class AdminController : Controller
     public IActionResult Offices() { SetNav("offices", "Office Locations"); return View(); }
     public IActionResult Reports() { SetNav("reports", "Reports"); return View(); }
     public IActionResult ApiKeys() { SetNav("api-keys", "API Keys Management"); return View(); }
+    public IActionResult Tracking() { 
+        SetNav("tracking", "Live Driver Tracking");
+        ViewData["GoogleMapsKey"] = _configuration["GoogleMaps:ApiKey"] ?? "";
+        return View(); 
+    }
 }
