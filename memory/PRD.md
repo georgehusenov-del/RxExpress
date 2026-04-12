@@ -16,40 +16,42 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ## Core Features Implemented
 
-### Latest Updates (March 29, 2026)
-- ✅ **Separate Driver Login Page** - Mobile-friendly login at `/Driver/Login` that drivers can bookmark
-- ✅ **Responsive Driver Dashboard** - Works on all screen sizes with touch-friendly buttons
-- ✅ **Office Locations Management** - Admin can add/edit/delete office locations at `/Admin/Offices`
-- ✅ **Geo-Lock for Office Scanning** - After pickup, drivers can't scan "At Office" until within 100m of office
-- ✅ **Geocoding Feature** - Get coordinates from address using Nominatim API
+### Latest Updates (April 12, 2026)
+- **Multi-Provider Route Optimization** — Admin can choose between 3 route optimization providers:
+  - **Circuit** — Original provider, API key configured, falls back to local when API fails
+  - **Google Maps** — Directions API with traffic-aware waypoint optimization (dummy key, local fallback)
+  - **Apple Maps** — MapKit Server API with nearest-neighbor optimization (dummy key, local fallback)
+- **Provider Selection Modal** — UI shows all 3 providers with status badges ("API Ready" / "Local Fallback")
+- **Optimization Results Display** — Shows optimized stop order, distance, duration after optimization
+- **Provider Tracking** — Each gig stores which provider was used (`OptimizationProvider` field)
+- **GET /api/routes/providers** — New endpoint listing available providers and their configuration status
 
-### Updates (March 19, 2026)
-- ✅ **POD Folder Location Fix** - Photos now save to Web project's wwwroot/pod (not API), API only returns URLs
-- ✅ **Route Optimization Fix** - No longer returns "Optimization Failed"; gracefully falls back to local optimization when Circuit API fails
-- ✅ **3-Photo POD URLs in API** - All API endpoints now return photoHomeUrl, photoAddressUrl, photoPackageUrl fields
+### Previous Updates (March 29, 2026)
+- Separate Driver Login Page — Mobile-friendly login at `/Driver/Login`
+- Responsive Driver Dashboard — Works on all screen sizes
+- Office Locations Management — Admin can add/edit/delete office locations at `/Admin/Offices`
+- Geo-Lock for Office Scanning — After pickup, drivers can't scan "At Office" until within 100m of office
+- Geocoding Feature — Get coordinates from address using Nominatim API
 
-### Updates (March 17, 2026)
-- ✅ **POD (Proof of Delivery) Fix** - PhotoUrl now properly returned in Admin and Pharmacy order lists
-- ✅ **Pharmacy Integration API v1** - Complete REST API for pharmacy software systems to connect
-  - `POST /api/v1/orders` - Create delivery orders
-  - `GET /api/v1/orders` - List orders with pagination
-  - `GET /api/v1/orders/{identifier}` - Get by ID, order number, tracking number, or external ID
-  - `GET /api/v1/orders/{identifier}/tracking` - Real-time tracking with driver location
-  - `DELETE /api/v1/orders/{identifier}` - Cancel orders
-  - `POST /api/v1/webhooks` - Register status update webhooks
-  - `GET /api/v1/webhooks` - List registered webhooks
-  - `DELETE /api/v1/webhooks/{id}` - Delete webhooks
-- ✅ **API Key Management** - Admin endpoints to create/manage API credentials for pharmacies
-- ✅ **API Documentation Page** - Available at `/developers`
-- ✅ **External Order ID Support** - Pharmacies can reference their internal order IDs
+### Previous Updates (March 19, 2026)
+- POD Folder Location Fix — Photos save to Web project's wwwroot/pod
+- Route Optimization Fix — Graceful fallback to local optimization when Circuit API fails
+- 3-Photo POD URLs in API — All API endpoints return photoHomeUrl, photoAddressUrl, photoPackageUrl
+
+### Previous Updates (March 17, 2026)
+- POD (Proof of Delivery) Fix — PhotoUrl properly returned
+- Pharmacy Integration API v1 — Complete REST API for pharmacy software systems
+- API Key Management — Admin endpoints to create/manage API credentials
+- API Documentation Page — Available at `/developers`
+- External Order ID Support
 
 ### Previous Updates (March 16, 2026)
-- ✅ **Admin Orders Refresh Button** - Quick data reload without page refresh
-- ✅ **Blue QR Codes for Refrigerated Items** - QR code IMAGE is blue (using qrserver.com color parameter)
-- ✅ **Print Label** - Opens print dialog (user must select physical printer, not "Save as PDF")
-- ✅ **In Transit → Office Reassignment Flow**
-- ✅ **Pharmacy Refrigeration Checkbox** - Now properly saves to database
-- ✅ **Driver Delivery History** - Enhanced with POD details
+- Admin Orders Refresh Button
+- Blue QR Codes for Refrigerated Items
+- Print Label
+- In Transit → Office Reassignment Flow
+- Pharmacy Refrigeration Checkbox
+- Driver Delivery History
 
 ### Order Status Flow
 | Status | Label | Meaning |
@@ -65,26 +67,17 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 | failed | Failed | Delivery attempt failed |
 | cancelled | Cancelled | Order cancelled |
 
-### Integration API Authentication
-- API Key + Secret header authentication
-- Headers: `X-API-Key` and `X-API-Secret`
-- Admin creates API keys via `/api/admin/api-keys`
+## Route Optimization Providers
+| Provider | File | Status | Fallback |
+|----------|------|--------|----------|
+| Circuit | `Services/CircuitService.cs` | API key configured | Local optimization |
+| Google Maps | `Services/GoogleMapsService.cs` | Dummy key | Local (city/postal grouping) |
+| Apple Maps | `Services/AppleMapsService.cs` | Dummy key | Local (nearest-neighbor heuristic) |
 
-### Database Entities Added
-- `ApiKey` - Stores pharmacy API credentials
-- `Webhook` - Stores webhook registrations
-- `Order.ExternalOrderId` - External system reference
-- `OfficeLocation` - Office/Hub locations for geo-lock (id, name, address, lat, lng, radius, isDefault)
-
-### Driver Geo-Lock Flow
-1. Driver picks up package from pharmacy → scans "Picked Up"
-2. Driver must physically go to office (within 100m radius)
-3. Only then can driver scan "At Office" (geo-locked)
-4. This prevents drivers from skipping the office step
-
-## Preview URL
-- https://pharmacy-pod-portal.preview.emergentagent.com
-- API Docs: https://pharmacy-pod-portal.preview.emergentagent.com/developers
+### How to Add Real API Keys:
+- **Google Maps**: Get API key from https://console.cloud.google.com/ → Enable Directions API → Update `appsettings.json` → `GoogleMaps:ApiKey`
+- **Apple Maps**: Get credentials from https://developer.apple.com/account/ → Create Maps ID → Update `appsettings.json` → `AppleMaps:AuthToken`
+- **Circuit**: Already configured in `appsettings.json` → `Circuit:ApiKey`
 
 ## Test Accounts
 | Role | Email | Password |
@@ -93,7 +86,7 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 | Pharmacy | pharmacy@test.com | Pharmacy@123 |
 | Driver | driver@test.com | Driver@123 |
 
-## Test API Key (for HealthFirst Pharmacy)
+## Test API Key (HealthFirst Pharmacy)
 - Key: `a4b4800042b34202b746e1213f1c77c6`
 - Secret: `111369031c114d7a942869f49c66584e2a09f404f35c4453a03120faa8f7627e`
 
@@ -101,10 +94,11 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 1. (P1) Circuit Webhook implementation
 2. (P1) Twilio/SendGrid notifications
 3. (P1) Webhook delivery implementation (trigger webhooks on status changes)
-4. (P2) Google Maps route optimization
-5. (P2) Cloud storage for POD images
+4. (P2) Cloud storage for POD images
+5. (P2) Self-Service API Key Portal for pharmacies
 6. (P2) Stripe payment flow
 7. (P2) Forgot password
+8. (P2) PWA Push Notifications
 
 ## Deployment
 - DNS/SSL: Cloudflare
@@ -113,14 +107,15 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 - Hosting: Hoster.pk (IIS)
 
 ## Key Files Reference
+- `/app/rxexpresss-solution/RxExpresss.API/Services/GoogleMapsService.cs` - Google Maps route optimization
+- `/app/rxexpresss-solution/RxExpresss.API/Services/AppleMapsService.cs` - Apple Maps route optimization
+- `/app/rxexpresss-solution/RxExpresss.API/Services/CircuitService.cs` - Circuit route optimization (original)
+- `/app/rxexpresss-solution/RxExpresss.API/Controllers/RoutesController.cs` - Route management with multi-provider optimization
+- `/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Routes.cshtml` - Admin Routes UI with provider selection
 - `/app/rxexpresss-solution/RxExpresss.API/Controllers/IntegrationController.cs` - Integration API
-- `/app/rxexpresss-solution/RxExpresss.API/Controllers/DriverPortalController.cs` - POD submission (saves to Web wwwroot)
-- `/app/rxexpresss-solution/RxExpresss.API/Controllers/RoutesController.cs` - Route optimization with Circuit fallback
+- `/app/rxexpresss-solution/RxExpresss.API/Controllers/DriverPortalController.cs` - POD submission
 - `/app/rxexpresss-solution/RxExpresss.API/Controllers/AdminController.cs` - Admin API (offices, API keys)
-- `/app/rxexpresss-solution/RxExpresss.Core/Entities/ApiKey.cs` - API Key entity
-- `/app/rxexpresss-solution/RxExpresss.Core/Entities/Webhook.cs` - Webhook entity
-- `/app/rxexpresss-solution/RxExpresss.Core/Entities/OfficeLocation.cs` - Office location entity
+- `/app/rxexpresss-solution/RxExpresss.Core/Entities/RoutePlan.cs` - RoutePlan entity (includes OptimizationProvider)
 - `/app/rxexpresss-solution/RxExpresss.Web/Views/Driver/Login.cshtml` - Mobile driver login
-- `/app/rxexpresss-solution/RxExpresss.Web/Views/Driver/Index.cshtml` - Responsive driver dashboard with geo-lock
+- `/app/rxexpresss-solution/RxExpresss.Web/Views/Driver/Index.cshtml` - Driver dashboard with geo-lock
 - `/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Offices.cshtml` - Office management UI
-- `/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/` - POD photos storage location
