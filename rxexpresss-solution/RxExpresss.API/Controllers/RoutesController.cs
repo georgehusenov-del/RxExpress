@@ -26,6 +26,7 @@ public class RoutesController : ControllerBase
     private readonly CircuitService _circuitService;
     private readonly GoogleMapsService _googleMapsService;
     private readonly AppleMapsService _appleMapsService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<RoutesController> _logger;
 
     public RoutesController(
@@ -40,6 +41,7 @@ public class RoutesController : ControllerBase
         CircuitService circuitService,
         GoogleMapsService googleMapsService,
         AppleMapsService appleMapsService,
+        IConfiguration configuration,
         ILogger<RoutesController> logger)
     {
         _plans = plans; 
@@ -53,6 +55,7 @@ public class RoutesController : ControllerBase
         _circuitService = circuitService;
         _googleMapsService = googleMapsService;
         _appleMapsService = appleMapsService;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -366,7 +369,7 @@ public class RoutesController : ControllerBase
     }
 
     [HttpPost("{id}/optimize")]
-    public async Task<IActionResult> OptimizeRoute(int id, [FromBody] OptimizeDto? dto = null)
+    public async Task<IActionResult> OptimizeRoute(int id)
     {
         var plan = await _plans.GetByIdAsync(id);
         if (plan == null) return NotFound();
@@ -378,8 +381,9 @@ public class RoutesController : ControllerBase
         if (!orders.Any())
             return BadRequest(new { detail = "No orders in this gig to optimize" });
         
-        // Determine which provider to use
-        var provider = dto?.Provider?.ToLower() ?? "circuit";
+        // Read active provider from appsettings.json → RouteOptimization:ActiveProvider
+        // To switch providers, change this value to "google_maps" or "apple_maps"
+        var provider = _configuration["RouteOptimization:ActiveProvider"]?.ToLower() ?? "circuit";
         
         // Update status to optimizing
         plan.OptimizationStatus = "optimizing";
@@ -867,4 +871,3 @@ public class SplitGigDto
     public List<int>? OrderIds { get; set; }
 }
 public class AutoCreateGigsDto { public string? Date { get; set; } }
-public class OptimizeDto { public string? Provider { get; set; } }

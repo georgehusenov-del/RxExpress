@@ -146,27 +146,6 @@
     </div>
 </div>
 
-<!-- Optimize Route Provider Selection Modal -->
-<div class="modal-overlay" id="optimize-modal">
-    <div class="modal" style="max-width:550px">
-        <div class="modal-header">
-            <h3><i class="fas fa-route"></i> Optimize Route</h3>
-            <button class="close-btn" onclick="closeM('optimize-modal')">&times;</button>
-        </div>
-        <div class="modal-body">
-            <input type="hidden" id="optimize-gig-id"/>
-            <p class="text-gray mb-2">Select a route optimization provider:</p>
-            <div id="providers-list" class="provider-cards" data-testid="providers-list">
-                <div class="provider-loading">Loading providers...</div>
-            </div>
-            <div id="optimize-result" class="optimize-result" style="display:none" data-testid="optimize-result"></div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeM('optimize-modal')">Close</button>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
 <script>
 if(!ApiService.requireAuth('Admin'))throw'';
@@ -309,9 +288,7 @@ function renderGigCard(g, showActions) {
                 <button class="btn btn-sm btn-primary" onclick="addSelectedToGig(${g.id})" data-testid="add-orders-${g.id}">+ Add Orders</button>
                 <button class="btn btn-sm btn-purple" onclick="openAssignOrdersModal(${g.id})" data-testid="assign-driver-${g.id}">Assign Driver</button>
                 ${g.driverCount > 0 ? `<button class="btn btn-sm btn-warning" onclick="unassignDriver(${g.id})" data-testid="unassign-${g.id}">Unassign</button>` : ''}
-                <button class="btn btn-sm btn-info" onclick="openOptimizeModal(${g.id})" data-testid="optimize-gig-${g.id}">
-                    <i class="fas fa-route"></i> Optimize
-                </button>
+                <button class="btn btn-sm btn-info" onclick="optimizeGig(${g.id})" data-testid="optimize-gig-${g.id}">Optimize</button>
                 ${g.orderCount > 1 ? `<button class="btn btn-sm btn-outline" onclick="openSplitModal(${g.id})" data-testid="split-gig-${g.id}">Split</button>` : ''}
                 <button class="btn btn-sm btn-danger" onclick="deleteGig(${g.id})" data-testid="delete-gig-${g.id}">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -418,114 +395,16 @@ async function unassignDriver(gigId) {
     }
 }
 
-async function openOptimizeModal(gigId) {
-    document.getElementById('optimize-gig-id').value = gigId;
-    document.getElementById('optimize-result').style.display = 'none';
-    document.getElementById('optimize-result').innerHTML = '';
-    
-    // Load providers
+async function optimizeGig(gigId) {
     try {
-        const data = await ApiService.get('/routes/providers');
-        const providers = data.providers || [];
-        document.getElementById('providers-list').innerHTML = providers.map(p => `
-            <div class="provider-card ${p.configured ? 'provider-configured' : 'provider-unconfigured'}" 
-                 data-testid="provider-${p.id}"
-                 onclick="runOptimize('${p.id}')">
-                <div class="provider-icon">
-                    <i class="fas ${p.icon}"></i>
-                </div>
-                <div class="provider-info">
-                    <strong>${p.name}</strong>
-                    <small>${p.description}</small>
-                </div>
-                <div class="provider-status">
-                    ${p.configured 
-                        ? '<span class="badge badge-success">API Ready</span>' 
-                        : '<span class="badge badge-secondary">Local Fallback</span>'}
-                </div>
-            </div>
-        `).join('');
-    } catch(e) {
-        document.getElementById('providers-list').innerHTML = `
-            <div class="provider-card" onclick="runOptimize('circuit')">
-                <div class="provider-icon"><i class="fas fa-bolt"></i></div>
-                <div class="provider-info"><strong>Circuit</strong><small>Default provider</small></div>
-            </div>
-            <div class="provider-card" onclick="runOptimize('google_maps')">
-                <div class="provider-icon"><i class="fas fa-map-marked-alt"></i></div>
-                <div class="provider-info"><strong>Google Maps</strong><small>Directions API</small></div>
-            </div>
-            <div class="provider-card" onclick="runOptimize('apple_maps')">
-                <div class="provider-icon"><i class="fas fa-apple-alt"></i></div>
-                <div class="provider-info"><strong>Apple Maps</strong><small>MapKit Server API</small></div>
-            </div>`;
-    }
-    
-    document.getElementById('optimize-modal').classList.add('active');
-}
-
-async function runOptimize(provider) {
-    const gigId = document.getElementById('optimize-gig-id').value;
-    const resultDiv = document.getElementById('optimize-result');
-    
-    // Disable provider cards during optimization
-    document.querySelectorAll('.provider-card').forEach(c => c.classList.add('provider-loading-state'));
-    
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = `<div class="optimize-loading"><i class="fas fa-spinner fa-spin"></i> Optimizing with ${providerNames[provider] || provider}...</div>`;
-    
-    try {
-        const r = await ApiService.post(`/routes/${gigId}/optimize`, { provider });
-        
-        let detailHtml = '';
-        if (r.details) {
-            if (r.details.totalDistance) {
-                detailHtml += `<div class="opt-stat"><strong>Total Distance:</strong> ${r.details.totalDistance}</div>`;
-            }
-            if (r.details.totalDuration) {
-                detailHtml += `<div class="opt-stat"><strong>Est. Duration:</strong> ${r.details.totalDuration}</div>`;
-            }
-            if (r.details.stops && r.details.stops.length) {
-                detailHtml += `<div class="opt-stops-title"><strong>Optimized Stop Order:</strong></div>`;
-                detailHtml += `<div class="opt-stops">`;
-                r.details.stops.forEach((s, i) => {
-                    detailHtml += `<div class="opt-stop">
-                        <span class="opt-stop-num">${i + 1}</span>
-                        <div class="opt-stop-info">
-                            <strong>${s.recipientName}</strong>
-                            <small>${s.address}</small>
-                            ${s.distanceText && s.distanceText !== 'N/A' ? `<span class="text-gray">${s.distanceText} / ${s.durationText}</span>` : ''}
-                        </div>
-                    </div>`;
-                });
-                detailHtml += `</div>`;
-            }
-            if (r.details.message) {
-                detailHtml += `<div class="opt-message">${r.details.message}</div>`;
-            }
-        }
-        
-        resultDiv.innerHTML = `
-            <div class="optimize-success">
-                <div class="opt-header">
-                    <i class="fas fa-check-circle" style="color:#22c55e;font-size:24px"></i>
-                    <div>
-                        <strong>${r.message}</strong>
-                        <span class="badge badge-success">${providerNames[r.provider] || r.provider}</span>
-                    </div>
-                </div>
-                ${detailHtml}
-            </div>`;
-        
-        toast(`Route optimized with ${providerNames[r.provider] || r.provider}!`, 'success');
+        toast('Optimizing route...', 'info');
+        const r = await ApiService.post(`/routes/${gigId}/optimize`);
+        const providerLabel = providerNames[r.provider] || r.provider || '';
+        toast(`Route optimized${providerLabel ? ' via ' + providerLabel : ''}!`, 'success');
         loadGigs();
     } catch(e) {
-        resultDiv.innerHTML = `<div class="optimize-error"><i class="fas fa-exclamation-triangle"></i> ${e.message || 'Optimization failed'}</div>`;
         toast(e.message || 'Optimization failed', 'danger');
     }
-    
-    // Re-enable provider cards
-    document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('provider-loading-state'));
 }
 
 let splitGigOrders = [];
@@ -750,152 +629,6 @@ loadGigs();
 }
 .action-btns .btn {
     white-space: nowrap;
-}
-
-/* Route Optimization Provider Cards */
-.provider-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.provider-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: var(--card-bg);
-}
-.provider-card:hover {
-    border-color: var(--primary);
-    background: var(--bg-secondary);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-.provider-configured {
-    border-left: 4px solid #22c55e;
-}
-.provider-unconfigured {
-    border-left: 4px solid #94a3b8;
-}
-.provider-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: var(--bg-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    color: var(--primary);
-    flex-shrink: 0;
-}
-.provider-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.provider-info small {
-    color: var(--text-secondary);
-    font-size: 12px;
-}
-.provider-status {
-    flex-shrink: 0;
-}
-.provider-loading-state {
-    opacity: 0.5;
-    pointer-events: none;
-}
-.provider-loading {
-    text-align: center;
-    padding: 20px;
-    color: var(--text-secondary);
-}
-
-/* Optimization Results */
-.optimize-result {
-    margin-top: 16px;
-    padding: 16px;
-    border-radius: 10px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-}
-.optimize-loading {
-    text-align: center;
-    padding: 20px;
-    color: var(--primary);
-    font-size: 15px;
-}
-.optimize-success .opt-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-}
-.optimize-error {
-    color: #ef4444;
-    text-align: center;
-    padding: 12px;
-}
-.opt-stat {
-    padding: 6px 0;
-    font-size: 14px;
-    border-bottom: 1px solid var(--border);
-}
-.opt-stops-title {
-    margin-top: 12px;
-    margin-bottom: 8px;
-    font-size: 14px;
-}
-.opt-stops {
-    max-height: 220px;
-    overflow-y: auto;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-}
-.opt-stop {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-}
-.opt-stop:last-child {
-    border-bottom: none;
-}
-.opt-stop-num {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--primary);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 600;
-    flex-shrink: 0;
-}
-.opt-stop-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-.opt-stop-info small {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-.opt-message {
-    margin-top: 10px;
-    padding: 8px 12px;
-    background: #fef3c7;
-    color: #92400e;
-    border-radius: 6px;
-    font-size: 13px;
 }
 </style>
 }
