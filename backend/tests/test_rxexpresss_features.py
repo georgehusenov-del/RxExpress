@@ -7,7 +7,7 @@ import pytest
 import requests
 import time
 
-BASE_URL = "https://driver-pod-camera.preview.emergentagent.com/api"
+BASE_URL = "https://pharmacy-pod-portal.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@rxexpresss.com"

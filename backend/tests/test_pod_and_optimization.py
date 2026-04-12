@@ -16,7 +16,7 @@ import os
 import base64
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://driver-pod-camera.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://pharmacy-pod-portal.preview.emergentagent.com').rstrip('/')
 
 
 class TestAuth:

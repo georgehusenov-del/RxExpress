@@ -83,8 +83,8 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 4. This prevents drivers from skipping the office step
 
 ## Preview URL
-- https://driver-pod-camera.preview.emergentagent.com
-- API Docs: https://driver-pod-camera.preview.emergentagent.com/developers
+- https://pharmacy-pod-portal.preview.emergentagent.com
+- API Docs: https://pharmacy-pod-portal.preview.emergentagent.com/developers
 
 ## Test Accounts
 | Role | Email | Password |
