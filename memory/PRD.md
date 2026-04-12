@@ -1,7 +1,7 @@
 # RX Expresss - Product Requirements Document
 
 ## Original Problem Statement
-Build a full-stack pharmacy delivery service application named "RX Expresss" based on ASP.NET Core 8. The application serves pharmacies, drivers, and administrators with features for order management, QR code tracking, route planning, and proof of delivery.
+Build a full-stack pharmacy delivery service application named "RX Expresss" based on ASP.NET Core 8. The application serves pharmacies, drivers, and administrators with features for order management, QR code tracking, route planning, proof of delivery, and real-time driver tracking.
 
 ## Current Architecture
 ```
@@ -17,41 +17,37 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 ## Core Features Implemented
 
 ### Latest Updates (April 12, 2026)
+- **Real-Time Driver Tracking** — Admin live tracking page at `/Admin/Tracking`
+  - Google Maps integration (shows map with driver markers when API key is real)
+  - Driver panel showing all drivers: status, active deliveries, time since last GPS update
+  - Filters: All / Online / On Route
+  - Auto-refresh every 10 seconds + manual refresh
+  - Driver trail/breadcrumb visualization (last 2 hours)
+  - Office locations shown on map with radius circles
+- **Driver Location Reporting** — Drivers automatically report GPS every 15 seconds
+  - `POST /api/driver-portal/location` — lat, lng, speed, heading, accuracy
+  - Updates `DriverProfile` (CurrentLatitude/Longitude/Speed/Heading/LastLocationUpdate)
+  - Logs to `DriverLocationLog` for history/trail
 - **Multi-Provider Route Optimization** — 3 separate service files:
   - `Services/CircuitService.cs` — Circuit/Spoke API (active by default)
   - `Services/GoogleMapsService.cs` — Google Maps Directions API
   - `Services/AppleMapsService.cs` — Apple Maps Server API
-- Only one provider active at a time, controlled via `appsettings.json` → `RouteOptimization:ActiveProvider`
-- No UI modal — Optimize button directly uses the configured provider
-- `GET /api/routes/providers` — Lists all 3 providers with configuration status
+  - Active provider set in `appsettings.json` → `RouteOptimization:ActiveProvider`
 
-### How to Switch Route Provider
-Change in `appsettings.json`:
+### How to Activate Google Maps
+Update `appsettings.json` in **both** API and Web projects:
 ```json
-"RouteOptimization": {
-    "ActiveProvider": "circuit"      // or "google_maps" or "apple_maps"
+"GoogleMaps": {
+    "ApiKey": "YOUR_REAL_KEY_FROM_GOOGLE_CLOUD_CONSOLE"
 }
 ```
-Also update the corresponding API key:
-- Google Maps: `GoogleMaps:ApiKey`
-- Apple Maps: `AppleMaps:AuthToken`
-- Circuit: `Circuit:ApiKey` (already configured)
+Enable in Google Cloud Console: **Maps JavaScript API** + **Directions API**
 
-### Previous Updates (March 29, 2026)
-- Separate Driver Login Page at `/Driver/Login`
-- Responsive Driver Dashboard
-- Office Locations Management at `/Admin/Offices`
-- Geo-Lock for Office Scanning (100m radius)
-
-### Previous Updates (March 19, 2026)
-- POD Folder Location Fix — Photos save to Web project's wwwroot/pod
-- Route Optimization Fix — Graceful fallback
-- 3-Photo POD URLs in API
-
-### Previous Updates (March 17, 2026)
-- Pharmacy Integration API v1
-- API Key Management
-- API Documentation at `/developers`
+### Previous Updates
+- Separate Driver Login at `/Driver/Login`, responsive driver dashboard
+- Office Locations Management at `/Admin/Offices` with geo-lock scanning
+- POD 3-photo system, Pharmacy Integration API v1, API Key Management
+- Route optimization with fallback, QR scanning, service zones
 
 ## Test Accounts
 | Role | Email | Password |
@@ -60,20 +56,28 @@ Also update the corresponding API key:
 | Pharmacy | pharmacy@test.com | Pharmacy@123 |
 | Driver | driver@test.com | Driver@123 |
 
+## Key API Endpoints
+- `POST /api/driver-portal/location` — Driver GPS report
+- `GET /api/admin/tracking/drivers` — All drivers with positions + offices
+- `GET /api/admin/tracking/drivers/{id}/trail?hours=2` — Location trail
+- `GET /api/routes/providers` — List route optimization providers
+- `POST /api/routes/{id}/optimize` — Optimize with active provider
+
 ## Backlog
 1. (P1) Circuit Webhook implementation
 2. (P1) Twilio/SendGrid notifications
-3. (P1) Webhook delivery implementation
+3. (P1) Webhook delivery on status changes
 4. (P2) Cloud storage for POD images
 5. (P2) Self-Service API Key Portal
 6. (P2) Stripe payment flow
 7. (P2) Forgot password
 8. (P2) PWA Push Notifications
 
-## Key Files Reference
-- `/app/rxexpresss-solution/RxExpresss.API/Services/GoogleMapsService.cs`
-- `/app/rxexpresss-solution/RxExpresss.API/Services/AppleMapsService.cs`
-- `/app/rxexpresss-solution/RxExpresss.API/Services/CircuitService.cs`
-- `/app/rxexpresss-solution/RxExpresss.API/Controllers/RoutesController.cs`
-- `/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Routes.cshtml`
-- `/app/rxexpresss-solution/RxExpresss.API/appsettings.json`
+## Key Files
+- `/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Tracking.cshtml` — Live tracking page
+- `/app/rxexpresss-solution/RxExpresss.Core/Entities/DriverLocationLog.cs` — Location history entity
+- `/app/rxexpresss-solution/RxExpresss.API/Services/GoogleMapsService.cs` — Google Maps service
+- `/app/rxexpresss-solution/RxExpresss.API/Services/AppleMapsService.cs` — Apple Maps service
+- `/app/rxexpresss-solution/RxExpresss.API/Controllers/RoutesController.cs` — Route optimization
+- `/app/rxexpresss-solution/RxExpresss.API/Controllers/AdminController.cs` — Tracking + admin endpoints
+- `/app/rxexpresss-solution/RxExpresss.API/Controllers/DriverPortalController.cs` — Driver location + POD
