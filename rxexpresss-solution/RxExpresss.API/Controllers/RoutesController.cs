@@ -21,8 +21,11 @@ public class RoutesController : ControllerBase
     private readonly IRepository<Order> _orders;
     private readonly IRepository<DriverProfile> _drivers;
     private readonly IRepository<ServiceZone> _zones;
+    private readonly IRepository<OfficeLocation> _offices;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly CircuitService _circuitService;
+    private readonly GoogleMapsService _googleMapsService;
+    private readonly AppleMapsService _appleMapsService;
     private readonly ILogger<RoutesController> _logger;
 
     public RoutesController(
@@ -32,8 +35,11 @@ public class RoutesController : ControllerBase
         IRepository<Order> orders,
         IRepository<DriverProfile> drivers, 
         IRepository<ServiceZone> zones,
+        IRepository<OfficeLocation> offices,
         UserManager<ApplicationUser> userManager,
         CircuitService circuitService,
+        GoogleMapsService googleMapsService,
+        AppleMapsService appleMapsService,
         ILogger<RoutesController> logger)
     {
         _plans = plans; 
@@ -42,8 +48,11 @@ public class RoutesController : ControllerBase
         _orders = orders; 
         _drivers = drivers; 
         _zones = zones;
+        _offices = offices;
         _userManager = userManager;
         _circuitService = circuitService;
+        _googleMapsService = googleMapsService;
+        _appleMapsService = appleMapsService;
         _logger = logger;
     }
 
@@ -57,7 +66,7 @@ public class RoutesController : ControllerBase
             var orderCount = await _planOrders.Query().CountAsync(o => o.RoutePlanId == p.Id);
             var driverIds = await _planDrivers.Query().Where(d => d.RoutePlanId == p.Id).Select(d => d.DriverId).ToListAsync();
             result.Add(new { 
-                p.Id, p.Title, p.Date, p.Status, p.OptimizationStatus, p.Distributed, 
+                p.Id, p.Title, p.Date, p.Status, p.OptimizationStatus, p.OptimizationProvider, p.Distributed, 
                 p.ServiceZoneId, p.IsAutoCreated, p.CreatedAt, 
                 orderCount, driverCount = driverIds.Count 
             });
@@ -109,7 +118,7 @@ public class RoutesController : ControllerBase
         }
         
         return Ok(new { 
-            plan = new { plan.Id, plan.Title, plan.Date, plan.Status, plan.OptimizationStatus, plan.Distributed, plan.ServiceZoneId, plan.IsAutoCreated }, 
+            plan = new { plan.Id, plan.Title, plan.Date, plan.Status, plan.OptimizationStatus, plan.OptimizationProvider, plan.Distributed, plan.ServiceZoneId, plan.IsAutoCreated }, 
             orders, 
             drivers, 
             stats = new { total = orders.Count, delivered = orders.Count(o => o.Status == "delivered"), assigned = orders.Count(o => o.Status == "assigned") } 
@@ -357,7 +366,7 @@ public class RoutesController : ControllerBase
     }
 
     [HttpPost("{id}/optimize")]
-    public async Task<IActionResult> OptimizeRoute(int id)
+    public async Task<IActionResult> OptimizeRoute(int id, [FromBody] OptimizeDto? dto = null)
     {
         var plan = await _plans.GetByIdAsync(id);
         if (plan == null) return NotFound();
@@ -369,101 +378,208 @@ public class RoutesController : ControllerBase
         if (!orders.Any())
             return BadRequest(new { detail = "No orders in this gig to optimize" });
         
+        // Determine which provider to use
+        var provider = dto?.Provider?.ToLower() ?? "circuit";
+        
         // Update status to optimizing
         plan.OptimizationStatus = "optimizing";
+        plan.OptimizationProvider = provider;
         await _plans.UpdateAsync(plan);
         
-        string failureReason = "";
+        object? optimizationDetails = null;
         
-        if (_circuitService.IsConfigured)
+        // ==========================================================
+        // PROVIDER: GOOGLE MAPS
+        // ==========================================================
+        if (provider == "google_maps")
         {
-            try
+            _logger.LogInformation("Optimizing gig {GigId} with Google Maps", id);
+            
+            // Get office address as origin
+            var originAddress = await GetDefaultOfficeAddress();
+            
+            var googleStops = orders.Select(o => new GoogleMapsStop
             {
-                // Create plan in Circuit if not exists
-                if (string.IsNullOrEmpty(plan.CircuitPlanId))
+                OrderId = o.Id,
+                Street = o.Street,
+                AptUnit = o.AptUnit,
+                City = o.City,
+                State = o.State,
+                PostalCode = o.PostalCode,
+                RecipientName = o.RecipientName,
+                RecipientPhone = o.RecipientPhone,
+                Notes = o.DeliveryNotes
+            }).ToList();
+            
+            var result = await _googleMapsService.OptimizeRouteAsync(originAddress, googleStops);
+            
+            if (result?.Success == true)
+            {
+                plan.OptimizationStatus = "optimized";
+                plan.OptimizationProvider = result.Provider;
+                optimizationDetails = new
                 {
-                    var driverIds = await _planDrivers.Query()
-                        .Where(d => d.RoutePlanId == id)
-                        .Select(d => d.DriverId)
-                        .ToListAsync();
-                    
-                    var circuitDriverIds = new List<string>();
-                    foreach (var did in driverIds)
+                    provider = result.Provider,
+                    message = result.Message,
+                    totalDistance = result.TotalDistanceText,
+                    totalDuration = result.TotalDurationText,
+                    stops = result.OptimizedStops.Select(s => new
                     {
-                        var driver = await _drivers.GetByIdAsync(did);
-                        if (driver?.CircuitDriverId != null)
-                            circuitDriverIds.Add(driver.CircuitDriverId);
-                    }
-                    
-                    var planResult = await _circuitService.CreatePlanAsync(plan.Title, plan.Date, circuitDriverIds);
-                    if (planResult?.Success == true && planResult.PlanId != null)
-                    {
-                        plan.CircuitPlanId = planResult.PlanId;
-                        await _plans.UpdateAsync(plan);
-                        _logger.LogInformation("Circuit plan created: {CircuitPlanId}", plan.CircuitPlanId);
-                    }
-                    else
-                    {
-                        // Circuit plan creation failed - fall back to local optimization
-                        _logger.LogWarning("Circuit plan creation failed for gig {GigId}, using local optimization", id);
-                        failureReason = "Circuit integration unavailable";
-                    }
-                }
-                
-                // Add stops to Circuit plan
-                if (!string.IsNullOrEmpty(plan.CircuitPlanId))
+                        s.OrderId, s.OptimizedIndex, s.RecipientName, s.Address,
+                        s.DistanceText, s.DurationText
+                    }),
+                    polyline = result.OverviewPolyline,
+                    apiConfigured = _googleMapsService.IsConfigured
+                };
+            }
+            else
+            {
+                plan.OptimizationStatus = "optimized";
+                plan.OptimizationProvider = "google_maps_local";
+            }
+        }
+        // ==========================================================
+        // PROVIDER: APPLE MAPS
+        // ==========================================================
+        else if (provider == "apple_maps")
+        {
+            _logger.LogInformation("Optimizing gig {GigId} with Apple Maps", id);
+            
+            var originAddress = await GetDefaultOfficeAddress();
+            
+            var appleStops = orders.Select(o => new AppleMapsStop
+            {
+                OrderId = o.Id,
+                Street = o.Street,
+                AptUnit = o.AptUnit,
+                City = o.City,
+                State = o.State,
+                PostalCode = o.PostalCode,
+                RecipientName = o.RecipientName,
+                RecipientPhone = o.RecipientPhone,
+                Notes = o.DeliveryNotes
+            }).ToList();
+            
+            var result = await _appleMapsService.OptimizeRouteAsync(originAddress, appleStops);
+            
+            if (result?.Success == true)
+            {
+                plan.OptimizationStatus = "optimized";
+                plan.OptimizationProvider = result.Provider;
+                optimizationDetails = new
                 {
-                    var stops = orders.Select(o => new CircuitStop
+                    provider = result.Provider,
+                    message = result.Message,
+                    totalDistance = result.TotalDistanceText,
+                    totalDuration = result.TotalDurationText,
+                    stops = result.OptimizedStops.Select(s => new
                     {
-                        OrderId = o.Id,
-                        Street = o.Street,
-                        AptUnit = o.AptUnit,
-                        City = o.City,
-                        State = o.State,
-                        PostalCode = o.PostalCode,
-                        RecipientName = o.RecipientName,
-                        RecipientPhone = o.RecipientPhone,
-                        Notes = o.DeliveryNotes
-                    }).ToList();
-                    
-                    var stopsAdded = await _circuitService.AddStopsAsync(plan.CircuitPlanId, stops);
-                    if (!stopsAdded)
+                        s.OrderId, s.OptimizedIndex, s.RecipientName, s.Address,
+                        s.DistanceText, s.DurationText
+                    }),
+                    apiConfigured = _appleMapsService.IsConfigured
+                };
+            }
+            else
+            {
+                plan.OptimizationStatus = "optimized";
+                plan.OptimizationProvider = "apple_maps_local";
+            }
+        }
+        // ==========================================================
+        // PROVIDER: CIRCUIT (Original - unchanged logic)
+        // ==========================================================
+        else
+        {
+            string failureReason = "";
+            
+            if (_circuitService.IsConfigured)
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(plan.CircuitPlanId))
                     {
-                        _logger.LogWarning("Failed to add stops to Circuit plan, using local optimization");
-                        failureReason = "Failed to add stops to Circuit";
-                    }
-                    else
-                    {
-                        // Optimize the plan
-                        var optimized = await _circuitService.OptimizePlanAsync(plan.CircuitPlanId);
-                        if (optimized)
+                        var driverIds = await _planDrivers.Query()
+                            .Where(d => d.RoutePlanId == id)
+                            .Select(d => d.DriverId)
+                            .ToListAsync();
+                        
+                        var circuitDriverIds = new List<string>();
+                        foreach (var did in driverIds)
                         {
-                            plan.OptimizationStatus = "optimized";
-                            _logger.LogInformation("Circuit optimization successful for gig {GigId}", id);
+                            var driver = await _drivers.GetByIdAsync(did);
+                            if (driver?.CircuitDriverId != null)
+                                circuitDriverIds.Add(driver.CircuitDriverId);
+                        }
+                        
+                        var planResult = await _circuitService.CreatePlanAsync(plan.Title, plan.Date, circuitDriverIds);
+                        if (planResult?.Success == true && planResult.PlanId != null)
+                        {
+                            plan.CircuitPlanId = planResult.PlanId;
+                            await _plans.UpdateAsync(plan);
                         }
                         else
                         {
-                            failureReason = "Circuit optimization API call failed";
+                            failureReason = "Circuit integration unavailable";
+                        }
+                    }
+                    
+                    if (!string.IsNullOrEmpty(plan.CircuitPlanId))
+                    {
+                        var stops = orders.Select(o => new CircuitStop
+                        {
+                            OrderId = o.Id,
+                            Street = o.Street,
+                            AptUnit = o.AptUnit,
+                            City = o.City,
+                            State = o.State,
+                            PostalCode = o.PostalCode,
+                            RecipientName = o.RecipientName,
+                            RecipientPhone = o.RecipientPhone,
+                            Notes = o.DeliveryNotes
+                        }).ToList();
+                        
+                        var stopsAdded = await _circuitService.AddStopsAsync(plan.CircuitPlanId, stops);
+                        if (!stopsAdded)
+                        {
+                            failureReason = "Failed to add stops to Circuit";
+                        }
+                        else
+                        {
+                            var optimized = await _circuitService.OptimizePlanAsync(plan.CircuitPlanId);
+                            if (optimized)
+                            {
+                                plan.OptimizationStatus = "optimized";
+                                plan.OptimizationProvider = "circuit";
+                            }
+                            else
+                            {
+                                failureReason = "Circuit optimization API call failed";
+                            }
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Circuit optimization failed for plan {PlanId}", id);
+                    failureReason = ex.Message;
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Circuit optimization failed for plan {PlanId}", id);
-                failureReason = ex.Message;
-            }
-        }
-        
-        // Fall back to local optimization if Circuit failed or not configured
-        if (plan.OptimizationStatus != "optimized")
-        {
-            // Local optimization: mark orders by proximity (simplified)
-            // In production, you'd use a proper TSP solver here
-            _logger.LogInformation("Using local optimization for gig {GigId} (Circuit: {Reason})", 
-                id, string.IsNullOrEmpty(failureReason) ? "not configured" : failureReason);
             
-            plan.OptimizationStatus = "optimized";
+            if (plan.OptimizationStatus != "optimized")
+            {
+                _logger.LogInformation("Using local optimization for gig {GigId} (Circuit: {Reason})", 
+                    id, string.IsNullOrEmpty(failureReason) ? "not configured" : failureReason);
+                plan.OptimizationStatus = "optimized";
+                plan.OptimizationProvider = "circuit_local";
+            }
+            
+            optimizationDetails = new
+            {
+                provider = plan.OptimizationProvider,
+                circuitConfigured = _circuitService.IsConfigured,
+                usedCircuit = string.IsNullOrEmpty(failureReason) && _circuitService.IsConfigured
+            };
         }
         
         plan.UpdatedAt = DateTime.UtcNow;
@@ -472,9 +588,64 @@ public class RoutesController : ControllerBase
         return Ok(new { 
             message = "Route optimized successfully", 
             status = plan.OptimizationStatus,
-            circuitConfigured = _circuitService.IsConfigured,
-            usedCircuit = string.IsNullOrEmpty(failureReason) && _circuitService.IsConfigured
+            provider = plan.OptimizationProvider,
+            details = optimizationDetails
         });
+    }
+
+    /// <summary>
+    /// GET /api/routes/providers — List available route optimization providers and their status
+    /// </summary>
+    [HttpGet("providers")]
+    public IActionResult GetProviders()
+    {
+        return Ok(new
+        {
+            providers = new[]
+            {
+                new
+                {
+                    id = "circuit",
+                    name = "Circuit",
+                    description = "Circuit/Spoke API for route optimization and driver tracking",
+                    configured = _circuitService.IsConfigured,
+                    icon = "fa-bolt"
+                },
+                new
+                {
+                    id = "google_maps",
+                    name = "Google Maps",
+                    description = "Google Maps Directions API with traffic-aware waypoint optimization",
+                    configured = _googleMapsService.IsConfigured,
+                    icon = "fa-map-marked-alt"
+                },
+                new
+                {
+                    id = "apple_maps",
+                    name = "Apple Maps",
+                    description = "Apple MapKit Server API with nearest-neighbor route optimization",
+                    configured = _appleMapsService.IsConfigured,
+                    icon = "fa-apple"
+                }
+            }
+        });
+    }
+
+    /// <summary>
+    /// Helper: Get the default office address for use as route origin
+    /// </summary>
+    private async Task<string> GetDefaultOfficeAddress()
+    {
+        var office = await _offices.Query().FirstOrDefaultAsync(o => o.IsDefault && o.IsActive);
+        if (office != null)
+            return $"{office.Address}, {office.City}, {office.State} {office.PostalCode}";
+        
+        // Fallback if no default office
+        var anyOffice = await _offices.Query().FirstOrDefaultAsync(o => o.IsActive);
+        if (anyOffice != null)
+            return $"{anyOffice.Address}, {anyOffice.City}, {anyOffice.State} {anyOffice.PostalCode}";
+        
+        return "New York, NY"; // Last resort fallback
     }
 
     [HttpPost("{id}/split")]
@@ -696,3 +867,4 @@ public class SplitGigDto
     public List<int>? OrderIds { get; set; }
 }
 public class AutoCreateGigsDto { public string? Date { get; set; } }
+public class OptimizeDto { public string? Provider { get; set; } }

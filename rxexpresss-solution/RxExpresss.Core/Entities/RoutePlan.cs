@@ -7,6 +7,7 @@ public class RoutePlan
     public string Date { get; set; } = DateTime.UtcNow.ToString("yyyy-MM-dd");
     public string Status { get; set; } = "draft"; // draft, assigned, in_progress, completed, cancelled
     public string OptimizationStatus { get; set; } = "not_started"; // not_started, optimizing, optimized, failed
+    public string? OptimizationProvider { get; set; } // circuit, google_maps, apple_maps, local
     public bool Distributed { get; set; } = false;
     public string? CircuitPlanId { get; set; } // Circuit API Plan ID
     public int? ServiceZoneId { get; set; } // Area-based gig (Queens, Brooklyn, etc.)

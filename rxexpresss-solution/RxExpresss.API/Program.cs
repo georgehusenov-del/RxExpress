@@ -68,6 +68,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddSingleton<RxExpresss.API.Services.CircuitService>();
+builder.Services.AddSingleton<RxExpresss.API.Services.GoogleMapsService>();
+builder.Services.AddSingleton<RxExpresss.API.Services.AppleMapsService>();
 
 // CORS - allow cross-origin requests from frontend
 builder.Services.AddCors(options =>
