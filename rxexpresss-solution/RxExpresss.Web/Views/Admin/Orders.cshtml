@@ -5,6 +5,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             Refresh
         </button>
+        <button class="btn btn-primary btn-sm" onclick="openCreateOrderModal()" data-testid="create-order-btn">+ Create Order</button>
         <input type="date" class="form-control" style="width:150px" id="date-filter" onchange="load()"/>
         <select class="form-control" style="width:150px" id="pharmacy-filter" onchange="load()"><option value="">All Pharmacies</option></select>
         <select class="form-control" style="width:150px" id="status-filter" onchange="load()">
@@ -101,6 +102,86 @@
             <button class="close-btn" onclick="closeModal('detail-modal')">&times;</button>
         </div>
         <div class="modal-body" id="detail-body"></div>
+    </div>
+</div>
+
+<!-- Create Order Modal -->
+<div class="modal-overlay" id="create-order-modal">
+    <div class="modal" style="max-width:650px">
+        <div class="modal-header">
+            <h3>Create Order</h3>
+            <button class="close-btn" onclick="closeModal('create-order-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Pharmacy</label>
+                <select class="form-control" id="co-pharmacy" data-testid="co-pharmacy"></select>
+            </div>
+            <div class="row">
+                <div class="col"><div class="form-group"><label>Recipient Name</label><input class="form-control" id="co-name" data-testid="co-name"/></div></div>
+                <div class="col"><div class="form-group"><label>Phone</label><input class="form-control" id="co-phone" data-testid="co-phone"/></div></div>
+            </div>
+            <div class="form-group"><label>Street Address</label><input class="form-control" id="co-street" data-testid="co-street"/></div>
+            <div class="row">
+                <div class="col"><div class="form-group"><label>Apt/Unit</label><input class="form-control" id="co-apt"/></div></div>
+                <div class="col"><div class="form-group"><label>City</label><input class="form-control" id="co-city" value="New York" data-testid="co-city"/></div></div>
+            </div>
+            <div class="row">
+                <div class="col"><div class="form-group"><label>State</label><input class="form-control" id="co-state" value="NY"/></div></div>
+                <div class="col"><div class="form-group"><label>Postal Code</label><input class="form-control" id="co-zip" data-testid="co-zip"/></div></div>
+            </div>
+            <div class="row">
+                <div class="col"><div class="form-group"><label>Delivery Type</label>
+                    <select class="form-control" id="co-type" data-testid="co-type">
+                        <option value="next_day">Next Day</option>
+                        <option value="same_day">Same Day</option>
+                        <option value="priority">Priority</option>
+                        <option value="scheduled">Scheduled</option>
+                    </select>
+                </div></div>
+                <div class="col"><div class="form-group"><label>Copay Amount ($)</label><input type="number" step="0.01" class="form-control" id="co-copay" value="0"/></div></div>
+            </div>
+            <div class="form-group"><label>Delivery Notes</label><textarea class="form-control" id="co-notes" rows="2"></textarea></div>
+            <label class="d-flex items-center gap-2 mt-1"><input type="checkbox" id="co-fridge" style="width:18px;height:18px"/> Refrigerated Item</label>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('create-order-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitCreateOrder()" data-testid="submit-create-order">Create Order</button>
+        </div>
+    </div>
+</div>
+
+<!-- Order History / Attempt Timeline Modal -->
+<div class="modal-overlay" id="history-modal">
+    <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+            <h3>Order Attempt History</h3>
+            <button class="close-btn" onclick="closeModal('history-modal')">&times;</button>
+        </div>
+        <div class="modal-body" id="history-body" data-testid="history-body"></div>
+    </div>
+</div>
+
+<!-- Duplicate Order Modal -->
+<div class="modal-overlay" id="duplicate-modal">
+    <div class="modal" style="max-width:450px">
+        <div class="modal-header">
+            <h3>Duplicate Order</h3>
+            <button class="close-btn" onclick="closeModal('duplicate-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="dup-order-id"/>
+            <p>This order has failed 2+ times. Create a duplicate with a <strong>new QR code</strong>.</p>
+            <div class="form-group mt-2">
+                <label>Labour Cost ($)</label>
+                <input type="number" step="0.01" class="form-control" id="dup-cost" value="10.00" data-testid="dup-cost"/>
+                <small class="text-gray">Extra cost added for re-delivery attempt</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('duplicate-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitDuplicate()" data-testid="submit-duplicate">Duplicate with New QR</button>
+        </div>
     </div>
 </div>
 
@@ -316,8 +397,119 @@ async function showDetail(id) {
             <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.street + ', ' + o.city + ', ' + o.state)}" target="_blank" class="btn btn-sm btn-outline">
                 ${actionIcons.map} Open in Google Maps
             </a>
+            <button class="btn btn-sm btn-outline" onclick="closeModal('detail-modal');showHistory(${o.id})" data-testid="history-btn-${o.id}">
+                <i class="fas fa-history"></i> Attempt History
+            </button>
+            ${o.status === 'failed' ? `<button class="btn btn-sm btn-warning" onclick="closeModal('detail-modal');openDuplicateModal(${o.id})" data-testid="duplicate-btn-${o.id}">Duplicate Order</button>` : ''}
         </div>`;
     document.getElementById('detail-modal').classList.add('active');
+}
+
+// ========== Create Order ==========
+function openCreateOrderModal() {
+    const sel = document.getElementById('co-pharmacy');
+    sel.innerHTML = pharmacies.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    document.getElementById('co-name').value = '';
+    document.getElementById('co-phone').value = '';
+    document.getElementById('co-street').value = '';
+    document.getElementById('co-apt').value = '';
+    document.getElementById('co-city').value = 'New York';
+    document.getElementById('co-state').value = 'NY';
+    document.getElementById('co-zip').value = '';
+    document.getElementById('co-type').value = 'next_day';
+    document.getElementById('co-copay').value = '0';
+    document.getElementById('co-notes').value = '';
+    document.getElementById('co-fridge').checked = false;
+    document.getElementById('create-order-modal').classList.add('active');
+}
+
+async function submitCreateOrder() {
+    try {
+        const r = await ApiService.post('/admin/orders/create', {
+            pharmacyId: parseInt(document.getElementById('co-pharmacy').value),
+            recipientName: document.getElementById('co-name').value,
+            recipientPhone: document.getElementById('co-phone').value,
+            street: document.getElementById('co-street').value,
+            aptUnit: document.getElementById('co-apt').value,
+            city: document.getElementById('co-city').value,
+            state: document.getElementById('co-state').value,
+            postalCode: document.getElementById('co-zip').value,
+            deliveryType: document.getElementById('co-type').value,
+            copayAmount: parseFloat(document.getElementById('co-copay').value) || 0,
+            deliveryNotes: document.getElementById('co-notes').value,
+            isRefrigerated: document.getElementById('co-fridge').checked
+        });
+        closeModal('create-order-modal');
+        toast(`Order ${r.orderNumber} created (QR: ${r.qrCode})`, 'success');
+        load();
+    } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ========== Order History ==========
+async function showHistory(orderId) {
+    try {
+        const h = await ApiService.get(`/admin/orders/${orderId}/history`);
+        
+        let html = `
+            <div class="history-summary" data-testid="history-summary">
+                <div class="hs-item"><strong>Total Attempts:</strong> ${h.totalAttempts}</div>
+                <div class="hs-item"><strong>Total Failed:</strong> <span style="color:#ef4444">${h.totalFailed}</span></div>
+                <div class="hs-item"><strong>Total Labour Cost:</strong> $${h.totalLabourCost.toFixed(2)}</div>
+            </div>
+            <h4 class="mt-2 mb-1">Order Chain</h4>`;
+        
+        html += h.orders.map(o => `
+            <div class="history-order ${o.id === orderId ? 'history-current' : ''}" data-testid="history-order-${o.id}">
+                <div class="ho-header">
+                    <strong>Attempt #${o.attemptNumber}: ${o.orderNumber}</strong>
+                    <span class="badge" style="background:${o.qrCode ? 'var(--primary)' : '#94a3b8'};color:#fff">${o.qrCode}</span>
+                </div>
+                <div class="ho-details">
+                    ${getStatusDisplay(o.status)}
+                    ${o.driverName ? `<span class="text-gray">Driver: ${o.driverName}</span>` : ''}
+                    ${o.labourCost > 0 ? `<span style="color:#f59e0b">Labour: $${o.labourCost.toFixed(2)}</span>` : ''}
+                    <span class="text-gray">${formatDate(o.createdAt)}</span>
+                </div>
+            </div>
+        `).join('');
+        
+        if (h.logs.length) {
+            html += '<h4 class="mt-2 mb-1">Attempt Log</h4>';
+            html += h.logs.map(l => `
+                <div class="history-log">
+                    <div class="hl-dot" style="background:${l.status === 'failed' ? '#ef4444' : '#22c55e'}"></div>
+                    <div>
+                        <strong>${l.status === 'failed' ? 'Failed' : 'Delivered'}</strong> — Attempt #${l.attemptNumber}
+                        ${l.driverName ? `<span class="text-gray">by ${l.driverName}</span>` : ''}
+                        ${l.failureReason ? `<div class="text-sm" style="color:#ef4444">${l.failureReason}</div>` : ''}
+                        ${l.notes ? `<div class="text-sm text-gray">${l.notes}</div>` : ''}
+                        <small class="text-gray">${formatDate(l.timestamp)}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        document.getElementById('history-body').innerHTML = html;
+        document.getElementById('history-modal').classList.add('active');
+    } catch(e) { toast('Failed to load history', 'danger'); }
+}
+
+// ========== Duplicate Order ==========
+function openDuplicateModal(orderId) {
+    document.getElementById('dup-order-id').value = orderId;
+    document.getElementById('dup-cost').value = '10.00';
+    document.getElementById('duplicate-modal').classList.add('active');
+}
+
+async function submitDuplicate() {
+    const orderId = document.getElementById('dup-order-id').value;
+    const cost = parseFloat(document.getElementById('dup-cost').value) || 10;
+    try {
+        const r = await ApiService.post(`/admin/orders/${orderId}/duplicate`, { labourCost: cost });
+        closeModal('duplicate-modal');
+        toast(`Order duplicated! New: ${r.newOrderNumber} (QR: ${r.newQrCode}), Labour: $${r.labourCost}`, 'success');
+        load();
+    } catch(e) { toast(e.message, 'danger'); }
 }
 
 load();
@@ -351,6 +543,15 @@ load();
 }
 .od-row:last-child { border: none; }
 .status-pill { text-transform: capitalize; }
-/* Refrigerated items - blue QR code styling is inline */
+/* History styles */
+.history-summary { display: flex; gap: 20px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 12px; }
+.hs-item { font-size: 14px; }
+.history-order { padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+.history-current { border-color: var(--primary); background: rgba(59,130,246,0.05); }
+.ho-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.ho-details { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.history-log { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.history-log:last-child { border: none; }
+.hl-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
 </style>
 }

@@ -8,7 +8,9 @@ const ApiService={
     async login(e,p){const d=await this.post('/auth/login',{email:e,password:p});if(d){this.setToken(d.token);this.setUser(d.user)}return d},
     logout(){localStorage.removeItem('rx_token');localStorage.removeItem('rx_user');window.location.replace('/');},
     isLoggedIn(){return!!this.getToken()},hasRole(r){const u=this.getUser();return u&&u.role===r},
-    requireAuth(r){if(!this.isLoggedIn()){window.location.replace('/');return false}if(r&&!this.hasRole(r)){window.location.replace('/');return false}return true}
+    hasPermission(p){const u=this.getUser();if(!u)return false;if(u.role==='Admin')return true;return u.permissions&&u.permissions.includes(p)},
+    isAdminLike(){const u=this.getUser();return u&&(u.role==='Admin'||u.role==='Manager'||u.role==='Operator')},
+    requireAuth(r){if(!this.isLoggedIn()){window.location.replace('/');return false}if(r==='Admin'){if(!this.isAdminLike()){window.location.replace('/');return false}}else if(r&&!this.hasRole(r)){window.location.replace('/');return false}return true}
 };
 function statusBadge(s){
     // Short status labels

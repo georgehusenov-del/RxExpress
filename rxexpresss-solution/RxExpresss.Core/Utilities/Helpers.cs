@@ -23,7 +23,8 @@ public static class QrCodeGenerator
 public static class AppRoles
 {
     public const string Admin = "Admin";
+    public const string Manager = "Manager";
+    public const string Operator = "Operator";
     public const string Pharmacy = "Pharmacy";
     public const string Driver = "Driver";
-    public const string Patient = "Patient";
 }

@@ -12,7 +12,7 @@ namespace RxExpresss.API.Controllers;
 
 [ApiController]
 [Route("api/routes")]
-[Authorize(Roles = AppRoles.Admin)]
+[Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Manager},{AppRoles.Operator}")]
 public class RoutesController : ControllerBase
 {
     private readonly IRepository<RoutePlan> _plans;

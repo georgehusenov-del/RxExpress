@@ -24,9 +24,17 @@
 </div>
 @section Scripts {
 <script>
+    // Redirect admin-like roles (Admin, Manager, Operator) to Admin panel
+    function getRedirectPath(role) {
+        if (role === 'Admin' || role === 'Manager' || role === 'Operator') {
+            return '/Admin/Index';
+        }
+        return '/' + role + '/Index';
+    }
+    
     if (ApiService.isLoggedIn()) {
         const u = ApiService.getUser();
-        if (u) window.location.replace('/' + u.role + '/Index');
+        if (u) window.location.replace(getRedirectPath(u.role));
     }
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -38,7 +46,7 @@
                 document.getElementById('password').value
             );
             if (d && d.user) {
-                window.location.replace('/' + d.user.role + '/Index');
+                window.location.replace(getRedirectPath(d.user.role));
             } else {
                 showAlert('alert-area', 'danger', 'Login failed - no response');
                 btn.disabled = false; btn.textContent = 'Sign In';

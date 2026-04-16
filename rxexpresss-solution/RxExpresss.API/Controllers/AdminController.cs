@@ -11,7 +11,7 @@ namespace RxExpresss.API.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-[Authorize(Roles = AppRoles.Admin)]
+[Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Manager},{AppRoles.Operator}")]
 public class AdminController : ControllerBase
 {
     private readonly IRepository<Order> _orders;
@@ -20,16 +20,26 @@ public class AdminController : ControllerBase
     private readonly IRepository<ApiKey> _apiKeys;
     private readonly IRepository<OfficeLocation> _officeLocations;
     private readonly IRepository<DriverLocationLog> _locationLogs;
+    private readonly IRepository<UserPermission> _permissions;
+    private readonly IRepository<OrderAttemptLog> _attemptLogs;
+    private readonly IRepository<ServiceZone> _zones;
+    private readonly IRepository<RoutePlan> _plans;
+    private readonly IRepository<RoutePlanOrder> _planOrders;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public AdminController(IRepository<Order> orders, IRepository<Pharmacy> pharmacies,
         IRepository<DriverProfile> drivers, IRepository<ApiKey> apiKeys, 
         IRepository<OfficeLocation> officeLocations, IRepository<DriverLocationLog> locationLogs,
+        IRepository<UserPermission> permissions, IRepository<OrderAttemptLog> attemptLogs,
+        IRepository<ServiceZone> zones, IRepository<RoutePlan> plans,
+        IRepository<RoutePlanOrder> planOrders,
         UserManager<ApplicationUser> userManager)
     {
         _orders = orders; _pharmacies = pharmacies;
         _drivers = drivers; _apiKeys = apiKeys; 
         _officeLocations = officeLocations; _locationLogs = locationLogs;
+        _permissions = permissions; _attemptLogs = attemptLogs;
+        _zones = zones; _plans = plans; _planOrders = planOrders;
         _userManager = userManager;
     }
 
@@ -546,6 +556,330 @@ public class AdminController : ControllerBase
             .ToListAsync();
 
         return Ok(new { trail, count = trail.Count });
+    }
+
+    #endregion
+
+    #region Permissions Management
+
+    /// <summary>
+    /// GET /api/admin/permissions/available — All available permission keys with labels
+    /// </summary>
+    [HttpGet("permissions/available")]
+    public IActionResult GetAvailablePermissions()
+    {
+        var grouped = Permissions.All
+            .GroupBy(p => p.Category)
+            .Select(g => new { category = g.Key, permissions = g.Select(p => new { key = p.Key, label = p.Label }) });
+        return Ok(new { permissions = grouped });
+    }
+
+    /// <summary>
+    /// GET /api/admin/permissions/my — Current user's permissions
+    /// </summary>
+    [HttpGet("permissions/my")]
+    public async Task<IActionResult> GetMyPermissions()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var roles = User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+        
+        // Admin has all permissions
+        if (roles.Contains(AppRoles.Admin))
+            return Ok(new { permissions = Permissions.All.Select(p => p.Key).ToList(), role = "Admin" });
+
+        var perms = await _permissions.Query()
+            .Where(p => p.UserId == userId)
+            .Select(p => p.PermissionKey)
+            .ToListAsync();
+
+        return Ok(new { permissions = perms, role = roles.FirstOrDefault() ?? "" });
+    }
+
+    /// <summary>
+    /// GET /api/admin/permissions/user/{userId} — Get a specific user's permissions
+    /// </summary>
+    [HttpGet("permissions/user/{userId}")]
+    public async Task<IActionResult> GetUserPermissions(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return NotFound(new { detail = "User not found" });
+        
+        var roles = await _userManager.GetRolesAsync(user);
+        var perms = await _permissions.Query()
+            .Where(p => p.UserId == userId)
+            .Select(p => p.PermissionKey)
+            .ToListAsync();
+
+        return Ok(new { 
+            userId, 
+            name = $"{user.FirstName} {user.LastName}",
+            role = roles.FirstOrDefault(),
+            permissions = perms 
+        });
+    }
+
+    /// <summary>
+    /// PUT /api/admin/permissions/user/{userId} — Set a user's permissions (replaces all)
+    /// Admin can set Manager/Operator permissions. Manager can set Operator permissions.
+    /// </summary>
+    [HttpPut("permissions/user/{userId}")]
+    public async Task<IActionResult> SetUserPermissions(string userId, [FromBody] SetPermissionsDto dto)
+    {
+        var targetUser = await _userManager.FindByIdAsync(userId);
+        if (targetUser == null) return NotFound(new { detail = "User not found" });
+
+        var targetRoles = await _userManager.GetRolesAsync(targetUser);
+        var callerRoles = User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+        var callerId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
+        // Authorization: Admin can manage Manager/Operator, Manager can manage Operator
+        if (callerRoles.Contains(AppRoles.Admin))
+        {
+            // Admin can manage anyone except other admins
+            if (targetRoles.Contains(AppRoles.Admin))
+                return BadRequest(new { detail = "Cannot modify admin permissions" });
+        }
+        else if (callerRoles.Contains(AppRoles.Manager))
+        {
+            // Manager can only manage Operators
+            if (!targetRoles.Contains(AppRoles.Operator))
+                return Forbid();
+            
+            // Manager can only assign permissions they themselves have
+            var myPerms = await _permissions.Query()
+                .Where(p => p.UserId == callerId)
+                .Select(p => p.PermissionKey)
+                .ToListAsync();
+            
+            var invalidPerms = dto.Permissions.Except(myPerms).ToList();
+            if (invalidPerms.Any())
+                return BadRequest(new { detail = $"You cannot assign permissions you don't have: {string.Join(", ", invalidPerms)}" });
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        // Remove existing permissions
+        var existing = await _permissions.Query().Where(p => p.UserId == userId).ToListAsync();
+        foreach (var p in existing) await _permissions.DeleteAsync(p);
+
+        // Add new permissions
+        foreach (var key in dto.Permissions)
+        {
+            await _permissions.AddAsync(new UserPermission
+            {
+                UserId = userId,
+                PermissionKey = key,
+                GrantedByUserId = callerId
+            });
+        }
+
+        return Ok(new { message = "Permissions updated", count = dto.Permissions.Count });
+    }
+
+    #endregion
+
+    #region Admin Order Creation & Duplication
+
+    /// <summary>
+    /// POST /api/admin/orders — Admin creates an order (with pharmacy dropdown)
+    /// </summary>
+    [HttpPost("orders/create")]
+    public async Task<IActionResult> AdminCreateOrder([FromBody] AdminCreateOrderDto dto)
+    {
+        var pharmacy = await _pharmacies.Query().FirstOrDefaultAsync(p => p.Id == dto.PharmacyId);
+        if (pharmacy == null) return BadRequest(new { detail = "Pharmacy not found" });
+
+        var order = new Order
+        {
+            PharmacyId = dto.PharmacyId,
+            PharmacyName = pharmacy.Name,
+            DeliveryType = dto.DeliveryType ?? "next_day",
+            TimeWindow = dto.TimeWindow,
+            ScheduledDate = dto.ScheduledDate,
+            RecipientName = dto.RecipientName,
+            RecipientPhone = dto.RecipientPhone,
+            RecipientEmail = dto.RecipientEmail,
+            Street = dto.Street,
+            AptUnit = dto.AptUnit,
+            City = dto.City,
+            State = dto.State ?? "NY",
+            PostalCode = dto.PostalCode,
+            DeliveryNotes = dto.DeliveryNotes,
+            DeliveryInstructions = dto.DeliveryInstructions,
+            CopayAmount = dto.CopayAmount,
+            IsRefrigerated = dto.IsRefrigerated,
+            QrCode = QrCodeGenerator.Generate(dto.City),
+            Status = "new",
+            AttemptNumber = 1
+        };
+
+        await _orders.AddAsync(order);
+        await AutoAssignToGig(order);
+
+        return Ok(new { message = "Order created", orderId = order.Id, orderNumber = order.OrderNumber, qrCode = order.QrCode });
+    }
+
+    /// <summary>
+    /// POST /api/admin/orders/{id}/duplicate — Duplicate a failed order with new QR code
+    /// </summary>
+    [HttpPost("orders/{id}/duplicate")]
+    public async Task<IActionResult> DuplicateOrder(int id, [FromBody] DuplicateOrderDto dto)
+    {
+        var original = await _orders.GetByIdAsync(id);
+        if (original == null) return NotFound(new { detail = "Order not found" });
+
+        // Find the root parent order
+        var rootOrderId = original.ParentOrderId ?? original.Id;
+
+        // Count total attempts across all duplicates of this order
+        var allRelated = await _orders.Query()
+            .Where(o => o.Id == rootOrderId || o.ParentOrderId == rootOrderId)
+            .ToListAsync();
+        var maxAttempt = allRelated.Max(o => o.AttemptNumber);
+
+        // Create duplicate with new QR code
+        var duplicate = new Order
+        {
+            PharmacyId = original.PharmacyId,
+            PharmacyName = original.PharmacyName,
+            DeliveryType = original.DeliveryType,
+            TimeWindow = original.TimeWindow,
+            ScheduledDate = original.ScheduledDate,
+            RecipientName = original.RecipientName,
+            RecipientPhone = original.RecipientPhone,
+            RecipientEmail = original.RecipientEmail,
+            Street = original.Street,
+            AptUnit = original.AptUnit,
+            City = original.City,
+            State = original.State,
+            PostalCode = original.PostalCode,
+            DeliveryNotes = original.DeliveryNotes,
+            DeliveryInstructions = original.DeliveryInstructions,
+            CopayAmount = original.CopayAmount,
+            IsRefrigerated = original.IsRefrigerated,
+            QrCode = QrCodeGenerator.Generate(original.City), // NEW QR code
+            Status = "new",
+            ParentOrderId = rootOrderId,
+            AttemptNumber = maxAttempt + 1,
+            LabourCost = dto.LabourCost
+        };
+
+        await _orders.AddAsync(duplicate);
+        await AutoAssignToGig(duplicate);
+
+        return Ok(new { 
+            message = "Order duplicated with new QR code",
+            newOrderId = duplicate.Id,
+            newOrderNumber = duplicate.OrderNumber,
+            newQrCode = duplicate.QrCode,
+            attemptNumber = duplicate.AttemptNumber,
+            labourCost = duplicate.LabourCost
+        });
+    }
+
+    /// <summary>
+    /// GET /api/admin/orders/{id}/history — Full attempt history for an order (all duplicates)
+    /// </summary>
+    [HttpGet("orders/{id}/history")]
+    public async Task<IActionResult> GetOrderHistory(int id)
+    {
+        var order = await _orders.GetByIdAsync(id);
+        if (order == null) return NotFound(new { detail = "Order not found" });
+
+        var rootOrderId = order.ParentOrderId ?? order.Id;
+
+        // Get all related orders (original + all duplicates)
+        var allOrders = await _orders.Query()
+            .Where(o => o.Id == rootOrderId || o.ParentOrderId == rootOrderId)
+            .OrderBy(o => o.AttemptNumber)
+            .Select(o => new {
+                o.Id, o.OrderNumber, o.QrCode, o.Status, o.AttemptNumber,
+                o.FailedAttempts, o.LabourCost, o.DriverName,
+                o.CreatedAt, o.ActualDeliveryTime, o.DeliveryNotes,
+                o.ParentOrderId
+            })
+            .ToListAsync();
+
+        // Get attempt logs
+        var orderIds = allOrders.Select(o => o.Id).ToList();
+        var logs = await _attemptLogs.Query()
+            .Where(l => orderIds.Contains(l.OrderId))
+            .OrderBy(l => l.Timestamp)
+            .Select(l => new { l.OrderId, l.AttemptNumber, l.Status, l.DriverName, l.FailureReason, l.Notes, l.Timestamp })
+            .ToListAsync();
+
+        return Ok(new {
+            rootOrderId,
+            totalAttempts = allOrders.Count,
+            totalFailed = allOrders.Sum(o => o.FailedAttempts),
+            totalLabourCost = allOrders.Sum(o => o.LabourCost),
+            orders = allOrders,
+            logs
+        });
+    }
+
+    /// <summary>
+    /// POST /api/admin/orders/{id}/log-attempt — Log a delivery attempt (success or failure)
+    /// </summary>
+    [HttpPost("orders/{id}/log-attempt")]
+    public async Task<IActionResult> LogAttempt(int id, [FromBody] LogAttemptDto dto)
+    {
+        var order = await _orders.GetByIdAsync(id);
+        if (order == null) return NotFound(new { detail = "Order not found" });
+
+        order.FailedAttempts++;
+        order.UpdatedAt = DateTime.UtcNow;
+        if (dto.Status == "failed") order.Status = "failed";
+        await _orders.UpdateAsync(order);
+
+        await _attemptLogs.AddAsync(new OrderAttemptLog
+        {
+            OrderId = id,
+            AttemptNumber = order.FailedAttempts,
+            Status = dto.Status,
+            DriverName = dto.DriverName ?? order.DriverName,
+            DriverId = order.DriverId,
+            FailureReason = dto.FailureReason,
+            Notes = dto.Notes
+        });
+
+        var canDuplicate = order.FailedAttempts >= 2;
+
+        return Ok(new { 
+            message = $"Attempt logged: {dto.Status}",
+            failedAttempts = order.FailedAttempts,
+            canDuplicate,
+            duplicateMessage = canDuplicate ? "This order has failed 2+ times. You can duplicate it with a new QR code." : null
+        });
+    }
+
+    private async Task AutoAssignToGig(Order order)
+    {
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var cityLower = order.City.ToLower().Trim();
+        var zone = await _zones.Query()
+            .FirstOrDefaultAsync(z => z.IsActive && z.Name.ToLower() == cityLower);
+        
+        if (zone == null)
+            zone = await _zones.Query()
+                .FirstOrDefaultAsync(z => z.IsActive && (z.Name.ToLower().Contains(cityLower) || cityLower.Contains(z.Name.ToLower())));
+        
+        if (zone == null) return;
+
+        var gig = await _plans.Query()
+            .FirstOrDefaultAsync(p => p.ServiceZoneId == zone.Id && p.Date == today && p.Status == "draft");
+        
+        if (gig == null)
+        {
+            gig = new RoutePlan { Title = $"{zone.Name} - {today}", Date = today, ServiceZoneId = zone.Id, Status = "draft", IsAutoCreated = true };
+            await _plans.AddAsync(gig);
+        }
+
+        order.RoutePlanId = gig.Id;
+        await _orders.UpdateAsync(order);
+        await _planOrders.AddAsync(new RoutePlanOrder { RoutePlanId = gig.Id, OrderId = order.Id });
     }
 
     #endregion

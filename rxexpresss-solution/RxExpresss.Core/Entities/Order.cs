@@ -42,6 +42,12 @@ public class Order
     // External Integration
     public string? ExternalOrderId { get; set; } // Pharmacy's internal order ID for integration
 
+    // Duplication / Attempt Tracking
+    public int? ParentOrderId { get; set; } // Links to the original order if this is a duplicate
+    public int AttemptNumber { get; set; } = 1; // 1 = original, 2+ = duplicate
+    public int FailedAttempts { get; set; } = 0; // Count of failed delivery attempts on THIS order
+    public decimal LabourCost { get; set; } = 0; // Extra cost added when duplicating
+
     // Status
     public string Status { get; set; } = "new";
     public string? DeliveryNotes { get; set; }

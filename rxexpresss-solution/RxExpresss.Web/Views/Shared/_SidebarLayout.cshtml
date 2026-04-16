@@ -159,7 +159,7 @@
         <nav class="sidebar-nav" id="sidebar-nav">
             @foreach (var item in navItems)
             {
-                <a href="@item.Href" class="@(item.Id == activeId ? "active" : "")">@Html.Raw(item.Icon)@item.Label</a>
+                <a href="@item.Href" class="@(item.Id == activeId ? "active" : "")" data-nav-id="@item.Id">@Html.Raw(item.Icon)@item.Label</a>
             }
         </nav>
         <div class="sidebar-footer" id="sidebar-footer"></div>
@@ -179,11 +179,39 @@
 <script src="~/js/api-service.js"></script>
 <script src="~/js/print-qr.js"></script>
 <script>
+    // Permission-based sidebar filtering
+    const navPermMap = {
+        'overview': '',
+        'users': 'users.view',
+        'pharmacies': 'pharmacies.view',
+        'drivers': 'drivers.view',
+        'tracking': 'tracking.view',
+        'orders': 'orders.view',
+        'routes': 'routes.view',
+        'pricing': 'pricing.view',
+        'scanning': 'scanning.view',
+        'zones': 'zones.view',
+        'offices': 'offices.view',
+        'api-keys': 'apikeys.view',
+        'reports': 'reports.view'
+    };
+
     // Setup sidebar footer with user info
     const user = ApiService.getUser();
     const sf = document.getElementById('sidebar-footer');
     if (sf && user) {
         sf.innerHTML = `<div class="user-name">${user.firstName} ${user.lastName}</div><div class="user-role">${user.role}</div><button class="logout-btn" onclick="ApiService.logout()">Sign Out</button>`;
+    }
+
+    // Filter sidebar items based on permissions (Admin sees all)
+    if (user && user.role !== 'Admin') {
+        document.querySelectorAll('[data-nav-id]').forEach(link => {
+            const navId = link.getAttribute('data-nav-id');
+            const requiredPerm = navPermMap[navId];
+            if (requiredPerm && !ApiService.hasPermission(requiredPerm)) {
+                link.style.display = 'none';
+            }
+        });
     }
     
     // Sidebar toggle functions

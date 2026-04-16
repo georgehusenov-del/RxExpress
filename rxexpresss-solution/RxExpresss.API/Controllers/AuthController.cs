@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using RxExpresss.Core.DTOs;
 using RxExpresss.Core.Entities;
 using RxExpresss.Core.Interfaces;
@@ -16,12 +17,15 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly JwtService _jwt;
     private readonly IRepository<Pharmacy> _pharmacies;
+    private readonly IRepository<UserPermission> _permissions;
 
-    public AuthController(UserManager<ApplicationUser> userManager, JwtService jwt, IRepository<Pharmacy> pharmacies)
+    public AuthController(UserManager<ApplicationUser> userManager, JwtService jwt, 
+        IRepository<Pharmacy> pharmacies, IRepository<UserPermission> permissions)
     {
         _userManager = userManager;
         _jwt = jwt;
         _pharmacies = pharmacies;
+        _permissions = permissions;
     }
 
     [HttpPost("login")]
@@ -36,15 +40,31 @@ public class AuthController : ControllerBase
 
         var token = await _jwt.GenerateTokenAsync(user);
         var roles = await _userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? "";
 
-        return Ok(new AuthResponseDto
+        // Get permissions (Admin has all)
+        List<string> perms;
+        if (role == AppRoles.Admin)
         {
-            Token = token,
-            User = new UserDto
+            perms = Permissions.All.Select(p => p.Key).ToList();
+        }
+        else
+        {
+            perms = _permissions.Query()
+                .Where(p => p.UserId == user.Id)
+                .Select(p => p.PermissionKey)
+                .ToList();
+        }
+
+        return Ok(new
+        {
+            token,
+            user = new
             {
-                Id = user.Id, Email = user.Email!, FirstName = user.FirstName,
-                LastName = user.LastName, Phone = user.PhoneNumber ?? "",
-                Role = roles.FirstOrDefault() ?? "", IsActive = user.IsActive
+                id = user.Id, email = user.Email!, firstName = user.FirstName,
+                lastName = user.LastName, phone = user.PhoneNumber ?? "",
+                role, isActive = user.IsActive,
+                permissions = perms
             }
         });
     }

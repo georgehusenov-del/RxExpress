@@ -1,14 +1,15 @@
 @{ Layout = "_SidebarLayout"; }
 @section TopbarRight { 
     <div class="d-flex gap-2">
-        <select class="form-control" style="width:160px" id="rf" onchange="load()">
+        <select class="form-control" style="width:160px" id="rf" onchange="load()" data-testid="role-filter">
             <option value="">All Roles</option>
             <option value="Admin">Admin</option>
+            <option value="Manager">Manager</option>
+            <option value="Operator">Operator</option>
             <option value="Pharmacy">Pharmacy</option>
             <option value="Driver">Driver</option>
-            <option value="Patient">Patient</option>
         </select>
-        <button class="btn btn-primary" onclick="openAddModal()">+ Add User</button>
+        <button class="btn btn-primary" onclick="openAddModal()" data-testid="add-user-btn">+ Add User</button>
     </div>
 }
 <div class="card"><div class="card-body table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Active</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="tbl"></tbody></table></div></div>
@@ -16,36 +17,52 @@
 <!-- Add/Edit User Modal -->
 <div class="modal-overlay" id="user-modal"><div class="modal"><div class="modal-header"><h3 id="modal-title">Add User</h3><button class="close-btn" onclick="closeModal()">&times;</button></div><div class="modal-body">
     <input type="hidden" id="m-id"/>
-    <div class="row"><div class="col"><div class="form-group"><label>First Name</label><input class="form-control" id="m-fn"/></div></div><div class="col"><div class="form-group"><label>Last Name</label><input class="form-control" id="m-ln"/></div></div></div>
-    <div class="form-group"><label>Email</label><input type="email" class="form-control" id="m-email"/></div>
-    <div class="form-group" id="pw-group"><label>Password</label><input class="form-control" id="m-pw" value="User@123"/></div>
-    <div class="form-group"><label>Phone</label><input class="form-control" id="m-phone"/></div>
-    <div class="row"><div class="col"><div class="form-group"><label>Role</label><select class="form-control" id="m-role"><option value="Admin">Admin</option><option value="Pharmacy">Pharmacy</option><option value="Driver">Driver</option><option value="Patient">Patient</option></select></div></div><div class="col"><div class="form-group"><label>Status</label><select class="form-control" id="m-active"><option value="true">Active</option><option value="false">Inactive</option></select></div></div></div>
-</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveUser()">Save</button></div></div></div>
+    <div class="row"><div class="col"><div class="form-group"><label>First Name</label><input class="form-control" id="m-fn" data-testid="user-firstname"/></div></div><div class="col"><div class="form-group"><label>Last Name</label><input class="form-control" id="m-ln" data-testid="user-lastname"/></div></div></div>
+    <div class="form-group"><label>Email</label><input type="email" class="form-control" id="m-email" data-testid="user-email"/></div>
+    <div class="form-group" id="pw-group"><label>Password</label><input class="form-control" id="m-pw" value="User@123" data-testid="user-password"/></div>
+    <div class="form-group"><label>Phone</label><input class="form-control" id="m-phone" data-testid="user-phone"/></div>
+    <div class="row"><div class="col"><div class="form-group"><label>Role</label><select class="form-control" id="m-role" data-testid="user-role"><option value="Manager">Manager</option><option value="Operator">Operator</option><option value="Pharmacy">Pharmacy</option><option value="Driver">Driver</option></select></div></div><div class="col"><div class="form-group"><label>Status</label><select class="form-control" id="m-active" data-testid="user-status"><option value="true">Active</option><option value="false">Inactive</option></select></div></div></div>
+</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveUser()" data-testid="save-user-btn">Save</button></div></div></div>
+
+<!-- Permissions Modal -->
+<div class="modal-overlay" id="perms-modal"><div class="modal" style="max-width:700px"><div class="modal-header"><h3 id="perms-title">Manage Permissions</h3><button class="close-btn" onclick="closePermsModal()">&times;</button></div><div class="modal-body">
+    <input type="hidden" id="perms-userid"/>
+    <p class="text-gray mb-2" id="perms-desc"></p>
+    <div id="perms-list" data-testid="permissions-list"></div>
+</div><div class="modal-footer"><button class="btn btn-outline" onclick="closePermsModal()">Cancel</button><button class="btn btn-primary" onclick="savePermissions()" data-testid="save-permissions-btn">Save Permissions</button></div></div></div>
 
 @section Scripts {
 <script>
 if(!ApiService.requireAuth('Admin'))throw'';
 
+const roleBadgeColors = {
+    'Admin': '#1e40af', 'Manager': '#7c3aed', 'Operator': '#0891b2',
+    'Pharmacy': '#059669', 'Driver': '#d97706'
+};
+
 async function load(){
     const r=document.getElementById('rf').value;
     const d=await ApiService.get(r?`/admin/users?role=${r}`:'/admin/users');
-    document.getElementById('tbl').innerHTML=d.users.length?d.users.map(u=>`<tr>
+    document.getElementById('tbl').innerHTML=d.users.length?d.users.map(u=>{
+        const badgeColor = roleBadgeColors[u.role] || '#64748b';
+        const showPerms = (u.role === 'Manager' || u.role === 'Operator');
+        return `<tr>
         <td><strong>${u.firstName} ${u.lastName}</strong></td>
         <td>${u.email}</td>
         <td>${u.phone||'-'}</td>
-        <td><span class="badge badge-available">${u.role}</span></td>
+        <td><span class="badge" style="background:${badgeColor};color:#fff">${u.role}</span></td>
         <td>${u.isActive?'<span class="text-success">Active</span>':'<span class="text-danger">Inactive</span>'}</td>
         <td>${formatDate(u.createdAt)}</td>
-        <td>
+        <td class="action-btns">
             <button class="btn btn-sm btn-outline" onclick="openEditModal('${u.id}')">Edit</button>
+            ${showPerms ? `<button class="btn btn-sm btn-purple" onclick="openPermsModal('${u.id}')" data-testid="perms-btn-${u.id}">Permissions</button>` : ''}
             <button class="btn btn-sm ${u.isActive?'btn-warning':'btn-success'}" onclick="toggleActive('${u.id}')">${u.isActive?'Deactivate':'Activate'}</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">Delete</button>
         </td>
-    </tr>`).join(''):'<tr><td colspan="7" class="text-center text-gray">No users</td></tr>';
+    </tr>`}).join(''):'<tr><td colspan="7" class="text-center text-gray">No users</td></tr>';
 }
 
 function closeModal(){document.getElementById('user-modal').classList.remove('active')}
+function closePermsModal(){document.getElementById('perms-modal').classList.remove('active')}
 
 function openAddModal(){
     document.getElementById('modal-title').textContent='Add User';
@@ -55,7 +72,7 @@ function openAddModal(){
     document.getElementById('m-email').value='';
     document.getElementById('m-pw').value='User@123';
     document.getElementById('m-phone').value='';
-    document.getElementById('m-role').value='Patient';
+    document.getElementById('m-role').value='Operator';
     document.getElementById('m-active').value='true';
     document.getElementById('pw-group').style.display='block';
     document.getElementById('m-email').disabled=false;
@@ -77,11 +94,53 @@ async function openEditModal(id){
     document.getElementById('user-modal').classList.add('active');
 }
 
+async function openPermsModal(userId){
+    document.getElementById('perms-userid').value = userId;
+    
+    // Load available permissions and user's current permissions
+    const [available, userPerms] = await Promise.all([
+        ApiService.get('/admin/permissions/available'),
+        ApiService.get(`/admin/permissions/user/${userId}`)
+    ]);
+    
+    document.getElementById('perms-title').textContent = `Permissions: ${userPerms.name}`;
+    document.getElementById('perms-desc').textContent = `Role: ${userPerms.role} — Check/uncheck to control access`;
+    
+    const currentPerms = new Set(userPerms.permissions || []);
+    
+    let html = '';
+    for (const group of available.permissions) {
+        html += `<div class="perm-category"><strong>${group.category}</strong><div class="perm-items">`;
+        for (const p of group.permissions) {
+            html += `<label class="perm-item">
+                <input type="checkbox" class="perm-cb" value="${p.key}" ${currentPerms.has(p.key) ? 'checked' : ''}/>
+                <span>${p.label}</span>
+            </label>`;
+        }
+        html += `</div></div>`;
+    }
+    
+    document.getElementById('perms-list').innerHTML = html;
+    document.getElementById('perms-modal').classList.add('active');
+}
+
+async function savePermissions(){
+    const userId = document.getElementById('perms-userid').value;
+    const selected = [...document.querySelectorAll('.perm-cb:checked')].map(cb => cb.value);
+    
+    try {
+        await ApiService.put(`/admin/permissions/user/${userId}`, { permissions: selected });
+        toast('Permissions updated!', 'success');
+        closePermsModal();
+    } catch(e) {
+        toast(e.message, 'danger');
+    }
+}
+
 async function saveUser(){
     const id=document.getElementById('m-id').value;
     try{
         if(id){
-            // Update
             await ApiService.put(`/admin/users/${id}`,{
                 firstName:document.getElementById('m-fn').value,
                 lastName:document.getElementById('m-ln').value,
@@ -89,9 +148,8 @@ async function saveUser(){
                 role:document.getElementById('m-role').value,
                 isActive:document.getElementById('m-active').value==='true'
             });
-            showAlert('alert-area','success','User updated!');
+            toast('User updated!','success');
         }else{
-            // Create
             await ApiService.post('/admin/users',{
                 email:document.getElementById('m-email').value,
                 password:document.getElementById('m-pw').value,
@@ -101,30 +159,33 @@ async function saveUser(){
                 role:document.getElementById('m-role').value,
                 isActive:document.getElementById('m-active').value==='true'
             });
-            showAlert('alert-area','success','User created!');
+            toast('User created!','success');
         }
         closeModal();
         load();
-    }catch(e){showAlert('alert-area','danger',e.message);}
+    }catch(e){toast(e.message,'danger');}
 }
 
 async function toggleActive(id){
     try{
         const r=await ApiService.put(`/admin/users/${id}/toggle-active`);
-        showAlert('alert-area','success',r.message);
+        toast(r.message,'success');
         load();
-    }catch(e){showAlert('alert-area','danger',e.message);}
-}
-
-async function deleteUser(id){
-    if(!confirm('Are you sure you want to delete this user?'))return;
-    try{
-        await ApiService.delete(`/admin/users/${id}`);
-        showAlert('alert-area','success','User deleted');
-        load();
-    }catch(e){showAlert('alert-area','danger',e.message);}
+    }catch(e){toast(e.message,'danger');}
 }
 
 load();
 </script>
+
+<style>
+.btn-purple { background: #7c3aed; color: white; border: none; }
+.btn-purple:hover { background: #6d28d9; }
+.action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.perm-category { margin-bottom: 16px; }
+.perm-category strong { display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.perm-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.perm-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+.perm-item:hover { background: var(--bg-secondary); }
+.perm-item input { accent-color: var(--primary); }
+</style>
 }

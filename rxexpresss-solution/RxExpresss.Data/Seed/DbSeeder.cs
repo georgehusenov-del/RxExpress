@@ -18,7 +18,7 @@ public static class DbSeeder
         await context.Database.MigrateAsync();
 
         // Seed Roles
-        string[] roles = { AppRoles.Admin, AppRoles.Pharmacy, AppRoles.Driver, AppRoles.Patient };
+        string[] roles = { AppRoles.Admin, AppRoles.Manager, AppRoles.Operator, AppRoles.Pharmacy, AppRoles.Driver };
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
@@ -197,5 +197,68 @@ public static class DbSeeder
         // NOTE: Orders and Gigs are NOT seeded - they are created automatically:
         // - Orders are created by pharmacies via the Order Creation flow
         // - Gigs (Route Plans) are auto-created when orders are submitted based on service zone
+
+        // Seed Test Manager
+        if (await userManager.FindByEmailAsync("manager@rxexpresss.com") == null)
+        {
+            var managerUser = new ApplicationUser
+            {
+                UserName = "manager@rxexpresss.com",
+                Email = "manager@rxexpresss.com",
+                FirstName = "Test",
+                LastName = "Manager",
+                PhoneNumber = "555-0010",
+                EmailConfirmed = true,
+                IsActive = true
+            };
+            await userManager.CreateAsync(managerUser, "Manager@123");
+            await userManager.AddToRoleAsync(managerUser, AppRoles.Manager);
+
+            // Give manager all permissions by default
+            foreach (var perm in Permissions.All)
+            {
+                context.UserPermissions.Add(new UserPermission
+                {
+                    UserId = managerUser.Id,
+                    PermissionKey = perm.Key,
+                    GrantedByUserId = "system"
+                });
+            }
+            await context.SaveChangesAsync();
+        }
+
+        // Seed Test Operator
+        if (await userManager.FindByEmailAsync("operator@rxexpresss.com") == null)
+        {
+            var operatorUser = new ApplicationUser
+            {
+                UserName = "operator@rxexpresss.com",
+                Email = "operator@rxexpresss.com",
+                FirstName = "Test",
+                LastName = "Operator",
+                PhoneNumber = "555-0011",
+                EmailConfirmed = true,
+                IsActive = true
+            };
+            await userManager.CreateAsync(operatorUser, "Operator@123");
+            await userManager.AddToRoleAsync(operatorUser, AppRoles.Operator);
+
+            // Give operator basic permissions
+            var operatorPerms = new[] { 
+                Permissions.OrdersView, Permissions.OrdersCreate, Permissions.OrdersEdit,
+                Permissions.RoutesView, Permissions.DriversView, Permissions.TrackingView,
+                Permissions.ScanningView, Permissions.ReportsView
+            };
+            foreach (var key in operatorPerms)
+            {
+                context.UserPermissions.Add(new UserPermission
+                {
+                    UserId = operatorUser.Id,
+                    PermissionKey = key,
+                    GrantedByUserId = "system"
+                });
+            }
+            await context.SaveChangesAsync();
+        }
     }
 }

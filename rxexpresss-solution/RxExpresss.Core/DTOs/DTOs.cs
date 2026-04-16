@@ -146,7 +146,7 @@ public class CreateUserDto
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
-    public string Role { get; set; } = "Patient";
+    public string Role { get; set; } = "Operator";
     public bool IsActive { get; set; } = true;
 }
 
@@ -202,4 +202,47 @@ public class UpdateOfficeLocationDto
     public int? RadiusMeters { get; set; }
     public bool? IsActive { get; set; }
     public bool? IsDefault { get; set; }
+}
+
+
+// Permissions
+public class SetPermissionsDto
+{
+    public List<string> Permissions { get; set; } = new();
+}
+
+// Admin Order Creation
+public class AdminCreateOrderDto
+{
+    public int PharmacyId { get; set; }
+    public string RecipientName { get; set; } = string.Empty;
+    public string RecipientPhone { get; set; } = string.Empty;
+    public string? RecipientEmail { get; set; }
+    public string Street { get; set; } = string.Empty;
+    public string? AptUnit { get; set; }
+    public string City { get; set; } = string.Empty;
+    public string? State { get; set; }
+    public string PostalCode { get; set; } = string.Empty;
+    public string? DeliveryType { get; set; }
+    public string? TimeWindow { get; set; }
+    public string? ScheduledDate { get; set; }
+    public string? DeliveryNotes { get; set; }
+    public string? DeliveryInstructions { get; set; }
+    public decimal CopayAmount { get; set; }
+    public bool IsRefrigerated { get; set; }
+}
+
+// Duplicate Order
+public class DuplicateOrderDto
+{
+    public decimal LabourCost { get; set; } = 10.00m;
+}
+
+// Log Attempt
+public class LogAttemptDto
+{
+    public string Status { get; set; } = "failed"; // "failed" or "delivered"
+    public string? DriverName { get; set; }
+    public string? FailureReason { get; set; }
+    public string? Notes { get; set; }
 }

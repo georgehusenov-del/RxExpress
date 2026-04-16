@@ -22,6 +22,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Webhook> Webhooks => Set<Webhook>();
     public DbSet<OfficeLocation> OfficeLocations => Set<OfficeLocation>();
     public DbSet<DriverLocationLog> DriverLocationLogs => Set<DriverLocationLog>();
+    public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
+    public DbSet<OrderAttemptLog> OrderAttemptLogs => Set<OrderAttemptLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
