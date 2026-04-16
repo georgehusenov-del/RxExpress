@@ -1,7 +1,7 @@
 # RX Expresss - Product Requirements Document
 
 ## Original Problem Statement
-Build a full-stack pharmacy delivery service application named "RX Expresss" based on ASP.NET Core 8. The application serves pharmacies, drivers, and administrators with features for order management, QR code tracking, route planning, proof of delivery, and real-time driver tracking.
+Build a full-stack pharmacy delivery service application named "RX Expresss" based on ASP.NET Core 8.
 
 ## Current Architecture
 ```
@@ -16,52 +16,48 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ## Core Features Implemented
 
-### Latest Updates (April 12, 2026)
-- **Real-Time Driver Tracking** — Admin live tracking page at `/Admin/Tracking`
-  - Google Maps integration (shows map with driver markers when API key is real)
-  - Driver panel showing all drivers: status, active deliveries, time since last GPS update
-  - Filters: All / Online / On Route
-  - Auto-refresh every 10 seconds + manual refresh
-  - Driver trail/breadcrumb visualization (last 2 hours)
-  - Office locations shown on map with radius circles
-- **Driver Location Reporting** — Drivers automatically report GPS every 15 seconds
-  - `POST /api/driver-portal/location` — lat, lng, speed, heading, accuracy
-  - Updates `DriverProfile` (CurrentLatitude/Longitude/Speed/Heading/LastLocationUpdate)
-  - Logs to `DriverLocationLog` for history/trail
-- **Multi-Provider Route Optimization** — 3 separate service files:
-  - `Services/CircuitService.cs` — Circuit/Spoke API (active by default)
-  - `Services/GoogleMapsService.cs` — Google Maps Directions API
-  - `Services/AppleMapsService.cs` — Apple Maps Server API
-  - Active provider set in `appsettings.json` → `RouteOptimization:ActiveProvider`
+### Latest Updates (April 16, 2026)
+- **Role Hierarchy:** Admin > Manager > Operator > Pharmacy > Driver (Patient removed)
+- **Per-User Permissions:** 28 granular permissions across 13 categories (page + action level)
+- **Permission Management:** Admin assigns Manager permissions, Manager assigns Operator permissions
+- **Admin Order Creation:** Create orders with pharmacy dropdown
+- **Order Duplication:** After 2 failed attempts → duplicate with new QR code + labour cost
+- **Attempt History:** Full timeline of all delivery attempts across duplicates
 
-### How to Activate Google Maps
-Update `appsettings.json` in **both** API and Web projects:
-```json
-"GoogleMaps": {
-    "ApiKey": "YOUR_REAL_KEY_FROM_GOOGLE_CLOUD_CONSOLE"
-}
-```
-Enable in Google Cloud Console: **Maps JavaScript API** + **Directions API**
+### Previous Updates (April 12, 2026)
+- Real-Time Driver Tracking with Google Maps
+- Multi-Provider Route Optimization (Circuit/Google Maps/Apple Maps)
 
-### Previous Updates
-- Separate Driver Login at `/Driver/Login`, responsive driver dashboard
-- Office Locations Management at `/Admin/Offices` with geo-lock scanning
-- POD 3-photo system, Pharmacy Integration API v1, API Key Management
-- Route optimization with fallback, QR scanning, service zones
+### Previous Updates (March 29, 2026)
+- Separate Driver Login, Responsive Dashboard, Office Locations, Geo-Lock Scanning
+
+## Role & Permission System
+| Role | Access | Creates |
+|------|--------|---------|
+| Admin | Everything | Managers, Operators, Pharmacies, Drivers |
+| Manager | Based on admin-assigned permissions | Operators |
+| Operator | Based on manager-assigned permissions | - |
+| Pharmacy | Own portal | Orders |
+| Driver | Own portal | POD submissions |
+
+**28 Permissions:** orders.view/create/edit/delete/duplicate, routes.view/create/optimize/assign, drivers.view/create/edit, tracking.view, pharmacies.view/create, users.view/create/edit, pricing.view/edit, scanning.view, zones.view/edit, offices.view/edit, apikeys.view/create, reports.view
+
+## Order Duplication Flow
+1. Order created → delivered or fails
+2. After 2 failed attempts → "Duplicate Order" option appears
+3. Admin enters labour cost (e.g., $10) → new order created with new QR code
+4. New order links to original via `ParentOrderId`
+5. If duplicate also fails 2 times → same process repeats
+6. Full history available via `/api/admin/orders/{id}/history`
 
 ## Test Accounts
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@rxexpresss.com | Admin@123 |
+| Manager | manager@rxexpresss.com | Manager@123 |
+| Operator | operator@rxexpresss.com | Operator@123 |
 | Pharmacy | pharmacy@test.com | Pharmacy@123 |
 | Driver | driver@test.com | Driver@123 |
-
-## Key API Endpoints
-- `POST /api/driver-portal/location` — Driver GPS report
-- `GET /api/admin/tracking/drivers` — All drivers with positions + offices
-- `GET /api/admin/tracking/drivers/{id}/trail?hours=2` — Location trail
-- `GET /api/routes/providers` — List route optimization providers
-- `POST /api/routes/{id}/optimize` — Optimize with active provider
 
 ## Backlog
 1. (P1) Circuit Webhook implementation
@@ -72,12 +68,3 @@ Enable in Google Cloud Console: **Maps JavaScript API** + **Directions API**
 6. (P2) Stripe payment flow
 7. (P2) Forgot password
 8. (P2) PWA Push Notifications
-
-## Key Files
-- `/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Tracking.cshtml` — Live tracking page
-- `/app/rxexpresss-solution/RxExpresss.Core/Entities/DriverLocationLog.cs` — Location history entity
-- `/app/rxexpresss-solution/RxExpresss.API/Services/GoogleMapsService.cs` — Google Maps service
-- `/app/rxexpresss-solution/RxExpresss.API/Services/AppleMapsService.cs` — Apple Maps service
-- `/app/rxexpresss-solution/RxExpresss.API/Controllers/RoutesController.cs` — Route optimization
-- `/app/rxexpresss-solution/RxExpresss.API/Controllers/AdminController.cs` — Tracking + admin endpoints
-- `/app/rxexpresss-solution/RxExpresss.API/Controllers/DriverPortalController.cs` — Driver location + POD
