@@ -132,7 +132,7 @@
 
 @section Scripts {
 <script>
-if(!ApiService.requireAuth('Admin')) throw '';
+if(!ApiService.requirePermission('apikeys.view')) throw '';
 
 let pharmacies = [];
 

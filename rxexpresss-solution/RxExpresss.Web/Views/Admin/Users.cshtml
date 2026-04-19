@@ -33,7 +33,15 @@
 
 @section Scripts {
 <script>
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('users.view'))throw'';
+const canCreateUsers = ApiService.hasPermission('users.create');
+const canEditUsers = ApiService.hasPermission('users.edit');
+
+// Hide add button if no permission
+if (!canCreateUsers) {
+    const addBtn = document.querySelector('[data-testid="add-user-btn"]');
+    if (addBtn) addBtn.style.display = 'none';
+}
 
 const roleBadgeColors = {
     'Admin': '#1e40af', 'Manager': '#7c3aed', 'Operator': '#0891b2',
@@ -54,9 +62,9 @@ async function load(){
         <td>${u.isActive?'<span class="text-success">Active</span>':'<span class="text-danger">Inactive</span>'}</td>
         <td>${formatDate(u.createdAt)}</td>
         <td class="action-btns">
-            <button class="btn btn-sm btn-outline" onclick="openEditModal('${u.id}')">Edit</button>
-            ${showPerms ? `<button class="btn btn-sm btn-purple" onclick="openPermsModal('${u.id}')" data-testid="perms-btn-${u.id}">Permissions</button>` : ''}
-            <button class="btn btn-sm ${u.isActive?'btn-warning':'btn-success'}" onclick="toggleActive('${u.id}')">${u.isActive?'Deactivate':'Activate'}</button>
+            ${canEditUsers ? `<button class="btn btn-sm btn-outline" onclick="openEditModal('${u.id}')">Edit</button>` : ''}
+            ${showPerms && canEditUsers ? `<button class="btn btn-sm btn-purple" onclick="openPermsModal('${u.id}')" data-testid="perms-btn-${u.id}">Permissions</button>` : ''}
+            ${canEditUsers ? `<button class="btn btn-sm ${u.isActive?'btn-warning':'btn-success'}" onclick="toggleActive('${u.id}')">${u.isActive?'Deactivate':'Activate'}</button>` : ''}
         </td>
     </tr>`}).join(''):'<tr><td colspan="7" class="text-center text-gray">No users</td></tr>';
 }

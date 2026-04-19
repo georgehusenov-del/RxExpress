@@ -45,7 +45,7 @@
 @section Scripts {
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('scanning.view'))throw'';
 
 let html5QrCode = null;
 let isScanning = false;

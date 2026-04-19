@@ -318,7 +318,7 @@ function toggleAutoRefresh() {
 }
 
 // Check auth then init
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('tracking.view'))throw'';
 </script>
 
 <!-- Load Google Maps JS API -->

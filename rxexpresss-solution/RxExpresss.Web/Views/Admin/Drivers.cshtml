@@ -11,7 +11,7 @@
 </div><div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('add-modal').classList.remove('active')">Cancel</button><button class="btn btn-primary" onclick="addDriver()">Create</button></div></div></div>
 @section Scripts {
 <script>
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('drivers.view'))throw'';
 async function load(){const d=await ApiService.get('/admin/drivers');document.getElementById('tbl').innerHTML=d.drivers.length?d.drivers.map(x=>`<tr><td><strong>${x.user?.firstName||''} ${x.user?.lastName||''}</strong></td><td>${x.user?.email||'-'}</td><td>${x.user?.phone||'-'}</td><td>${x.vehicleType} ${x.vehicleNumber}</td><td>${statusBadge(x.status)}</td><td>${x.totalDeliveries}</td><td>${x.isVerified?'<span class="text-success">Yes</span>':'<span class="text-gray">No</span>'}</td></tr>`).join(''):'<tr><td colspan="7" class="text-center text-gray">No drivers</td></tr>';}
 async function addDriver(){try{await ApiService.post('/admin/drivers',{firstName:document.getElementById('d-fn').value,lastName:document.getElementById('d-ln').value,email:document.getElementById('d-em').value,password:document.getElementById('d-pw').value,phone:document.getElementById('d-ph').value,vehicleType:document.getElementById('d-vt').value,vehicleNumber:document.getElementById('d-vn').value,licenseNumber:document.getElementById('d-lic').value});document.getElementById('add-modal').classList.remove('active');showAlert('alert-area','success','Driver created!');load();}catch(e){showAlert('alert-area','danger',e.message);}}
 load();

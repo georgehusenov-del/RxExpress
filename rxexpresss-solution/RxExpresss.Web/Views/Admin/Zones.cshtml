@@ -11,7 +11,7 @@
 
 @section Scripts {
 <script>
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('zones.view'))throw'';
 function closeM(id){document.getElementById(id).classList.remove('active')}
 const boroughColors={M:'#f59e0b',B:'#22c55e',Q:'#3b82f6',X:'#ef4444',S:'#8b5cf6'};
 async function load(){

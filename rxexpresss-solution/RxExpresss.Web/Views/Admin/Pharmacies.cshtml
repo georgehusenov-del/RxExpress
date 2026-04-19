@@ -2,7 +2,7 @@
 <div class="card"><div class="card-body table-wrap"><table><thead><tr><th>Name</th><th>License</th><th>Phone</th><th>Email</th><th>City</th><th>Verified</th><th>Actions</th></tr></thead><tbody id="tbl"></tbody></table></div></div>
 @section Scripts {
 <script>
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('pharmacies.view'))throw'';
 async function load(){
     const d=await ApiService.get('/admin/pharmacies');
     document.getElementById('tbl').innerHTML=d.pharmacies.map(p=>`<tr><td><strong>${p.name}</strong></td><td>${p.licenseNumber}</td><td>${p.phone}</td><td>${p.email}</td><td>${p.city}, ${p.state}</td><td>${p.isVerified?'<span class="text-success">Verified</span>':'<span class="text-warning">Pending</span>'}</td><td><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.street+', '+p.city+', '+p.state)}" target="_blank" class="btn btn-sm btn-outline">${Icons.mapPin} Map</a></td></tr>`).join('')||'<tr><td colspan="7" class="text-center text-gray">No pharmacies</td></tr>';

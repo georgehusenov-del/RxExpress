@@ -187,8 +187,17 @@
 
 @section Scripts {
 <script>
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('orders.view'))throw'';
 let drivers=[], pharmacies=[];
+const canCreate = ApiService.hasPermission('orders.create');
+const canEdit = ApiService.hasPermission('orders.edit');
+const canDuplicate = ApiService.hasPermission('orders.duplicate');
+
+// Hide create button if no permission
+if (!canCreate) {
+    const createBtn = document.querySelector('[data-testid="create-order-btn"]');
+    if (createBtn) createBtn.style.display = 'none';
+}
 
 // Load pharmacies for filter
 (async()=>{
@@ -284,7 +293,7 @@ async function load() {
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="showDetail(${o.id})" title="View Details" data-testid="view-order-${o.id}">${actionIcons.view}</button>
-                    <button class="icon-btn" onclick="openEdit(${o.id},'${o.status}',${o.isRefrigerated || false})" title="Edit" data-testid="edit-order-${o.id}">${actionIcons.edit}</button>
+                    ${canEdit ? `<button class="icon-btn" onclick="openEdit(${o.id},'${o.status}',${o.isRefrigerated || false})" title="Edit" data-testid="edit-order-${o.id}">${actionIcons.edit}</button>` : ''}
                     <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.street + ', ' + o.city + ', ' + o.state)}" target="_blank" class="icon-btn" title="Open in Maps">${actionIcons.map}</a>
                 </div>
             </td>
@@ -400,7 +409,7 @@ async function showDetail(id) {
             <button class="btn btn-sm btn-outline" onclick="closeModal('detail-modal');showHistory(${o.id})" data-testid="history-btn-${o.id}">
                 <i class="fas fa-history"></i> Attempt History
             </button>
-            ${o.status === 'failed' ? `<button class="btn btn-sm btn-warning" onclick="closeModal('detail-modal');openDuplicateModal(${o.id})" data-testid="duplicate-btn-${o.id}">Duplicate Order</button>` : ''}
+            ${o.status === 'failed' && canDuplicate ? `<button class="btn btn-sm btn-warning" onclick="closeModal('detail-modal');openDuplicateModal(${o.id})" data-testid="duplicate-btn-${o.id}">Duplicate Order</button>` : ''}
         </div>`;
     document.getElementById('detail-modal').classList.add('active');
 }

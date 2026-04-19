@@ -180,11 +180,21 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetUsers([FromQuery] string? role)
     {
         var users = _userManager.Users.ToList();
+        var callerRoles = User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+        var isAdmin = callerRoles.Contains(AppRoles.Admin);
+        
         var result = new List<object>();
         foreach (var u in users)
         {
             var roles = await _userManager.GetRolesAsync(u);
             if (!string.IsNullOrEmpty(role) && !roles.Contains(role, StringComparer.OrdinalIgnoreCase)) continue;
+            
+            // Manager/Operator cannot see Admin users
+            if (!isAdmin && roles.Contains(AppRoles.Admin)) continue;
+            
+            // Operator cannot see Manager users
+            if (callerRoles.Contains(AppRoles.Operator) && roles.Contains(AppRoles.Manager)) continue;
+            
             result.Add(new { u.Id, u.Email, u.FirstName, u.LastName, Phone = u.PhoneNumber, Role = roles.FirstOrDefault(), u.IsActive, u.CreatedAt });
         }
         return Ok(new { users = result, total = result.Count });
@@ -733,6 +743,20 @@ public class AdminController : ControllerBase
         // Find the root parent order
         var rootOrderId = original.ParentOrderId ?? original.Id;
 
+        // Cancel any existing duplicates still in "new" or "assigned" status
+        // Only the latest duplicate should be active
+        var existingDuplicates = await _orders.Query()
+            .Where(o => o.ParentOrderId == rootOrderId && (o.Status == "new" || o.Status == "assigned"))
+            .ToListAsync();
+        
+        foreach (var dup in existingDuplicates)
+        {
+            dup.Status = "cancelled";
+            dup.DeliveryNotes = (dup.DeliveryNotes ?? "") + " [Auto-cancelled: superseded by new duplicate]";
+            dup.UpdatedAt = DateTime.UtcNow;
+            await _orders.UpdateAsync(dup);
+        }
+
         // Count total attempts across all duplicates of this order
         var allRelated = await _orders.Query()
             .Where(o => o.Id == rootOrderId || o.ParentOrderId == rootOrderId)
@@ -775,7 +799,8 @@ public class AdminController : ControllerBase
             newOrderNumber = duplicate.OrderNumber,
             newQrCode = duplicate.QrCode,
             attemptNumber = duplicate.AttemptNumber,
-            labourCost = duplicate.LabourCost
+            labourCost = duplicate.LabourCost,
+            cancelledPrevious = existingDuplicates.Count
         });
     }
 

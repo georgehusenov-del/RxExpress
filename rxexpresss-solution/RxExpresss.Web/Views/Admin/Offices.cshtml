@@ -127,7 +127,7 @@
 
 @section Scripts {
 <script>
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('offices.view'))throw'';
 
 async function load() {
     try {

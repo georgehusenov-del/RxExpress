@@ -14,6 +14,6 @@
 
 ## Role Hierarchy
 Admin > Manager > Operator > Pharmacy > Driver
-- Admin: full access, creates everyone
-- Manager: creates Operators, access controlled by Admin
-- Operator: limited access controlled by Manager/Admin
+- Admin: full access, creates everyone, sees all users
+- Manager: creates Operators, CANNOT see Admin users, access controlled by Admin
+- Operator: limited access controlled by Manager/Admin, CANNOT see Admin/Manager users

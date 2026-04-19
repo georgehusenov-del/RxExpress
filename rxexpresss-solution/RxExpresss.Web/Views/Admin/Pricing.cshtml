@@ -15,7 +15,7 @@
 
 @section Scripts {
 <script>
-if(!ApiService.requireAuth('Admin'))throw'';
+if(!ApiService.requirePermission('pricing.view'))throw'';
 function closeM(id){document.getElementById(id).classList.remove('active')}
 async function load(){
     const d=await ApiService.get('/pricing?includeInactive=true');
