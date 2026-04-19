@@ -10,7 +10,7 @@ const ApiService={
     isLoggedIn(){return!!this.getToken()},hasRole(r){const u=this.getUser();return u&&u.role===r},
     hasPermission(p){const u=this.getUser();if(!u)return false;if(u.role==='Admin')return true;return u.permissions&&u.permissions.includes(p)},
     isAdminLike(){const u=this.getUser();return u&&(u.role==='Admin'||u.role==='Manager'||u.role==='Operator')},
-    requirePermission(p){if(!this.isLoggedIn()){window.location.replace('/');return false}if(!this.isAdminLike()){window.location.replace('/');return false}if(!this.hasPermission(p)){window.location.replace('/Admin');return false}return true},
+    requirePermission(p){if(!this.isLoggedIn()){window.location.replace('/');return false}if(!this.isAdminLike()){window.location.replace('/');return false}if(!this.hasPermission(p)){window.location.replace('/Admin/Unauthorized');return false}return true},
     requireAuth(r){if(!this.isLoggedIn()){window.location.replace('/');return false}if(r==='Admin'){if(!this.isAdminLike()){window.location.replace('/');return false}}else if(r&&!this.hasRole(r)){window.location.replace('/');return false}return true}
 };
 function statusBadge(s){

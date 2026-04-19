@@ -62,6 +62,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWRtaW4vVHJhY2tpbmcuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Unauthorized.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWRtaW4vVW5hdXRob3JpemVkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Users.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWRtaW4vVXNlcnMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

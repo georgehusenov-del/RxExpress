@@ -743,18 +743,16 @@ public class AdminController : ControllerBase
         // Find the root parent order
         var rootOrderId = original.ParentOrderId ?? original.Id;
 
-        // Cancel any existing duplicates still in "new" or "assigned" status
-        // Only the latest duplicate should be active
-        var existingDuplicates = await _orders.Query()
-            .Where(o => o.ParentOrderId == rootOrderId && (o.Status == "new" || o.Status == "assigned"))
-            .ToListAsync();
+        // Block duplicate if any active duplicate already exists (not failed/cancelled/delivered)
+        var activeDuplicate = await _orders.Query()
+            .FirstOrDefaultAsync(o => o.ParentOrderId == rootOrderId 
+                && o.Status != "failed" && o.Status != "cancelled" && o.Status != "delivered");
         
-        foreach (var dup in existingDuplicates)
+        if (activeDuplicate != null)
         {
-            dup.Status = "cancelled";
-            dup.DeliveryNotes = (dup.DeliveryNotes ?? "") + " [Auto-cancelled: superseded by new duplicate]";
-            dup.UpdatedAt = DateTime.UtcNow;
-            await _orders.UpdateAsync(dup);
+            return BadRequest(new { 
+                detail = $"Cannot duplicate: an active duplicate already exists (Order #{activeDuplicate.OrderNumber}, Status: {activeDuplicate.Status}). Wait until it is delivered, failed, or cancelled." 
+            });
         }
 
         // Count total attempts across all duplicates of this order
@@ -763,7 +761,7 @@ public class AdminController : ControllerBase
             .ToListAsync();
         var maxAttempt = allRelated.Max(o => o.AttemptNumber);
 
-        // Create duplicate with new QR code
+        // Create duplicate with new QR code — status is "in_transit" (goes back to office for reassignment)
         var duplicate = new Order
         {
             PharmacyId = original.PharmacyId,
@@ -784,7 +782,7 @@ public class AdminController : ControllerBase
             CopayAmount = original.CopayAmount,
             IsRefrigerated = original.IsRefrigerated,
             QrCode = QrCodeGenerator.Generate(original.City), // NEW QR code
-            Status = "new",
+            Status = "in_transit", // Goes to office for driver reassignment
             ParentOrderId = rootOrderId,
             AttemptNumber = maxAttempt + 1,
             LabourCost = dto.LabourCost
@@ -794,13 +792,13 @@ public class AdminController : ControllerBase
         await AutoAssignToGig(duplicate);
 
         return Ok(new { 
-            message = "Order duplicated with new QR code",
+            message = "Order duplicated with new QR code (status: In Transit — ready for driver assignment)",
             newOrderId = duplicate.Id,
             newOrderNumber = duplicate.OrderNumber,
             newQrCode = duplicate.QrCode,
             attemptNumber = duplicate.AttemptNumber,
             labourCost = duplicate.LabourCost,
-            cancelledPrevious = existingDuplicates.Count
+            status = "in_transit"
         });
     }
 

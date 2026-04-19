@@ -1,0 +1,18 @@
+@{ Layout = "_SidebarLayout"; }
+
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;text-align:center">
+    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5" style="margin-bottom:20px">
+        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+    </svg>
+    <h2 style="margin-bottom:8px;color:var(--text-primary)">Access Denied</h2>
+    <p style="color:var(--text-secondary);max-width:400px;margin-bottom:24px">
+        You don't have permission to access this page. Contact your administrator to request access.
+    </p>
+    <a href="/Admin" class="btn btn-primary" data-testid="back-to-dashboard">Back to Dashboard</a>
+</div>
+
+@section Scripts {
+<script>
+if(!ApiService.requireAuth('Admin'))throw'';
+</script>
+}

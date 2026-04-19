@@ -55,4 +55,6 @@ public class AdminController : Controller
         ViewData["GoogleMapsKey"] = _configuration["GoogleMaps:ApiKey"] ?? "";
         return View(); 
     }
+    public new IActionResult Unauthorized() { SetNav("", "Access Denied"); return View(); }
 }
+
