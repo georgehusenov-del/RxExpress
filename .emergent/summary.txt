@@ -1,164 +1,161 @@
 <analysis>**original_problem_statement:**
-The user is building an enterprise-grade pharmacy delivery service application, RX Expresss, using an ASP.NET Core 8 multi-project solution. 
+The user is building an enterprise-grade pharmacy delivery service application, RX Expresss, using an ASP.NET Core 8 multi-project solution.
 In this session, the user requested to:
-1. Fix a bug where the POD (Proof of Delivery) folder was being saved in the API project instead of the Web project (API should only pass URLs).
-2. Fix an Optimization Failed error occurring during route generation.
-3. Create a separate, mobile-friendly login page exclusively for drivers.
-4. Make the Driver dashboard responsive for all screen sizes (mobile/desktop).
-5. Allow Admins to add/manage Office Locations.
-6. Implement a Geo-location sensor (Geo-lock) that restricts drivers from scanning packages for pickup unless they are within a 100-meter radius of the office location.
+1. Implement Google Maps and Apple Maps API for route optimization as alternatives to Circuit (configured via backend settings, not UI).
+2. Implement real-time driver tracking on the Admin side using Google Maps (with dummy keys initially) and periodic location updates from drivers.
+3. Update the Role Hierarchy: Remove Patient role, and introduce Manager and Operator roles below Admin but above Pharmacy/Driver. Implement granular Role-Based Access Control (RBAC) where Admins configure exactly what Managers/Operators can see and do.
+4. Add Create Order functionality to the Admin Orders page.
+5. Implement an Order Duplication flow: If an order fails, Admins can duplicate it (generating a new QR code) while adding a labor cost field. The system must maintain a full attempt history.
+6. Fix several RBAC and duplication bugs (hide Admins from Managers, enforce action-level permissions, block unauthorized direct URL access, and ensure duplicate orders enter in_transit status without allowing concurrent active duplicates).
+7. (Pending) Add OTP functionality for Pharmacy login.
 
 **PRODUCT REQUIREMENTS:**
 - **Core Architecture:** ASP.NET Core 8 multi-project solution (, , , , ).
-- **Backend:** ASP.NET Core 8, EF Core, and SQL Server support (using SQLite for development).
-- **Authentication:** ASP.NET Identity with JWT for web users; API Key/Secret for integration partners.
-- **Core Features:** Role-based dashboards, Admin management pages, QR code scanning, route management, public Integration API.
-- **New Features Built:** Web-based POD storage, Fallback route optimization, Mobile-responsive Driver Login (), Responsive Driver Dashboard, Admin Office Locations management, Geo-locked scanning constraint.
-- **Deliverables:** A functional web application on the .NET stack with separate driver flows and geographical constraints.
+- **Backend:** ASP.NET Core 8, EF Core, SQL Server (SQLite for dev).
+- **Roles:** Admin > Manager > Operator > Pharmacy > Driver. Granular permissions (e.g., , ).
+- **Core Features:** Role-based dashboards, Route optimization (Circuit/Google/Apple toggleable via config), Admin real-time driver tracking, Admin Order Creation, Order Attempt History & Duplication.
 
 **User's preferred language**: English
 *(INSTRUCT NEXT AGENT: Respond in English only)*
 
 **what currently exists?**
-The project is a fully functional ASP.NET Core 8 multi-project application. It includes a public-facing Integration API, Admin dashboards for Route Plans, API Keys, and Office Locations, as well as separate Pharmacy and Driver portals. The Driver portal includes a dedicated, mobile-optimized login page, a responsive dashboard, 3-photo Proof of Delivery capture (using the device's camera), and a geo-locked QR scanning feature that requires the driver to be within 100 meters of the office to pick up packages. POD images are properly saved to the Web project's  directory to ensure they render correctly on the frontend.
+The app is a fully functional ASP.NET Core 8 multi-project application with Role-Based Access Control. Managers and Operators have granular, UI-enforced and API-enforced permissions. The Admin portal includes live real-time driver tracking using Google Maps and driver geo-location polling. The Route Optimization service supports Circuit, Google Maps, and Apple Maps (controlled via ). Admins can create orders and duplicate failed orders (generating new QR codes, capturing labor costs, and maintaining an ). An unauthorized access page gracefully handles users navigating to restricted URLs.
 
 **Last working item**:
-- **Last item agent was working:** Implementing the Driver separate login, mobile responsiveness, Admin Office Locations, and Geo-lock scanning feature. The agent successfully completed and tested these features via the testing subagent, verified the UI via screenshots, fixed a minor logout redirect bug, and summarized the changes. 
+- **Last item agent was working:** Fixing post-release bugs for the RBAC and Order Duplication feature. Specifically: Redirecting unauthorized accesses to  instead of the dashboard, setting new duplicated orders to  status (not new), and blocking admins from duplicating an order if an active duplicate already exists.
 - **Status:** USER VERIFICATION PENDING
 - **Agent Testing Done:** Y
-- **Which testing method agent to use?** Frontend testing agent / Manual testing by the user (requires a physical device to test the Geo-lock API via browser location services).
+- **Which testing method agent to use?** Frontend testing agent / manual testing
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Geo-lock Scanning & Driver Login Verification (P0)**
-   - **Attempted fixes:** The agent successfully built the UI and logic using  and distance calculation to enforce the 100m radius constraint. 
-   - **Next debug checklist:** 
-      - User needs to log in as a driver on a physical mobile device at .
-      - User must test the responsive layout of the dashboard.
-      - User must test the geo-lock feature by trying to scan a package while inside and outside the 100m radius of the default office location.
-   - **Why fix this issue and what will be achieved with the fix?** Ensures the real-world location tracking works as intended on physical devices, as the agent's headless browser could not fully mock location services.
-   - **Status:** USER VERIFICATION PENDING
-   - **Is recurring issue?** N
-   - **Should Test frontend/backend/both after fix?** Frontend
+- **Issue 1: Verify Unauthorized Redirect & Duplicate Logic (P0)**
+    - **Attempted fixes:** The agent created , updated the duplicate status to , and added a check to block duplication if another duplicate is currently active.
+    - **Next debug checklist:** User needs to manually test logging in as an Operator, navigating to an unauthorized URL, and checking an order's duplication status rules.
+    - **Why fix this issue and what will be achieved with the fix?** Ensures business rules for order duplication are strictly enforced and UI routing is secure.
+    - **Status:** USER VERIFICATION PENDING
+    - **Is recurring issue?** N
+    - **Should Test frontend/backend/both after fix?** Frontend
 
 **In progress Task List**:
-*(No development tasks are currently in progress. The previous tasks were finished successfully).*
+*(No tasks currently in progress. Previous bug fixes were finished).*
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-  - **(P1) Implement Webhook Dispatcher:** The integration API allows pharmacies to register webhook URLs, but the backend logic to *send* notifications to these URLs upon events (e.g., , ) needs to be built.
-  - **(P1) Implement Circuit Spoke Webhook Logic:** The  endpoint remains a placeholder.
-  - **(P1) Integrate Twilio/SendGrid Notifications:** Implement a notification service for critical alerts.
+  - **(P0) Implement OTP for Pharmacy Login:** The user requested on login for pharmacy i want working of otp. *Agent needs to ask whether this should be SMS (Twilio) or Email (SendGrid/SMTP) before implementation.*
+  - **(P1) Implement Webhook Dispatcher:** Trigger notifications to registered pharmacy webhooks upon order status changes.
+  - **(P1) Implement Circuit Spoke Webhook Logic:** Replace placeholder endpoint.
+  - **(P1) Integrate Twilio/SendGrid Notifications:** For OTPs and critical alerts.
 
 - **Future Tasks:**
-  - **(P2) Enhance Proof of Delivery (POD) with Cloud Storage:** Migrate POD image saving from  to a cloud service like Azure Blob Storage or AWS S3. 
-  - **(P2) Self-Service API Key Portal:** Allow pharmacies to generate and manage their own API keys from their dashboard.
-  - **(P2) Replace Circuit with Google Maps API:** For route optimization and custom real-time driver tracking.
-  - **(P2) Implement Stripe Frontend Flow:** Build the  views and JavaScript for a payment checkout flow.
-  - **(P2) Add PWA Push Notifications:** Suggested enhancement to alert drivers when new deliveries are assigned.
+  - **(P2) Enhance Proof of Delivery (POD) with Cloud Storage:** Migrate from  to Azure Blob/AWS S3.
+  - **(P2) Self-Service API Key Portal:** Manage API keys via pharmacy dashboard.
+  - **(P2) Implement Stripe Frontend Flow:** Payment checkout flow.
+  - **(P2) Add PWA Push Notifications.**
 
 **Completed work in this session**
-- **POD Storage Fix:** Updated  to save photos to  instead of the API project. Migrated old photos. (DONE)
-- **Route Optimization Fix:** Added a graceful fallback in  to use local routing logic if the Circuit API is unconfigured or returns unauthorized errors, instead of breaking. (DONE)
-- **Separate Driver Login:** Created a new, mobile-friendly login view at  with safeguards to prevent non-driver accounts from logging in. (DONE)
-- **Responsive Driver Dashboard:** Updated CSS with media queries to make the entire driver portal mobile-friendly. (DONE)
-- **Office Locations Management:** Created  DB entity, Admin API endpoints, and a new Admin UI view to manage physical office addresses and geo-fences. Seeded Main Office - NYC Hub. (DONE)
-- **Geo-Locked Scanning:** Integrated  into the driver's QR scanning flow to prevent picking up packages unless within 100 meters of the office. (DONE)
+- **Multi-Provider Route Optimization:** Implemented  and . The active provider is managed via  (no frontend toggle UI). (DONE)
+- **Live Driver Tracking:** Created  entity, updated driver frontend to report coordinates via , and built  with auto-refreshing Google Maps UI. (DONE)
+- **Role Hierarchy & RBAC:** Replaced Patient role with Manager & Operator. Added  entity with 28 granular permissions. Updated  to enforce action-level UI hiding. (DONE)
+- **Admin Order Creation & Duplication:** Added modal to create orders. Added Duplicate Order logic that creates a new QR code, captures labor cost, auto-cancels old pending duplicates, and logs to . (DONE)
+- **RBAC & Logic Bug Fixes:** Prevented Managers from seeing SuperAdmin, added  redirect, fixed duplicate status to . (DONE)
 
 **Earlier issues found/mentioned but not fixed**
 - **Issue 1: Inaccessible Figma Design File**
-   - **Debug checklist:** The user needs to provide a publicly accessible link to the Figma file.
-   - **Why to solve this issue and what will be achieved with this?** To align the UI with the user's original design vision.
+   - **Debug checklist:** User needs to provide a publicly accessible link to the Figma file.
+   - **Why to solve this issue and what will be achieved with this?** To align UI with the original vision.
    - **Should Test frontend/backend/both after fix:** Frontend
    - **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
-- **Inaccessible Figma Design File:** This has been a recurring blocker since the project's inception.
-- **Recurrence count:** 10+
-- **Status:** BLOCKED
+- **Inaccessible Figma Design File:**
+  - Recurrence count: 10+
+  - Status: BLOCKED
+- **.NET 8 SDK Disappears on Environment Restart:**
+  - Recurrence count: 3+
+  - Status: RESOLVED (Agent must run  or download script if  command fails).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 - **Backend:** ASP.NET Core 8, Web API, EF Core, LINQ
-- **Frontend:** ASP.NET Core MVC, Razor Pages (), JavaScript (jQuery, )
-- **Browser APIs:**  (Camera),  (GPS Location).
-- **Database:** Entity Framework Core with SQLite.
+- **Frontend:** ASP.NET Core MVC, Razor Pages, vanilla JS ( handling auth/permissions)
+- **Database:** Entity Framework Core with SQLite
+- **APIs:** Google Maps Directions/Geocoding, Apple MapKit, Circuit, HTML5 Geolocation
 
 **key DB schema**
-- **OfficeLocations (New)**:
-  - 
-- **Orders**: Includes , , .
-- **ApiKeys / Webhooks**: For Integration API.
+- **DriverLocationLog (New)**: 
+- **UserPermission (New)**: 
+- **OrderAttemptLog (New)**: 
+- **Order (Updated)**: Added , , , .
+- **ApplicationUser / Roles**: Admin, Manager, Operator, Pharmacy, Driver.
 
 **changes in tech stack**
-- No changes to the core technology stack.
+- No major changes.
 
 **All files of reference**
-- : (New) Dedicated, mobile-responsive login page for drivers.
-- : Updated heavily for mobile responsiveness and geo-location constraints.
-- : Updated to route and serve the new Driver login page.
-- : (New) Entity defining office locations and geo-fences.
-- : Added endpoints for CRUD operations on Office Locations.
-- : (New) Admin UI for office location management.
-- : Fixed Circuit API fallback logic.
-- : Updated photo saving logic to write to Web project's .
+-  & : (New) Routing providers.
+- : (New) Live driver map.
+-  & : (New) DB Entities.
+- : Added heavy RBAC, tracking, and duplication logic.
+- : Updated with  and .
+- : (New) Access denied page.
 
 **Areas that need refactoring**:
-- The Proof of Delivery (POD) image upload logic saves to the local  directory. This needs to be migrated to cloud storage (Azure Blob, AWS S3) for scalability.
+- Local  storage needs migrating to cloud storage.
 
 **key api endpoints**
-- **Driver Portal**:
-  -  (Fetches active office locations for geo-locking).
-- **Admin Office Locations ()**:
-  - , , , .
+- 
+- 
+- 
+- 
 
 **Critical Info for New Agent**
-- **The development environment is ephemeral.** The .NET 8 SDK is **NOT** pre-installed. You **MUST** run the installation script ( or manually download/install) at the beginning of each session. Otherwise,  commands will fail.
-- **Razor CSS Escaping:** When adding CSS media queries in Razor  files, you must use  instead of  to prevent Razor compilation errors.
-- **Frontend URLs:** Always use  / dynamic runtime bases for API calls.
+- **.NET SDK Vanishes:** If  commands fail, the environment dropped the SDK. Run  or manually download/install it.
+- **Routing Provider:** Switching between Circuit/Google/Apple routing is handled entirely by changing the  in . There is no frontend toggle.
+- **Method Hiding Warning:** The  has a  method. The  keyword is deliberate to hide .
+- **Frontend Permissions:** The frontend UI relies on  to show/hide action buttons dynamically.
+- **Integrations:** Google Maps and Apple Maps are currently using dummy keys. Fallback logic gracefully handles these mocked API requests.
 
 **documents and test reports created in this job**
--  (Updated with new office location and driver login requirements)
--  (Passed - Verified POD folder fix and Routes optimization fix)
--  (Passed - Verified Driver login, mobile views, and Admin Office locations)
+- 
+- 
+- 
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1. **user:** Asked to confirm the agent's plan for fixing the POD folder issue and Optimization Failed error.
-2. **agent:** Used ask_human to confirm.
-3. **user:** Approved fixing the POD folder (saving to Web, returning URL in API) and fixing the Optimization Failed error.
-4. **agent:** Fixed both issues, migrated existing photos, tested via testing subagent, updated PRD, and finished the task.
-5. **user:** Requested a separate responsive login page for drivers, mobile responsiveness for the driver dashboard, Admin office location management, and a Geo-location sensor (Geo-lock) to prevent scanning unless at the office.
-6. **agent:** Used ask_human to clarify the scope of the geo-lock and separate login page.
-7. **user:** Clarified that drivers should go to , bookmark it, and that the admin should add office addresses. Scanning should be blocked if not at the office.
-8. **agent:** Created the Driver Login view, updated CSS for responsiveness, created the  entity, built Admin CRUD for offices, and implemented  logic in the Driver portal. Ran testing agent.
-9. **agent:** Fixed a minor logout redirect bug on the new driver login page, updated the PRD, and finished the task. *(USER VERIFICATION PENDING)*
+1. **user:** Asked to fix bugs: Manager can see SuperAdmin, UI permissions only work on the page level (not action level), direct URLs aren't blocked, and duplicates should auto-cancel previous active duplicates.
+2. **agent:** Implemented all 4 fixes (backend filtering, action-level checks,  redirects, and auto-cancellation of duplicates). Tested successfully.
+3. **user:** Corrected the agent on the redirect and status: Unauthorized should go to a specific unauthorized page (not index), duplicate order status should be  (not new), and blocked entirely if another active duplicate exists.
+4. **agent:** Created , updated duplication status to , added blocking check for active duplicates. Resolved a compiler warning with the  method. Re-tested and confirmed features.
 
 **Project Health Check:**
-- **Broken:** The environment is non-functional at the start of each session until the .NET 8 SDK is installed.
-- **Mocked:**
-  - Circuit webhook endpoint is a placeholder.
-  - Webhook dispatching logic is unbuilt.
-  - Headless browser could not fully test Geo-location, so it gracefully fell back to Location unavailable in automated tests.
+- **Broken:** The environment loses  on restart.
+- **Mocked:** Google Maps & Apple Maps APIs use dummy keys (Google Maps shows a custom fallback UI placeholder on the Tracking page). Circuit Webhooks are placeholders.
 
 **3rd Party Integrations**
-- **qrserver.com:** QR code generation (frontend).
-- **toastr.js:** Frontend notifications.
-- No new external integrations were added in this session.
+- **qrserver.com** (Frontend QR codes)
+- **Google Maps API** (Directions & Geocoding) - *Requires User API Key (Currently mocked)*
+- **Apple Maps Server API** - *Requires User API Key (Currently mocked)*
+- **Circuit API** - *Requires User API Key (Currently configured)*
 
 **Testing status**
-- **Testing agent used after significant changes:** YES ( used twice).
+- **Testing agent used after significant changes:** YES
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** None
 - **Known regressions:** None
 
 **Credentials to test flow:**
-| Role       | Email                  | Password    |
-| :--------- | :--------------------- | :---------- |
-| **Admin**  |  |  |
-| **Pharmacy** |     |  |
-| **Driver**   |       |    |
+*(Available in )*
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Admin** |  |  |
+| **Manager** |  |  |
+| **Operator** |  |  |
+| **Pharmacy** |  |  |
+| **Driver** |  |  |
 
 **What agent forgot to execute**
-- Nothing was overlooked from the user's explicit requests. The geo-lock, mobile views, driver login, admin offices, and bug fixes were all successfully executed and tested.</analysis>
+- The agent was in the middle of getting clarification from the user about the **OTP for Pharmacy Login** requirement (is that possible?). The agent has not implemented this yet. The next agent MUST ask the user if they prefer Twilio (SMS) or SendGrid/SMTP (Email) for the OTP delivery, and then implement it using .</analysis>
