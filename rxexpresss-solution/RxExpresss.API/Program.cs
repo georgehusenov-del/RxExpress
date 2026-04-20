@@ -102,6 +102,15 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Show real error details when ASPNETCORE_DETAILED_ERRORS=true is set in web.config.
+// Keep OFF in normal prod; flip ON temporarily to diagnose 500s without SSH to the server.
+if (app.Environment.IsDevelopment() ||
+    string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_DETAILED_ERRORS"), "true",
+        StringComparison.OrdinalIgnoreCase))
+{
+    app.UseDeveloperExceptionPage();
+}
+
 // CORS must be first!
 app.UseCors();
 
