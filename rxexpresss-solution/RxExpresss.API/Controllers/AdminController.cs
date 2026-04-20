@@ -50,7 +50,16 @@ public class AdminController : ControllerBase
         var totalPharmacies = await _pharmacies.Query().CountAsync();
         var totalDrivers = await _drivers.Query().CountAsync();
         var activeDrivers = await _drivers.Query().CountAsync(d => d.Status != "offline");
-        var allOrders = await _orders.Query().ToListAsync();
+
+        // Project to only the columns we need. Avoids loading newer columns
+        // (AttemptNumber, FailedAttempts, LabourCost, ParentOrderId, etc.) so this
+        // endpoint keeps working even on DBs that haven't applied the latest migrations.
+        var allOrders = await _orders.Query().Select(o => new {
+            o.Id, o.OrderNumber, o.QrCode, o.PharmacyName, o.RecipientName, o.City,
+            o.Status, o.DeliveryType, o.CopayAmount, o.CopayCollected,
+            o.DriverName, o.CreatedAt, o.ActualDeliveryTime
+        }).ToListAsync();
+
         var totalOrders = allOrders.Count;
 
         var ordersByStatus = allOrders.GroupBy(o => o.Status).ToDictionary(g => g.Key, g => g.Count());
