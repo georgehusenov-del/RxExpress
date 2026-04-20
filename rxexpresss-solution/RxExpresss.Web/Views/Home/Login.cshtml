@@ -24,17 +24,26 @@
 </div>
 @section Scripts {
 <script>
-    // Redirect admin-like roles (Admin, Manager, Operator) to Admin panel
+    // Map known roles to destination pages. Unknown / missing role -> stay on login.
     function getRedirectPath(role) {
-        if (role === 'Admin' || role === 'Manager' || role === 'Operator') {
-            return '/Admin/Index';
+        switch (role) {
+            case 'Admin':
+            case 'Manager':
+            case 'Operator':
+                return '/Admin/Index';
+            case 'Pharmacy':
+                return '/Pharmacy/Index';
+            case 'Driver':
+                return '/Driver/Index';
+            default:
+                return null; // no valid role -> do not redirect
         }
-        return '/' + role + '/Index';
     }
-    
+
     if (ApiService.isLoggedIn()) {
         const u = ApiService.getUser();
-        if (u) window.location.replace(getRedirectPath(u.role));
+        const path = u ? getRedirectPath(u.role) : null;
+        if (path) window.location.replace(path);
     }
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -46,7 +55,14 @@
                 document.getElementById('password').value
             );
             if (d && d.user) {
-                window.location.replace(getRedirectPath(d.user.role));
+                const path = getRedirectPath(d.user.role);
+                if (path) {
+                    window.location.replace(path);
+                } else {
+                    showAlert('alert-area', 'danger',
+                        'Your account has no role assigned. Please contact an administrator.');
+                    btn.disabled = false; btn.textContent = 'Sign In';
+                }
             } else {
                 showAlert('alert-area', 'danger', 'Login failed - no response');
                 btn.disabled = false; btn.textContent = 'Sign In';
