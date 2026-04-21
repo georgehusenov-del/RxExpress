@@ -18,6 +18,7 @@ public class DriverPortalController : ControllerBase
     private readonly IRepository<OfficeLocation> _officeLocations;
     private readonly IRepository<DriverLocationLog> _locationLogs;
     private readonly IWebHostEnvironment _env;
+    private readonly IConfiguration _config;
     private readonly ILogger<DriverPortalController> _logger;
 
     public DriverPortalController(
@@ -26,6 +27,7 @@ public class DriverPortalController : ControllerBase
         IRepository<OfficeLocation> officeLocations,
         IRepository<DriverLocationLog> locationLogs,
         IWebHostEnvironment env,
+        IConfiguration config,
         ILogger<DriverPortalController> logger)
     {
         _drivers = drivers; 
@@ -33,6 +35,7 @@ public class DriverPortalController : ControllerBase
         _officeLocations = officeLocations;
         _locationLogs = locationLogs;
         _env = env;
+        _config = config;
         _logger = logger;
     }
 
@@ -244,6 +247,33 @@ public class DriverPortalController : ControllerBase
         });
     }
     
+    private string ResolvePodFolder()
+    {
+        // 1. Allow explicit override via appsettings (recommended for prod).
+        //    Example appsettings.json:  "Pod": { "StoragePath": "C:\\inetpub\\rxexpresss\\web\\wwwroot\\pod" }
+        var configured = _config["Pod:StoragePath"];
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            Directory.CreateDirectory(configured);
+            return configured;
+        }
+
+        // 2. Try the sibling Web project (dev layout: RxExpresss.API + RxExpresss.Web).
+        var sibling = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "RxExpresss.Web", "wwwroot", "pod"));
+        var siblingParent = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "RxExpresss.Web"));
+        if (Directory.Exists(siblingParent))
+        {
+            Directory.CreateDirectory(sibling);
+            return sibling;
+        }
+
+        // 3. Production fallback: save under API's own wwwroot/pod.
+        //    Images are still served because app.UseStaticFiles() is enabled on the API.
+        var apiLocal = Path.Combine(_env.ContentRootPath, "wwwroot", "pod");
+        Directory.CreateDirectory(apiLocal);
+        return apiLocal;
+    }
+
     private async Task<string> SavePhotoAsync(string base64Data, string orderNumber, string photoType = "pod")
     {
         // Remove data URL prefix if present
@@ -252,28 +282,19 @@ public class DriverPortalController : ControllerBase
         {
             base64 = base64.Split(',')[1];
         }
-        
+
         var bytes = Convert.FromBase64String(base64);
         var fileName = $"{photoType}_{orderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.jpg";
-        
-        // Save to Web project's wwwroot/pod folder (not API's wwwroot)
-        // This ensures images are served by the Web static file middleware
-        var webProjectRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "RxExpresss.Web"));
-        var podFolder = Path.Combine(webProjectRoot, "wwwroot", "pod");
-        
-        if (!Directory.Exists(podFolder))
-        {
-            Directory.CreateDirectory(podFolder);
-        }
-        
+
+        var podFolder = ResolvePodFolder();
         var filePath = Path.Combine(podFolder, fileName);
         await System.IO.File.WriteAllBytesAsync(filePath, bytes);
-        
-        _logger.LogInformation("POD photo saved to Web wwwroot: {FilePath}", filePath);
-        
+
+        _logger.LogInformation("POD photo saved: {FilePath}", filePath);
+
         return $"/pod/{fileName}";
     }
-    
+
     private async Task<string> SaveSignatureAsync(string base64Data, string orderNumber)
     {
         var base64 = base64Data;
@@ -281,24 +302,16 @@ public class DriverPortalController : ControllerBase
         {
             base64 = base64.Split(',')[1];
         }
-        
+
         var bytes = Convert.FromBase64String(base64);
         var fileName = $"sig_{orderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.png";
-        
-        // Save to Web project's wwwroot/pod folder (not API's wwwroot)
-        var webProjectRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "RxExpresss.Web"));
-        var podFolder = Path.Combine(webProjectRoot, "wwwroot", "pod");
-        
-        if (!Directory.Exists(podFolder))
-        {
-            Directory.CreateDirectory(podFolder);
-        }
-        
+
+        var podFolder = ResolvePodFolder();
         var filePath = Path.Combine(podFolder, fileName);
         await System.IO.File.WriteAllBytesAsync(filePath, bytes);
-        
-        _logger.LogInformation("Signature saved to Web wwwroot: {FilePath}", filePath);
-        
+
+        _logger.LogInformation("Signature saved: {FilePath}", filePath);
+
         return $"/pod/{fileName}";
     }
 
