@@ -7,6 +7,7 @@ public class PharmacyController : Controller
     private static readonly List<(string Id, string Label, string Href, string Icon)> NavItems = new()
     {
         ("dashboard", "Dashboard", "/Pharmacy", SvgIcons.Dashboard),
+        ("reports", "Reports", "/Pharmacy/Reports", SvgIcons.BarChart),
     };
 
     private void SetNav(string activeId, string pageTitle)
@@ -20,4 +21,5 @@ public class PharmacyController : Controller
     }
 
     public IActionResult Index() { SetNav("dashboard", "Pharmacy Dashboard"); return View(); }
+    public IActionResult Reports() { SetNav("reports", "Reports"); return View(); }
 }

@@ -44,7 +44,7 @@
   "seed_data_creation": "Seeded data already exists: 4 users, 2 drivers, 1 pharmacy, 5 orders",
   "retest_needed": false,
   "should_main_agent_self_test": true,
-  "context_for_next_testing_agent": "This is an ASP.NET Core 8 application (not Python). Backend API on port 8001, Frontend MVC on port 3000. Preview URL: https://rx-express-delivery.preview.emergentagent.com. Some endpoints return 404 when accessed externally (forgot-password, get user by id, driver history) - likely nginx/routing issue rather than code bug. All main features (landing, login, admin CRUD, orders, routes, scanning, driver portal) work correctly.",
+  "context_for_next_testing_agent": "This is an ASP.NET Core 8 application (not Python). Backend API on port 8001, Frontend MVC on port 3000. Preview URL: https://pod-upload-staging.preview.emergentagent.com. Some endpoints return 404 when accessed externally (forgot-password, get user by id, driver history) - likely nginx/routing issue rather than code bug. All main features (landing, login, admin CRUD, orders, routes, scanning, driver portal) work correctly.",
   "features_tested": {
     "Landing page": "✓ Hero section, Features, Contact form, Navigation links all working",
     "Login": "✓ Admin, Pharmacy, Driver all redirect correctly to their dashboards",

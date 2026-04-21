@@ -12,7 +12,6 @@
 .stat-card .stat-value{font-size:22px;font-weight:700;margin-top:4px}
 </style>
 
-<!-- Filter Bar -->
 <div class="card mb-3">
     <div class="card-body">
         <div class="filter-bar">
@@ -23,12 +22,6 @@
             <div class="form-group">
                 <label>To Date</label>
                 <input type="date" class="form-control" id="r-to" data-testid="report-to-date"/>
-            </div>
-            <div class="form-group">
-                <label>Pharmacy</label>
-                <select class="form-control" id="r-pharmacy" data-testid="report-pharmacy-filter">
-                    <option value="">All Pharmacies</option>
-                </select>
             </div>
             <div class="form-group">
                 <label>Driver</label>
@@ -64,22 +57,16 @@
     </div>
 </div>
 
-<!-- Summary Tiles -->
 <div id="summary-tiles" class="mb-3"></div>
 
-<!-- Tabs -->
 <div class="tabs">
     <button class="tab-btn active" data-tab="monthly" onclick="switchTab('monthly')">Monthly Breakdown</button>
-    <button class="tab-btn" data-tab="pharmacy" onclick="switchTab('pharmacy')">By Pharmacy</button>
     <button class="tab-btn" data-tab="driver" onclick="switchTab('driver')">By Driver</button>
     <button class="tab-btn" data-tab="status" onclick="switchTab('status')">Status Breakdown</button>
 </div>
 
 <div id="tab-monthly" class="tab-panel">
     <div class="card"><div class="card-body table-wrap"><div id="monthly-mount"><p class="text-gray">Loading...</p></div></div></div>
-</div>
-<div id="tab-pharmacy" class="tab-panel" style="display:none">
-    <div class="card"><div class="card-body table-wrap"><div id="pharmacy-mount"><p class="text-gray">Loading...</p></div></div></div>
 </div>
 <div id="tab-driver" class="tab-panel" style="display:none">
     <div class="card"><div class="card-body table-wrap"><div id="driver-mount"><p class="text-gray">Loading...</p></div></div></div>
@@ -91,34 +78,27 @@
 @section Scripts {
 <script src="~/js/reports.js"></script>
 <script>
-if(!ApiService.requirePermission('reports.view'))throw'';
+if(!ApiService.requireAuth('Pharmacy'))throw'';
 
 function getFilters(){
     return {
         from: document.getElementById('r-from').value,
         to: document.getElementById('r-to').value,
-        pharmacyId: document.getElementById('r-pharmacy').value || null,
         driverId: document.getElementById('r-driver').value || null,
         status: document.getElementById('r-status').value || null
     };
 }
 
-async function loadDropdowns(){
+async function loadDriverDropdown(){
+    const f = { from: document.getElementById('r-from').value, to: document.getElementById('r-to').value };
     try{
-        const [pharm, drv] = await Promise.all([
-            ApiService.get('/admin/pharmacies'),
-            ApiService.get('/admin/drivers')
-        ]);
-        const pSel = document.getElementById('r-pharmacy');
-        (pharm.pharmacies || []).forEach(p => {
-            pSel.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
-        });
-        const dSel = document.getElementById('r-driver');
-        (drv.drivers || []).forEach(d => {
-            const n = d.user ? `${d.user.firstName} ${d.user.lastName}` : `Driver #${d.id}`;
-            dSel.insertAdjacentHTML('beforeend', `<option value="${d.id}">${n}</option>`);
-        });
-    }catch(e){console.error('dropdown load failed',e);}
+        const d = await ApiService.get('/pharmacies/reports/drivers-list?' + ReportsUI.buildQuery(f));
+        const sel = document.getElementById('r-driver');
+        const current = sel.value;
+        sel.innerHTML = '<option value="">All Drivers</option>' +
+            (d.drivers || []).map(x => `<option value="${x.driverId}">${x.driverName || 'Driver #' + x.driverId}</option>`).join('');
+        sel.value = current;
+    }catch(e){console.error('driver list failed',e);}
 }
 
 function preset(p){
@@ -136,15 +116,14 @@ async function runReports(){
     const f = getFilters();
     const qs = ReportsUI.buildQuery(f);
     try{
-        const [summary, monthly, byPharm, byDriver] = await Promise.all([
-            ApiService.get('/admin/reports/summary?' + qs),
-            ApiService.get('/admin/reports/monthly?' + qs),
-            ApiService.get('/admin/reports/by-pharmacy?' + ReportsUI.buildQuery({from:f.from,to:f.to,driverId:f.driverId,status:f.status})),
-            ApiService.get('/admin/reports/by-driver?' + ReportsUI.buildQuery({from:f.from,to:f.to,pharmacyId:f.pharmacyId,status:f.status}))
+        await loadDriverDropdown();
+        const [summary, monthly, byDriver] = await Promise.all([
+            ApiService.get('/pharmacies/reports/summary?' + qs),
+            ApiService.get('/pharmacies/reports/monthly?' + qs),
+            ApiService.get('/pharmacies/reports/by-driver?' + ReportsUI.buildQuery({from:f.from,to:f.to,status:f.status}))
         ]);
         ReportsUI.renderSummaryTiles(summary, 'summary-tiles');
         ReportsUI.renderMonthly(monthly.months || [], 'monthly-mount');
-        renderPharmacyTable(byPharm.pharmacies || []);
         renderDriverTable(byDriver.drivers || []);
         ReportsUI.renderStatusBreakdown(summary, 'status-mount');
     }catch(err){
@@ -152,29 +131,11 @@ async function runReports(){
     }
 }
 
-function renderPharmacyTable(rows){
-    if(!rows.length){ document.getElementById('pharmacy-mount').innerHTML='<p class="text-gray text-center">No pharmacy data.</p>'; return; }
-    document.getElementById('pharmacy-mount').innerHTML = `
-        <table><thead><tr>
-            <th>Pharmacy</th><th>Total</th><th>Delivered</th><th>Failed</th><th>Cancelled</th><th>Revenue</th><th>Copay</th>
-        </tr></thead><tbody>
-        ${rows.map(p => `<tr>
-            <td><strong>${p.pharmacyName}</strong></td>
-            <td>${p.total}</td>
-            <td style="color:#22c55e">${p.delivered}</td>
-            <td style="color:#ef4444">${p.failed}</td>
-            <td style="color:#6b7280">${p.cancelled}</td>
-            <td>${ReportsUI.money(p.revenue)}</td>
-            <td>${ReportsUI.money(p.copayCollected)}</td>
-        </tr>`).join('')}
-        </tbody></table>`;
-}
-
 function renderDriverTable(rows){
     if(!rows.length){ document.getElementById('driver-mount').innerHTML='<p class="text-gray text-center">No driver data.</p>'; return; }
     document.getElementById('driver-mount').innerHTML = `
         <table><thead><tr>
-            <th>Driver</th><th>Total</th><th>Delivered</th><th>Failed</th><th>Success Rate</th><th>Avg Delivery (min)</th>
+            <th>Driver</th><th>Total</th><th>Delivered</th><th>Failed</th><th>Success Rate</th>
         </tr></thead><tbody>
         ${rows.map(d => `<tr>
             <td><strong>${d.driverName}</strong></td>
@@ -182,7 +143,6 @@ function renderDriverTable(rows){
             <td style="color:#22c55e">${d.delivered}</td>
             <td style="color:#ef4444">${d.failed}</td>
             <td>${d.successRate}%</td>
-            <td>${d.avgDeliveryMinutes}</td>
         </tr>`).join('')}
         </tbody></table>`;
 }
@@ -192,7 +152,7 @@ async function exportCsv(){
     const qs = ReportsUI.buildQuery(f);
     try{
         const token = ApiService.getToken();
-        const res = await fetch(`${API_BASE_URL}/admin/reports/export?${qs}`, {
+        const res = await fetch(`${API_BASE_URL}/pharmacies/reports/export?${qs}`, {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         if(!res.ok){ throw new Error('Export failed: '+res.status); }
@@ -200,7 +160,7 @@ async function exportCsv(){
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `rxexpresss-report-${f.from}-to-${f.to}.csv`;
+        a.download = `pharmacy-report-${f.from}-to-${f.to}.csv`;
         document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url);
     }catch(err){ showAlert('alert-area','danger',err.message); }
@@ -210,7 +170,6 @@ async function exportCsv(){
     const { from, to } = ReportsUI.defaultRange();
     document.getElementById('r-from').value = from;
     document.getElementById('r-to').value = to;
-    await loadDropdowns();
     await runReports();
 })();
 </script>

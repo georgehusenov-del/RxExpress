@@ -203,8 +203,8 @@
         sf.innerHTML = `<div class="user-name">${user.firstName} ${user.lastName}</div><div class="user-role">${user.role}</div><button class="logout-btn" onclick="ApiService.logout()">Sign Out</button>`;
     }
 
-    // Filter sidebar items based on permissions (Admin sees all)
-    if (user && user.role !== 'Admin') {
+    // Filter sidebar items based on permissions (Admin/Pharmacy/Driver see their full nav)
+    if (user && user.role !== 'Admin' && user.role !== 'Pharmacy' && user.role !== 'Driver') {
         document.querySelectorAll('[data-nav-id]').forEach(link => {
             const navId = link.getAttribute('data-nav-id');
             const requiredPerm = navPermMap[navId];

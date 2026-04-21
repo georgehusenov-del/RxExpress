@@ -25,16 +25,32 @@
       "PackagePath": "staticwebassets/js/qr-scanner-patch.js"
     },
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/js/reports.js",
+      "PackagePath": "staticwebassets/js/reports.js"
+    },
+    {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/media/pharmacy-brochure.mp4",
       "PackagePath": "staticwebassets/media/pharmacy-brochure.mp4"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/addr_RX-3510F527_20260421074815.jpg",
+      "PackagePath": "staticwebassets/pod/addr_RX-3510F527_20260421074815.jpg"
     },
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/addr_RX-BKN00002_20260319175005.jpg",
       "PackagePath": "staticwebassets/pod/addr_RX-BKN00002_20260319175005.jpg"
     },
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/home_RX-3510F527_20260421074815.jpg",
+      "PackagePath": "staticwebassets/pod/home_RX-3510F527_20260421074815.jpg"
+    },
+    {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/home_RX-BKN00002_20260319175005.jpg",
       "PackagePath": "staticwebassets/pod/home_RX-BKN00002_20260319175005.jpg"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/pkg_RX-3510F527_20260421074815.jpg",
+      "PackagePath": "staticwebassets/pod/pkg_RX-3510F527_20260421074815.jpg"
     },
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/pkg_RX-BKN00002_20260319175005.jpg",
@@ -59,6 +75,10 @@
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/pod_RX-QNS00002_20260317113329.jpg",
       "PackagePath": "staticwebassets/pod/pod_RX-QNS00002_20260317113329.jpg"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/sig_RX-3510F527_20260421074815.png",
+      "PackagePath": "staticwebassets/pod/sig_RX-3510F527_20260421074815.png"
     },
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/sig_RX-BKN00002_20260319175005.png",

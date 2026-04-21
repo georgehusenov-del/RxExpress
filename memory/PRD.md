@@ -16,6 +16,17 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ## Core Features Implemented
 
+### Latest Updates (April 21, 2026)
+- **Admin & Pharmacy Reports Module**
+  - Filters: From/To date, pharmacy (admin), driver, status
+  - Quick presets: Today, Last 7/30 days, This Month, Last Month, This Year
+  - Summary tiles: Total, Delivered, Failed, Pending, Revenue, Copay (collected/pending), Avg delivery
+  - Breakdowns: Monthly, By Pharmacy (admin), By Driver, By Status
+  - CSV export with current filters applied
+  - Endpoints: `GET /api/admin/reports/{summary,monthly,by-pharmacy,by-driver,export}`, `GET /api/pharmacies/reports/{summary,monthly,by-driver,drivers-list,export}`
+  - Schema-drift safe: all queries use `.Select()` projection
+- **Sidebar fix**: Pharmacy & Driver roles now see their full scoped nav (previously filtered by admin permission map)
+
 ### Latest Updates (April 16, 2026)
 - **Role Hierarchy:** Admin > Manager > Operator > Pharmacy > Driver (Patient removed)
 - **Per-User Permissions:** 28 granular permissions across 13 categories (page + action level)

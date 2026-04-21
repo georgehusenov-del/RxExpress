@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "vLCygVHi774pj5vRoNjYfqPueSblx6KgxRtVmITgytY=",
+  "Hash": "B0Xd06z3MXKLbzna+gNnca9Has+HFVDYI6FuyaGDGSU=",
   "Source": "RxExpresss.Web",
   "BasePath": "_content/RxExpresss.Web",
   "Mode": "Default",
@@ -131,6 +131,25 @@
       "OriginalItemSpec": "wwwroot/js/qr-scanner-patch.js"
     },
     {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/js/reports.js",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "js/reports.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/js/reports.js"
+    },
+    {
       "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/media/pharmacy-brochure.mp4",
       "SourceId": "RxExpresss.Web",
       "SourceType": "Discovered",
@@ -148,6 +167,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/media/pharmacy-brochure.mp4"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/addr_RX-3510F527_20260421074815.jpg",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "pod/addr_RX-3510F527_20260421074815.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/addr_RX-3510F527_20260421074815.jpg"
     },
     {
       "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/addr_RX-BKN00002_20260319175005.jpg",
@@ -169,6 +207,25 @@
       "OriginalItemSpec": "wwwroot/pod/addr_RX-BKN00002_20260319175005.jpg"
     },
     {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/home_RX-3510F527_20260421074815.jpg",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "pod/home_RX-3510F527_20260421074815.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/home_RX-3510F527_20260421074815.jpg"
+    },
+    {
       "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/home_RX-BKN00002_20260319175005.jpg",
       "SourceId": "RxExpresss.Web",
       "SourceType": "Discovered",
@@ -186,6 +243,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/pod/home_RX-BKN00002_20260319175005.jpg"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/pkg_RX-3510F527_20260421074815.jpg",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "pod/pkg_RX-3510F527_20260421074815.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/pkg_RX-3510F527_20260421074815.jpg"
     },
     {
       "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/pkg_RX-BKN00002_20260319175005.jpg",
@@ -300,6 +376,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/pod/pod_RX-QNS00002_20260317113329.jpg"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/sig_RX-3510F527_20260421074815.png",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "pod/sig_RX-3510F527_20260421074815.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/pod/sig_RX-3510F527_20260421074815.png"
     },
     {
       "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/sig_RX-BKN00002_20260319175005.png",
