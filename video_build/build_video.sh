@@ -5,12 +5,11 @@ FRAMES=/app/video_build/frames
 AUDIO=/app/video_build/audio
 CLIPS=/app/video_build/clips
 OUT=/app/rxexpresss-pharmacy-walkthrough.mp4
-PAD=0.3  # seconds of tail padding after each narration
+PAD=0.3
 
 mkdir -p "$CLIPS"
 rm -f "$CLIPS"/*.mp4 "$OUT"
 
-# Scene list: index:image:audio
 SCENES=(
   "01:01_landing.png:01_01_landing.mp3"
   "02:02_login.png:02_02_login.mp3"
@@ -18,11 +17,16 @@ SCENES=(
   "04:04_dashboard_delivered.png:04_04_dashboard_delivered.mp3"
   "05:05_order_detail.png:05_05_order_detail.mp3"
   "06:06_pod.png:06_06_pod.mp3"
-  "07:07_reports_top.png:07_07_reports_top.mp3"
-  "08:08_reports_charts.png:08_08_reports_charts.mp3"
-  "09:09_reports_bydriver.png:09_09_reports_bydriver.mp3"
-  "10:10_create_order.png:10_10_create_order.mp3"
-  "11:11_closing.png:11_11_closing.mp3"
+  "07:07_create_order_modal.png:07_07_create_order_modal.mp3"
+  "08:08_create_order_types.png:08_08_create_order_types.mp3"
+  "09:09_create_order_cold.png:09_09_create_order_cold.mp3"
+  "10:10_reports_top.png:10_10_reports_top.mp3"
+  "11:11_reports_monthly.png:11_11_reports_monthly.mp3"
+  "12:12_reports_bydriver.png:12_12_reports_bydriver.mp3"
+  "13:13_developers_top.png:13_13_developers_top.mp3"
+  "14:14_developers_endpoints.png:14_14_developers_endpoints.mp3"
+  "15:15_developers_webhooks.png:15_15_developers_webhooks.mp3"
+  "16:16_closing.png:16_16_closing.mp3"
 )
 
 for s in "${SCENES[@]}"; do
@@ -32,15 +36,13 @@ for s in "${SCENES[@]}"; do
   dur=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$aud_path")
   clip_dur=$(python3 -c "print(${dur}+${PAD})")
   out_clip="$CLIPS/scene_${idx}.mp4"
-  echo "==> Building scene $idx (audio=${dur}s, clip=${clip_dur}s) -> $out_clip"
+  echo "==> Building scene $idx (audio=${dur}s, clip=${clip_dur}s)"
 
-  # Pad audio with silence at the end to match clip_dur
   padded_aud="$CLIPS/aud_${idx}.m4a"
   ffmpeg -y -loglevel error -i "$aud_path" \
     -af "apad=pad_dur=${PAD},atrim=duration=${clip_dur},aresample=44100" \
     -c:a aac -b:a 192k "$padded_aud"
 
-  # Build clip: loop still image for clip_dur, scaled to 1920x1080, H.264 + AAC mix
   ffmpeg -y -loglevel error \
     -loop 1 -framerate 30 -t "$clip_dur" -i "$img_path" \
     -i "$padded_aud" \
@@ -51,13 +53,11 @@ for s in "${SCENES[@]}"; do
     "$out_clip"
 done
 
-# Build concat list
 CONCAT=/app/video_build/concat.txt
 > "$CONCAT"
 for f in "$CLIPS"/scene_*.mp4; do
   echo "file '$f'" >> "$CONCAT"
 done
-cat "$CONCAT"
 
 echo "==> Concatenating into $OUT"
 ffmpeg -y -loglevel error -f concat -safe 0 -i "$CONCAT" -c copy "$OUT"
