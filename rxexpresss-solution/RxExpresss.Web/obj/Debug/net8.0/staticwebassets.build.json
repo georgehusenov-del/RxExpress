@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "s0yiPf/JA3wviNfSLEpLrlFDBPHwy1COqJxLntHcIys=",
+  "Hash": "vLCygVHi774pj5vRoNjYfqPueSblx6KgxRtVmITgytY=",
   "Source": "RxExpresss.Web",
   "BasePath": "_content/RxExpresss.Web",
   "Mode": "Default",
@@ -129,6 +129,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/js/qr-scanner-patch.js"
+    },
+    {
+      "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/media/pharmacy-brochure.mp4",
+      "SourceId": "RxExpresss.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/",
+      "BasePath": "_content/RxExpresss.Web",
+      "RelativePath": "media/pharmacy-brochure.mp4",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/media/pharmacy-brochure.mp4"
     },
     {
       "Identity": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/addr_RX-BKN00002_20260319175005.jpg",

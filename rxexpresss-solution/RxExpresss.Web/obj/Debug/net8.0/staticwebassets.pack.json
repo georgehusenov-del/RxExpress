@@ -25,6 +25,10 @@
       "PackagePath": "staticwebassets/js/qr-scanner-patch.js"
     },
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/media/pharmacy-brochure.mp4",
+      "PackagePath": "staticwebassets/media/pharmacy-brochure.mp4"
+    },
+    {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/addr_RX-BKN00002_20260319175005.jpg",
       "PackagePath": "staticwebassets/pod/addr_RX-BKN00002_20260319175005.jpg"
     },
