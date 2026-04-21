@@ -1,0 +1,224 @@
+@{ Layout = "_SidebarLayout"; }
+@*
+  Pharmacy Billing — Plans grid, current subscription, usage, invoices, checkout via Stripe.
+  LAUNCH: sidebar link is commented in PharmacyController.NavItems — flip appsettings
+  Subscriptions:Enabled=true AND uncomment the nav item to expose.
+*@
+<style>
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px}
+.plan-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;transition:all .2s}
+.plan-card:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.plan-card.featured{border-color:var(--primary);border-width:2px}
+.plan-card .badge-featured{position:absolute;top:-10px;right:16px;background:var(--primary);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.plan-name{font-size:18px;font-weight:700;margin:0}
+.plan-desc{color:var(--gray);font-size:13px;margin:4px 0 12px}
+.plan-price{font-size:28px;font-weight:800}
+.plan-price small{font-size:13px;color:var(--gray);font-weight:500}
+.plan-features{list-style:none;padding:0;margin:12px 0}
+.plan-features li{padding:4px 0;font-size:13px;display:flex;gap:8px}
+.plan-features li::before{content:"✓";color:#16a34a;font-weight:700}
+.plan-features li.off::before{content:"—";color:var(--gray)}
+.plan-features li.off{color:var(--gray);text-decoration:line-through}
+.billing-toggle{display:inline-flex;background:#f3f4f6;padding:4px;border-radius:8px;gap:4px}
+.billing-toggle button{background:none;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600}
+.billing-toggle button.active{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.current-sub{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-radius:12px;padding:20px;margin-bottom:16px}
+.current-sub h3{margin:0 0 4px;font-size:20px}
+.current-sub .status-pill{display:inline-block;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600;text-transform:uppercase;margin-left:8px}
+.usage-bar{background:rgba(255,255,255,.2);height:8px;border-radius:4px;overflow:hidden;margin-top:8px}
+.usage-bar .fill{background:#fff;height:100%;transition:width .3s}
+.flag-banner{background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#92400e}
+.trial-alert{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;margin-bottom:16px;border-radius:4px}
+.trial-alert.critical{background:#fee2e2;border-color:#dc2626;color:#7f1d1d}
+</style>
+
+<div id="flag-warning" class="flag-banner" style="display:none" data-testid="billing-disabled-banner">
+    <strong>Billing module is in preview.</strong> This page is staged but not yet active for pharmacies.
+</div>
+
+<div id="current-sub-container"></div>
+<div id="trial-alert-container"></div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+    <div>
+        <h2 style="margin:0">Choose your plan</h2>
+        <div style="color:var(--gray);font-size:14px">30-day free trial. Card required — we won't charge until you confirm.</div>
+    </div>
+    <div class="billing-toggle" data-testid="billing-toggle">
+        <button id="btn-monthly" class="active" onclick="setInterval('monthly')" data-testid="toggle-monthly">Monthly</button>
+        <button id="btn-annual" onclick="setInterval('annual')" data-testid="toggle-annual">Annual <small style="color:#16a34a">−20%</small></button>
+    </div>
+</div>
+
+<div class="plan-grid" id="plan-grid" data-testid="plan-grid">
+    <div style="padding:40px;text-align:center;color:var(--gray);grid-column:1/-1">Loading plans...</div>
+</div>
+
+<div class="card mt-3" id="invoices-card" style="display:none">
+    <div class="card-header"><strong>Invoice history</strong></div>
+    <div class="card-body">
+        <div style="overflow-x:auto">
+        <table class="table" data-testid="invoices-table">
+            <thead><tr><th>Date</th><th>Amount</th><th>Status</th><th>Invoice</th></tr></thead>
+            <tbody id="invoices-rows"></tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = (window.API_BASE_URL || '/api');
+let currentInterval = 'monthly';
+let plans = [];
+let currentSub = null;
+
+function fmtMoney(n, c='USD'){ return new Intl.NumberFormat('en-US',{style:'currency',currency:c}).format(n||0); }
+function fmtDate(s){ if(!s) return '—'; return new Date(s).toLocaleDateString(); }
+
+async function authFetch(url, opts={}) {
+    const token = ApiService.getToken();
+    opts.headers = Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+token}, opts.headers||{});
+    const res = await fetch(url, opts);
+    if (res.status === 404) { document.getElementById('flag-warning').style.display='block'; throw new Error('disabled'); }
+    return res;
+}
+
+async function loadAll() {
+    try {
+        const [pr, mr] = await Promise.all([
+            authFetch(`${API}/subscriptions/plans`),
+            authFetch(`${API}/subscriptions/my`)
+        ]);
+        if (pr.ok) { plans = await pr.json(); renderPlans(); }
+        if (mr.ok) { const d = await mr.json(); currentSub = d.subscription; renderCurrent(d); loadInvoices(); }
+    } catch(e) { renderPlans(); }
+}
+
+function renderCurrent(d) {
+    if (!currentSub) return;
+    const statusLabels = {'Trialing':'Trialing','TrialPendingConfirm':'Trial Ending — Action Needed','Active':'Active','PastDue':'Past Due','Canceled':'Canceled','Unpaid':'Unpaid','Expired':'Expired'};
+    const planName = currentSub.plan ? currentSub.plan.name : '—';
+    const limit = currentSub.plan && currentSub.plan.maxOrdersPerMonth >= 0 ? currentSub.plan.maxOrdersPerMonth : null;
+    const used = d.usage ? d.usage.ordersThisMonth : 0;
+    const pct = limit ? Math.min(100, Math.round(used/limit*100)) : 0;
+
+    document.getElementById('current-sub-container').innerHTML = `
+        <div class="current-sub" data-testid="current-subscription">
+            <div>
+                <h3>${planName} Plan <span class="status-pill">${statusLabels[currentSub.status]||currentSub.status}</span></h3>
+                <div style="opacity:.9;font-size:14px">
+                    ${currentSub.interval==='Annual'?'Annual billing':'Monthly billing'}
+                    ${currentSub.trialEnd?` · Trial ends ${fmtDate(currentSub.trialEnd)}`:''}
+                    ${currentSub.currentPeriodEnd?` · Renews ${fmtDate(currentSub.currentPeriodEnd)}`:''}
+                </div>
+                ${limit!==null?`
+                <div style="margin-top:12px">
+                    <div style="display:flex;justify-content:space-between;font-size:13px"><span>Orders used</span><span>${used} / ${limit}</span></div>
+                    <div class="usage-bar"><div class="fill" style="width:${pct}%"></div></div>
+                </div>`:''}
+            </div>
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn" style="background:#fff;color:#4f46e5" onclick="openPortal()" data-testid="manage-billing-btn">Manage Billing</button>
+                ${currentSub.status==='TrialPendingConfirm'?`<button class="btn btn-success" onclick="confirmTrial()" data-testid="confirm-trial-btn">Confirm & Keep Subscription</button>`:''}
+                ${currentSub.cancelAtPeriodEnd?'':`<button class="btn btn-outline" style="color:#fff;border-color:#fff" onclick="cancelSub()" data-testid="cancel-subscription-btn">Cancel</button>`}
+            </div>
+        </div>`;
+
+    if (currentSub.status==='TrialPendingConfirm') {
+        document.getElementById('trial-alert-container').innerHTML = `
+            <div class="trial-alert critical" data-testid="trial-ending-alert">
+                <strong>Your trial is ending.</strong> Confirm to continue with paid billing, or your subscription will be canceled automatically.
+            </div>`;
+    }
+}
+
+function renderPlans() {
+    const grid = document.getElementById('plan-grid');
+    if (!plans.length) { grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray);grid-column:1/-1">No plans available.</div>'; return; }
+    grid.innerHTML = plans.map(p => {
+        const price = currentInterval==='monthly' ? p.monthlyPrice : p.annualPrice;
+        const suffix = currentInterval==='monthly' ? '/month' : '/year';
+        const isPro = p.code==='pro';
+        const isCurrent = currentSub && currentSub.plan && currentSub.plan.code===p.code;
+        return `
+        <div class="plan-card ${isPro?'featured':''}" data-testid="plan-card-${p.code}">
+            ${isPro?'<span class="badge-featured">Most Popular</span>':''}
+            <h3 class="plan-name">${p.name}</h3>
+            <div class="plan-desc">${p.description||''}</div>
+            <div class="plan-price">${fmtMoney(price)}<small>${suffix}</small></div>
+            ${currentInterval==='annual'?`<div style="color:#16a34a;font-size:12px">Save 20% vs monthly</div>`:''}
+            <ul class="plan-features">
+                <li>${p.maxOrdersPerMonth<0?'Unlimited orders':`${p.maxOrdersPerMonth} orders/month`}</li>
+                <li>${p.maxActiveDrivers<0?'Unlimited drivers':`${p.maxActiveDrivers} active drivers`}</li>
+                <li class="${p.apiAccess?'':'off'}">API access</li>
+                <li class="${p.webhookAccess?'':'off'}">Webhooks</li>
+                <li class="${p.advancedReports?'':'off'}">Advanced reports</li>
+                <li class="${p.routeOptimization?'':'off'}">Route optimization</li>
+                <li class="${p.prioritySupport?'':'off'}">Priority support</li>
+            </ul>
+            <button class="btn btn-primary" style="width:100%" ${isCurrent?'disabled':''} onclick="startCheckout(${p.id})" data-testid="select-plan-${p.code}">
+                ${isCurrent?'Current plan':`Start ${p.trialDays}-day trial`}
+            </button>
+        </div>`;
+    }).join('');
+}
+
+async function loadInvoices() {
+    try {
+        const r = await authFetch(`${API}/subscriptions/invoices`);
+        if (!r.ok) return;
+        const invs = await r.json();
+        if (!invs.length) return;
+        document.getElementById('invoices-card').style.display = '';
+        document.getElementById('invoices-rows').innerHTML = invs.map(i => `
+            <tr>
+                <td>${fmtDate(i.paidAt||i.createdAt)}</td>
+                <td>${fmtMoney(i.amountPaid||i.amount, (i.currency||'usd').toUpperCase())}</td>
+                <td>${i.status}</td>
+                <td>${i.hostedInvoiceUrl?`<a href="${i.hostedInvoiceUrl}" target="_blank">View</a>`:'—'} ${i.invoicePdfUrl?` · <a href="${i.invoicePdfUrl}" target="_blank">PDF</a>`:''}</td>
+            </tr>`).join('');
+    } catch(e){}
+}
+
+function setInterval(iv) {
+    currentInterval = iv;
+    document.getElementById('btn-monthly').classList.toggle('active', iv==='monthly');
+    document.getElementById('btn-annual').classList.toggle('active', iv==='annual');
+    renderPlans();
+}
+
+async function startCheckout(planId) {
+    const origin = window.location.origin;
+    const r = await authFetch(`${API}/subscriptions/checkout`,{method:'POST',body:JSON.stringify({planId, interval: currentInterval, originUrl: origin})});
+    if (!r.ok) { const d=await r.json(); alert('Failed: '+(d.error||'')); return; }
+    const d = await r.json();
+    window.location.href = d.url;
+}
+
+async function openPortal() {
+    const r = await authFetch(`${API}/subscriptions/portal`,{method:'POST',body:JSON.stringify({returnUrl: window.location.href})});
+    if (!r.ok) { const d=await r.json(); alert('Failed: '+(d.error||'')); return; }
+    const d = await r.json();
+    window.location.href = d.url;
+}
+async function confirmTrial() {
+    const r = await authFetch(`${API}/subscriptions/confirm-trial-conversion`,{method:'POST'});
+    if (r.ok) { alert('Confirmed. You will be charged when the trial ends.'); loadAll(); } else { const d=await r.json(); alert('Failed: '+(d.error||'')); }
+}
+async function cancelSub() {
+    if (!confirm('Cancel at period end? You keep access until the end of the current period.')) return;
+    const r = await authFetch(`${API}/subscriptions/cancel`,{method:'POST',body:JSON.stringify({immediate:false})});
+    if (r.ok) { alert('Canceled at period end.'); loadAll(); } else { const d=await r.json(); alert('Failed: '+(d.error||'')); }
+}
+
+// Handle Stripe Checkout return
+const params = new URLSearchParams(window.location.search);
+if (params.get('session_id')) {
+    // Webhook handles sub status; just give a moment then reload.
+    setTimeout(() => { window.history.replaceState({},'',window.location.pathname); loadAll(); }, 1500);
+} else if (params.get('canceled')) {
+    window.history.replaceState({},'',window.location.pathname);
+}
+
+document.addEventListener('DOMContentLoaded', loadAll);
+</script>

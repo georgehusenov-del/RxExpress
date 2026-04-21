@@ -26,6 +26,8 @@ public class AdminController : Controller
         ("offices", "Office Locations", "/Admin/Offices", SvgIcons.Building),
         ("api-keys", "API Keys", "/Admin/ApiKeys", SvgIcons.Key),
         ("reports", "Reports", "/Admin/Reports", SvgIcons.BarChart),
+        // LAUNCH: uncomment to surface Subscriptions nav once Subscriptions:Enabled=true.
+        // ("subscriptions", "Subscriptions", "/Admin/Subscriptions", SvgIcons.Dollar),
     };
 
     private void SetNav(string activeId, string pageTitle)
@@ -50,6 +52,10 @@ public class AdminController : Controller
     public IActionResult Offices() { SetNav("offices", "Office Locations"); return View(); }
     public IActionResult Reports() { SetNav("reports", "Reports"); return View(); }
     public IActionResult ApiKeys() { SetNav("api-keys", "API Keys Management"); return View(); }
+    // LAUNCH: Subscriptions route stays accessible (returns blank-ish view) but is hidden from sidebar
+    // until the nav item is uncommented above. Enable fully by flipping Subscriptions:Enabled flag
+    // in API appsettings.json.
+    public IActionResult Subscriptions() { SetNav("subscriptions", "Subscriptions & Billing"); return View(); }
     public IActionResult Tracking() { 
         SetNav("tracking", "Live Driver Tracking");
         ViewData["GoogleMapsKey"] = _configuration["GoogleMaps:ApiKey"] ?? "";

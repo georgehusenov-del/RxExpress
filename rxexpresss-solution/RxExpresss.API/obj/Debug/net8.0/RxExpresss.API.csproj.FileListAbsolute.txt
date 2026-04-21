@@ -36,7 +36,6 @@
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/Microsoft.IdentityModel.Tokens.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/Microsoft.OpenApi.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/Microsoft.SqlServer.Server.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/Microsoft.Win32.SystemEvents.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/Mono.TextTemplating.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/SQLitePCLRaw.batteries_v2.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/SQLitePCLRaw.core.dll
@@ -51,13 +50,10 @@
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Composition.Runtime.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Composition.TypedParts.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Configuration.ConfigurationManager.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Drawing.Common.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.IdentityModel.Tokens.Jwt.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Memory.Data.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Runtime.Caching.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Security.Cryptography.ProtectedData.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Security.Permissions.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/System.Windows.Extensions.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/cs/Microsoft.CodeAnalysis.resources.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/de/Microsoft.CodeAnalysis.resources.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/es/Microsoft.CodeAnalysis.resources.dll
@@ -116,7 +112,6 @@
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win-arm64/native/Microsoft.Data.SqlClient.SNI.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win-x64/native/Microsoft.Data.SqlClient.SNI.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win-x86/native/Microsoft.Data.SqlClient.SNI.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win/lib/net6.0/Microsoft.Win32.SystemEvents.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/browser-wasm/nativeassets/net8.0/e_sqlite3.a
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/linux-arm/native/libe_sqlite3.so
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/linux-arm64/native/libe_sqlite3.so
@@ -137,11 +132,7 @@
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win-arm64/native/e_sqlite3.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win-x64/native/e_sqlite3.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win-x86/native/e_sqlite3.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/unix/lib/net6.0/System.Drawing.Common.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win/lib/net6.0/System.Drawing.Common.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win/lib/net6.0/System.Runtime.Caching.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win/lib/net6.0/System.Security.Cryptography.ProtectedData.dll
-/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/runtimes/win/lib/net6.0/System.Windows.Extensions.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/RxExpresss.Core.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/RxExpresss.Data.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/RxExpresss.Identity.dll
@@ -171,3 +162,5 @@
 /app/rxexpresss-solution/RxExpresss.API/obj/Debug/net8.0/ref/RxExpresss.API.dll
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/web.config
 /app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/appsettings.Production.json
+/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/Newtonsoft.Json.dll
+/app/rxexpresss-solution/RxExpresss.API/bin/Debug/net8.0/Stripe.net.dll

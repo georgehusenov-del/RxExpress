@@ -58,6 +58,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWRtaW4vU2Nhbm5pbmcuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Subscriptions.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWRtaW4vU3Vic2NyaXB0aW9ucy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/app/rxexpresss-solution/RxExpresss.Web/Views/Admin/Tracking.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWRtaW4vVHJhY2tpbmcuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -112,6 +116,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/app/rxexpresss-solution/RxExpresss.Web/Views/Home/Track.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSG9tZS9UcmFjay5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/app/rxexpresss-solution/RxExpresss.Web/Views/Pharmacy/Billing.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUGhhcm1hY3kvQmlsbGluZy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/app/rxexpresss-solution/RxExpresss.Web/Views/Pharmacy/Index.cshtml]

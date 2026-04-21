@@ -17,3 +17,8 @@ Admin > Manager > Operator > Pharmacy > Driver
 - Admin: full access, creates everyone, sees all users
 - Manager: creates Operators, CANNOT see Admin users, access controlled by Admin
 - Operator: limited access controlled by Manager/Admin, CANNOT see Admin/Manager users
+
+## Stripe (test mode)
+- API key: `sk_test_emergent` (from pod env `STRIPE_API_KEY`)
+- Test card: `4242 4242 4242 4242`, any future CVC/expiry
+- Subscriptions feature is behind `Subscriptions:Enabled` flag in `RxExpresss.API/appsettings.json` (default false — dormant for launch).

@@ -63,6 +63,10 @@
               "target": "Package",
               "version": "[8.0.0, )"
             },
+            "Stripe.net": {
+              "target": "Package",
+              "version": "[47.0.0, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.6.2, )"
@@ -215,6 +219,10 @@
               "version": "[8.0.0, )"
             },
             "Microsoft.EntityFrameworkCore.Sqlite": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Configuration.Abstractions": {
               "target": "Package",
               "version": "[8.0.0, )"
             }

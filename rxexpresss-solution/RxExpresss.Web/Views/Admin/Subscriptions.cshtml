@@ -1,0 +1,224 @@
+@{ Layout = "_SidebarLayout"; }
+@*
+  Admin Subscriptions — Manage all pharmacy subscriptions, MRR, refunds, cancellations.
+  Visibility: sidebar link is commented in AdminController.NavItems.
+  Route /Admin/Subscriptions remains reachable so admins can preview before launch.
+  API returns 404 unless Subscriptions:Enabled=true — the page will show a disabled banner.
+*@
+<style>
+.sub-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.sub-stat{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.sub-stat .lbl{font-size:12px;color:var(--gray);text-transform:uppercase;letter-spacing:.3px}
+.sub-stat .val{font-size:22px;font-weight:700;margin-top:4px}
+.sub-stat .sub{font-size:11px;color:var(--gray);margin-top:2px}
+.filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+.filter-bar .form-group{margin:0;min-width:160px}
+.badge-status{padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase}
+.b-active{background:#dcfce7;color:#166534}
+.b-trialing{background:#dbeafe;color:#1e40af}
+.b-pendingconfirm{background:#fef3c7;color:#92400e}
+.b-pastdue{background:#fed7aa;color:#9a3412}
+.b-canceled{background:#fee2e2;color:#991b1b}
+.b-unpaid{background:#fecaca;color:#7f1d1d}
+.b-incomplete{background:#e5e7eb;color:#374151}
+.b-expired{background:#e5e7eb;color:#374151}
+.flag-banner{background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#92400e}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tabs button{background:none;border:none;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;color:var(--gray);font-weight:500}
+.tabs button.active{color:var(--primary);border-color:var(--primary)}
+</style>
+
+<div id="flag-warning" class="flag-banner" style="display:none" data-testid="subs-disabled-banner">
+    <strong>Subscriptions module is disabled.</strong> Feature is fully built but hidden from live users.
+    Enable by setting <code>Subscriptions:Enabled = true</code> in <code>appsettings.json</code> and following the launch checklist in <code>Program.cs</code>.
+</div>
+
+<div class="sub-stats" id="sub-stats" data-testid="admin-subs-stats">
+    <div class="sub-stat"><div class="lbl">MRR</div><div class="val" id="s-mrr">$0</div><div class="sub">Monthly recurring revenue</div></div>
+    <div class="sub-stat"><div class="lbl">ARR</div><div class="val" id="s-arr">$0</div><div class="sub">Annual run-rate</div></div>
+    <div class="sub-stat"><div class="lbl">Active</div><div class="val" id="s-active">0</div></div>
+    <div class="sub-stat"><div class="lbl">Trialing</div><div class="val" id="s-trialing">0</div></div>
+    <div class="sub-stat"><div class="lbl">Past Due</div><div class="val" id="s-pastdue">0</div></div>
+    <div class="sub-stat"><div class="lbl">Revenue This Month</div><div class="val" id="s-rev">$0</div></div>
+</div>
+
+<div class="tabs">
+    <button class="active" onclick="switchTab('subs',this)" data-testid="tab-subscriptions">Subscriptions</button>
+    <button onclick="switchTab('plans',this)" data-testid="tab-plans">Plans</button>
+</div>
+
+<!-- Subscriptions tab -->
+<div id="tab-subs">
+    <div class="card">
+        <div class="card-body">
+            <div class="filter-bar">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select class="form-control" id="f-status" data-testid="filter-status">
+                        <option value="">All</option>
+                        <option value="Active">Active</option>
+                        <option value="Trialing">Trialing</option>
+                        <option value="TrialPendingConfirm">Trial Pending Confirm</option>
+                        <option value="PastDue">Past Due</option>
+                        <option value="Canceled">Canceled</option>
+                        <option value="Unpaid">Unpaid</option>
+                        <option value="Expired">Expired</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Plan</label>
+                    <select class="form-control" id="f-plan" data-testid="filter-plan">
+                        <option value="">All</option>
+                        <option value="starter">Starter</option>
+                        <option value="pro">Pro</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1;min-width:220px">
+                    <label>Search pharmacy</label>
+                    <input class="form-control" id="f-search" placeholder="Name or email..." data-testid="filter-search"/>
+                </div>
+                <button class="btn btn-primary" onclick="loadSubs()" data-testid="apply-filters-btn">Apply</button>
+                <button class="btn btn-outline" onclick="syncPlans()" data-testid="sync-plans-btn">Sync Plans with Stripe</button>
+            </div>
+
+            <div style="overflow-x:auto">
+            <table class="table" data-testid="subs-table">
+                <thead>
+                    <tr>
+                        <th>Pharmacy</th><th>Plan</th><th>Interval</th><th>Status</th>
+                        <th>Amount</th><th>Trial Ends</th><th>Period Ends</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="subs-rows"><tr><td colspan="8" style="text-align:center;color:var(--gray)">Loading...</td></tr></tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plans tab -->
+<div id="tab-plans" style="display:none">
+    <div class="card">
+        <div class="card-body">
+            <div style="overflow-x:auto">
+            <table class="table" data-testid="plans-table">
+                <thead>
+                    <tr>
+                        <th>Code</th><th>Name</th><th>Monthly</th><th>Annual</th>
+                        <th>Orders/mo</th><th>Drivers</th><th>Features</th><th>Trial</th><th>Active</th><th></th>
+                    </tr>
+                </thead>
+                <tbody id="plans-rows"><tr><td colspan="10" style="text-align:center;color:var(--gray)">Loading...</td></tr></tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = (window.API_BASE_URL || '/api');
+function fmtMoney(n, c='USD'){ return new Intl.NumberFormat('en-US',{style:'currency',currency:c}).format(n||0); }
+function fmtDate(s){ if(!s) return '—'; return new Date(s).toLocaleDateString(); }
+function statusBadge(s){
+    const m = { 'Active':'b-active', 'Trialing':'b-trialing', 'TrialPendingConfirm':'b-pendingconfirm', 'PastDue':'b-pastdue', 'Canceled':'b-canceled', 'Unpaid':'b-unpaid', 'Incomplete':'b-incomplete', 'Expired':'b-expired' };
+    return `<span class="badge-status ${m[s]||'b-incomplete'}">${s}</span>`;
+}
+
+async function authFetch(url, opts={}) {
+    const token = ApiService.getToken();
+    opts.headers = Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+token}, opts.headers||{});
+    const res = await fetch(url, opts);
+    if (res.status === 404) { document.getElementById('flag-warning').style.display='block'; throw new Error('Subscriptions disabled'); }
+    return res;
+}
+
+async function loadSummary() {
+    try {
+        const r = await authFetch(`${API}/admin/subscriptions/summary`);
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById('s-mrr').textContent = fmtMoney(d.mrr);
+        document.getElementById('s-arr').textContent = fmtMoney(d.arr);
+        document.getElementById('s-active').textContent = d.active;
+        document.getElementById('s-trialing').textContent = d.trialing;
+        document.getElementById('s-pastdue').textContent = d.pastDue;
+        document.getElementById('s-rev').textContent = fmtMoney(d.revenueThisMonth);
+    } catch(e){}
+}
+
+async function loadSubs() {
+    const status = document.getElementById('f-status').value;
+    const plan = document.getElementById('f-plan').value;
+    const search = document.getElementById('f-search').value;
+    const qs = new URLSearchParams({status, planCode: plan, search}).toString();
+    try {
+        const r = await authFetch(`${API}/admin/subscriptions?${qs}`);
+        if (!r.ok) { document.getElementById('subs-rows').innerHTML='<tr><td colspan="8" style="color:#dc2626">Failed to load</td></tr>'; return; }
+        const rows = await r.json();
+        if (!rows.length) { document.getElementById('subs-rows').innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray)">No subscriptions yet</td></tr>'; return; }
+        document.getElementById('subs-rows').innerHTML = rows.map(s => `
+            <tr>
+                <td><strong>${s.pharmacyName||''}</strong><br/><small style="color:var(--gray)">${s.pharmacyEmail||''}</small></td>
+                <td>${s.planName}</td>
+                <td>${s.interval}</td>
+                <td>${statusBadge(s.status)}${s.cancelAtPeriodEnd?'<br/><small style="color:#dc2626">cancels at period end</small>':''}</td>
+                <td>${fmtMoney(s.amount)}</td>
+                <td>${fmtDate(s.trialEnd)}</td>
+                <td>${fmtDate(s.currentPeriodEnd)}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline" onclick="cancelSub(${s.id},false)" data-testid="cancel-at-end-${s.id}">Cancel at End</button>
+                    <button class="btn btn-sm btn-danger" onclick="cancelSub(${s.id},true)" data-testid="cancel-now-${s.id}">Cancel Now</button>
+                    <button class="btn btn-sm btn-outline" onclick="refundLatest(${s.id})" data-testid="refund-${s.id}">Refund</button>
+                </td>
+            </tr>`).join('');
+    } catch(e){ document.getElementById('subs-rows').innerHTML=`<tr><td colspan="8" style="color:#dc2626">${e.message}</td></tr>`; }
+}
+
+async function loadPlans() {
+    try {
+        const r = await authFetch(`${API}/admin/subscriptions/plans`);
+        if (!r.ok) return;
+        const plans = await r.json();
+        document.getElementById('plans-rows').innerHTML = plans.map(p => `
+            <tr>
+                <td><code>${p.code}</code></td>
+                <td>${p.name}</td>
+                <td>${fmtMoney(p.monthlyPrice)}</td>
+                <td>${fmtMoney(p.annualPrice)}</td>
+                <td>${p.maxOrdersPerMonth<0?'∞':p.maxOrdersPerMonth}</td>
+                <td>${p.maxActiveDrivers<0?'∞':p.maxActiveDrivers}</td>
+                <td>${[p.apiAccess&&'API',p.webhookAccess&&'Webhooks',p.advancedReports&&'Reports',p.routeOptimization&&'Routes',p.prioritySupport&&'Priority'].filter(Boolean).join(', ')||'—'}</td>
+                <td>${p.trialDays}d</td>
+                <td>${p.isActive?'Yes':'No'}</td>
+                <td><small style="color:var(--gray)">Edit via PUT /api/admin/subscriptions/plans/${p.id}</small></td>
+            </tr>`).join('');
+    } catch(e){}
+}
+
+async function cancelSub(id, immediate) {
+    if (!confirm(immediate?'Cancel this subscription immediately?':'Cancel at period end?')) return;
+    const r = await authFetch(`${API}/admin/subscriptions/${id}/cancel`,{method:'POST',body:JSON.stringify({immediate})});
+    if (r.ok) { alert('Canceled.'); loadSubs(); loadSummary(); } else alert('Failed');
+}
+async function refundLatest(id) {
+    if (!confirm('Refund the latest paid invoice?')) return;
+    const r = await authFetch(`${API}/admin/subscriptions/${id}/refund-latest`,{method:'POST'});
+    const d = await r.json();
+    alert(d.ok ? `Refunded (${d.refundId})` : 'No paid invoice to refund');
+}
+async function syncPlans() {
+    const r = await authFetch(`${API}/admin/subscriptions/sync-plans`,{method:'POST'});
+    if (r.ok) { alert('Synced with Stripe.'); loadPlans(); } else { const d=await r.json(); alert('Failed: '+(d.error||'')); }
+}
+
+function switchTab(t, btn) {
+    document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-subs').style.display = t==='subs'?'':'none';
+    document.getElementById('tab-plans').style.display = t==='plans'?'':'none';
+    if (t==='plans') loadPlans();
+}
+
+document.addEventListener('DOMContentLoaded', () => { loadSummary(); loadSubs(); });
+</script>

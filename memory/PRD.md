@@ -16,6 +16,19 @@ Build a full-stack pharmacy delivery service application named "RX Expresss" bas
 
 ## Core Features Implemented
 
+### Latest Updates (April 21, 2026 — Evening)
+- **Stripe Subscriptions Module (DORMANT / Ready for Launch)**
+  - 3-tier catalog: Starter ($49/mo, 100 orders), Pro ($149/mo, 500 orders, all features), Enterprise ($399/mo, unlimited) — Monthly + Annual (20% discount)
+  - 30-day trial with **card required upfront but no auto-charge**: Stripe `trial_will_end` webhook flips sub to `TrialPendingConfirm`; user must explicitly click Confirm to convert to paid, otherwise sub is paused/expired (hard lock).
+  - Feature gate with hard-lock: `SubscriptionFeatureGate.CanUseFeatureAsync(pharmacyId, feature)` blocks orders when Canceled/Unpaid/Expired or monthly limit reached
+  - **Admin UI** (`/Admin/Subscriptions`): MRR/ARR/Active/Trialing/PastDue/Revenue, list all pharmacies subs, cancel (now or at period end), refund latest invoice, Sync Plans with Stripe, Plans editor
+  - **Pharmacy UI** (`/Pharmacy/Billing`): 3 plan cards with Monthly/Annual toggle, current subscription panel with usage meter, trial-ending alert with Confirm button, Stripe billing portal, invoice history
+  - **Stripe webhook** `/api/stripe/webhook` handles checkout.session.completed, customer.subscription.*, trial_will_end, invoice.payment_*
+  - **Feature flag** `Subscriptions:Enabled=false` (default) → all endpoints return 404 and sidebar nav items are commented out. Flip to `true` to launch.
+  - **Launch runbook**: `/app/rxexpresss-solution/SUBSCRIPTIONS_LAUNCH.md`
+  - **SQL migration**: `/app/rxexpresss-solution/SqlServer_Subscriptions.sql` (creates 5 tables + seeds plans, idempotent)
+  - Stripe.net 47.0.0 NuGet installed. API key `sk_test_emergent` in env; LIVE key replaces at launch.
+
 ### Latest Updates (April 21, 2026)
 - **Admin & Pharmacy Reports Module**
   - Filters: From/To date, pharmacy (admin), driver, status

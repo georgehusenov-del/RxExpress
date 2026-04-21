@@ -39,6 +39,11 @@ public class OrdersController : ControllerBase
         var pharmacy = await _pharmacies.GetByIdAsync(dto.PharmacyId);
         if (pharmacy == null) return NotFound(new { detail = "Pharmacy not found" });
 
+        // LAUNCH: uncomment to enforce subscription plan limits on order creation.
+        // (Requires Subscriptions:Enabled=true + SubscriptionFeatureGate injected via ctor.)
+        // var (allowed, reason) = await _featureGate.CanUseFeatureAsync(dto.PharmacyId, RxExpresss.API.Services.Subscriptions.SubscriptionFeature.CreateOrder);
+        // if (!allowed) return StatusCode(402, new { error = "subscription_required", detail = reason });
+
         var order = new Order
         {
             PharmacyId = dto.PharmacyId, PharmacyName = pharmacy.Name,
@@ -60,6 +65,9 @@ public class OrdersController : ControllerBase
         
         // Auto-assign to gig based on city/service zone
         await AutoAssignToGig(order);
+
+        // LAUNCH: uncomment to track usage for plan limits.
+        // await _featureGate.IncrementOrderUsageAsync(dto.PharmacyId);
 
         return Ok(new { message = "Order created", order_id = order.Id, order_number = order.OrderNumber, qr_code = order.QrCode });
     }

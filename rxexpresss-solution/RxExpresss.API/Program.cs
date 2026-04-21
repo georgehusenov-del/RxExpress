@@ -71,6 +71,22 @@ builder.Services.AddSingleton<RxExpresss.API.Services.CircuitService>();
 builder.Services.AddSingleton<RxExpresss.API.Services.GoogleMapsService>();
 builder.Services.AddSingleton<RxExpresss.API.Services.AppleMapsService>();
 
+// ─────────────────── SUBSCRIPTIONS MODULE (feature-flagged) ───────────────────
+// This module is always registered but all API endpoints return 404 unless
+// Subscriptions:Enabled=true in appsettings.json.
+//
+// LAUNCH CHECKLIST (to go live):
+//   1. Set "Subscriptions:Enabled": true in appsettings.json (or env var Subscriptions__Enabled=true).
+//   2. Run Sql script: /app/rxexpresss-solution/SqlServer_Subscriptions.sql on your production DB.
+//   3. Set Stripe:ApiKey (live key) + Stripe:WebhookSecret in appsettings.
+//   4. POST /api/admin/subscriptions/sync-plans (Admin JWT) to create Products/Prices in Stripe.
+//   5. Configure Stripe webhook: https://<domain>/api/stripe/webhook  (events: checkout.session.completed,
+//      customer.subscription.*, invoice.payment_*)
+//   6. Uncomment the SubscriptionPlanSeeder line below (or call /api/admin/subscriptions/sync-plans).
+builder.Services.AddScoped<RxExpresss.API.Services.Subscriptions.StripeSubscriptionService>();
+builder.Services.AddScoped<RxExpresss.API.Services.Subscriptions.SubscriptionFeatureGate>();
+// ─────────────────────────────────────────────────────────────────────────────
+
 // CORS - allow cross-origin requests from frontend
 builder.Services.AddCors(options =>
 {
@@ -123,6 +139,11 @@ if (!Directory.Exists(wwwrootPath))
 using (var scope = app.Services.CreateScope())
 {
     await DbSeeder.SeedAsync(scope.ServiceProvider);
+
+    // LAUNCH: uncomment the two lines below AFTER creating subscription tables in prod DB
+    // (run /app/rxexpresss-solution/SqlServer_Subscriptions.sql) AND setting Subscriptions:Enabled=true.
+    // var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    // await RxExpresss.Data.Seed.SubscriptionPlanSeeder.SeedAsync(db, builder.Configuration);
 }
 
 app.UseSwagger();

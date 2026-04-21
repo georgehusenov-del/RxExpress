@@ -3276,6 +3276,7 @@
       "Microsoft.EntityFrameworkCore >= 8.0.0",
       "Microsoft.EntityFrameworkCore.SqlServer >= 8.0.0",
       "Microsoft.EntityFrameworkCore.Sqlite >= 8.0.0",
+      "Microsoft.Extensions.Configuration.Abstractions >= 8.0.0",
       "RxExpresss.Core >= 1.0.0"
     ]
   },
@@ -3338,6 +3339,10 @@
             "version": "[8.0.0, )"
           },
           "Microsoft.EntityFrameworkCore.Sqlite": {
+            "target": "Package",
+            "version": "[8.0.0, )"
+          },
+          "Microsoft.Extensions.Configuration.Abstractions": {
             "target": "Package",
             "version": "[8.0.0, )"
           }

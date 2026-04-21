@@ -52,7 +52,7 @@
     "POD photos accessible via HTTP": {
       "status": "PASS",
       "evidence": [
-        "curl -s https://pod-upload-staging.preview.emergentagent.com/pod/home_RX-BKN00002_20260319175005.jpg returns HTTP 200",
+        "curl -s https://pharmacy-analytics-5.preview.emergentagent.com/pod/home_RX-BKN00002_20260319175005.jpg returns HTTP 200",
         "All 3 photo types (home, addr, pkg) return HTTP 200",
         "Signature files return HTTP 200",
         "Content-Type headers correctly set for image/jpeg and image/png"

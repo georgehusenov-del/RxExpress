@@ -25,6 +25,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
     public DbSet<OrderAttemptLog> OrderAttemptLogs => Set<OrderAttemptLog>();
 
+    // Subscriptions module (LAUNCH: toggle via appsettings Subscriptions:Enabled)
+    public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+    public DbSet<PharmacySubscription> PharmacySubscriptions => Set<PharmacySubscription>();
+    public DbSet<SubscriptionInvoice> SubscriptionInvoices => Set<SubscriptionInvoice>();
+    public DbSet<SubscriptionUsage> SubscriptionUsages => Set<SubscriptionUsage>();
+    public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -161,6 +168,69 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.Property(o => o.City).HasMaxLength(100);
             e.Property(o => o.State).HasMaxLength(50);
             e.Property(o => o.PostalCode).HasMaxLength(20);
+        });
+
+        // ===== Subscriptions (LAUNCH: toggle via Subscriptions:Enabled) =====
+        builder.Entity<SubscriptionPlan>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Code).HasMaxLength(50);
+            e.Property(p => p.Name).HasMaxLength(100);
+            e.Property(p => p.Description).HasMaxLength(500);
+            e.Property(p => p.Currency).HasMaxLength(10);
+            e.Property(p => p.StripeProductId).HasMaxLength(128);
+            e.Property(p => p.StripeMonthlyPriceId).HasMaxLength(128);
+            e.Property(p => p.StripeAnnualPriceId).HasMaxLength(128);
+            e.Property(p => p.MonthlyPrice).HasColumnType("decimal(10,2)");
+            e.Property(p => p.AnnualPrice).HasColumnType("decimal(10,2)");
+            e.HasIndex(p => p.Code).IsUnique();
+        });
+
+        builder.Entity<PharmacySubscription>(e =>
+        {
+            e.HasKey(s => s.Id);
+            e.HasOne(s => s.Pharmacy).WithMany().HasForeignKey(s => s.PharmacyId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(s => s.Plan).WithMany().HasForeignKey(s => s.SubscriptionPlanId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(s => s.StripeCustomerId).HasMaxLength(128);
+            e.Property(s => s.StripeSubscriptionId).HasMaxLength(128);
+            e.Property(s => s.StripeCheckoutSessionId).HasMaxLength(128);
+            e.Property(s => s.StripePriceId).HasMaxLength(128);
+            e.HasIndex(s => s.PharmacyId);
+            e.HasIndex(s => s.StripeSubscriptionId);
+        });
+
+        builder.Entity<SubscriptionInvoice>(e =>
+        {
+            e.HasKey(i => i.Id);
+            e.HasOne(i => i.PharmacySubscription).WithMany().HasForeignKey(i => i.PharmacySubscriptionId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(i => i.StripeInvoiceId).HasMaxLength(128);
+            e.Property(i => i.StripePaymentIntentId).HasMaxLength(128);
+            e.Property(i => i.HostedInvoiceUrl).HasMaxLength(500);
+            e.Property(i => i.InvoicePdfUrl).HasMaxLength(500);
+            e.Property(i => i.Currency).HasMaxLength(10);
+            e.Property(i => i.Status).HasMaxLength(30);
+            e.Property(i => i.Amount).HasColumnType("decimal(10,2)");
+            e.Property(i => i.AmountPaid).HasColumnType("decimal(10,2)");
+            e.HasIndex(i => i.StripeInvoiceId);
+        });
+
+        builder.Entity<SubscriptionUsage>(e =>
+        {
+            e.HasKey(u => u.Id);
+            e.HasIndex(u => new { u.PharmacyId, u.Year, u.Month }).IsUnique();
+        });
+
+        builder.Entity<PaymentTransaction>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.Property(p => p.StripeSessionId).HasMaxLength(128);
+            e.Property(p => p.StripePaymentIntentId).HasMaxLength(128);
+            e.Property(p => p.StripeSubscriptionId).HasMaxLength(128);
+            e.Property(p => p.Kind).HasMaxLength(30);
+            e.Property(p => p.Status).HasMaxLength(30);
+            e.Property(p => p.Currency).HasMaxLength(10);
+            e.Property(p => p.Amount).HasColumnType("decimal(10,2)");
+            e.HasIndex(p => p.StripeSessionId);
         });
     }
 }

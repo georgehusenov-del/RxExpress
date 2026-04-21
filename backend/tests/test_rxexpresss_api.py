@@ -8,7 +8,7 @@ import os
 import time
 
 # Use the preview URL for testing
-BASE_URL = "https://pod-upload-staging.preview.emergentagent.com/api"
+BASE_URL = "https://pharmacy-analytics-5.preview.emergentagent.com/api"
 
 def retry_request(method, url, max_retries=3, **kwargs):
     """Retry request with exponential backoff for transient 520 errors"""

@@ -1230,6 +1230,7 @@
           "Microsoft.EntityFrameworkCore": "8.0.0",
           "Microsoft.EntityFrameworkCore.SqlServer": "8.0.0",
           "Microsoft.EntityFrameworkCore.Sqlite": "8.0.0",
+          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
           "RxExpresss.Core": "1.0.0"
         },
         "compile": {

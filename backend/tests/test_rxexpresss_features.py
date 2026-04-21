@@ -7,7 +7,7 @@ import pytest
 import requests
 import time
 
-BASE_URL = "https://pod-upload-staging.preview.emergentagent.com/api"
+BASE_URL = "https://pharmacy-analytics-5.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@rxexpresss.com"
