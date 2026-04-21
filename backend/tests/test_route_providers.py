@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = "https://pharmacy-analytics-5.preview.emergentagent.com"
+BASE_URL = "https://subs-launch-staging.preview.emergentagent.com"
 
 # Test credentials
 ADMIN_EMAIL = "admin@rxexpresss.com"
