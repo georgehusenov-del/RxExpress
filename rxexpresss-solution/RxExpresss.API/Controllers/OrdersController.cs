@@ -143,7 +143,7 @@ public class OrdersController : ControllerBase
         if (pharmacyId.HasValue) query = query.Where(o => o.PharmacyId == pharmacyId.Value);
         var total = await query.CountAsync();
         var orders = await query.OrderByDescending(o => o.CreatedAt).Skip(skip).Take(limit)
-            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyId, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.City, o.State, o.PostalCode, o.DriverId, o.DriverName, o.Status, o.DeliveryFee, o.TotalAmount, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.IsRefrigerated, o.PhotoUrl, o.PhotoHomeUrl, o.PhotoAddressUrl, o.PhotoPackageUrl, o.SignatureUrl, o.RecipientNameSigned, o.ActualDeliveryTime, o.CreatedAt, o.UpdatedAt })
+            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyId, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.City, o.State, o.PostalCode, o.DriverId, o.DriverName, o.Status, o.DeliveryFee, o.TotalAmount, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.IsRefrigerated, o.PhotoUrl, o.PhotoHomeUrl, o.PhotoAddressUrl, o.PhotoPackageUrl, o.SignatureUrl, o.RecipientNameSigned, o.ActualDeliveryTime, o.CreatedAt, o.UpdatedAt, o.FailedAttempts })
             .ToListAsync();
         return Ok(new { orders, total });
     }
@@ -152,7 +152,7 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> Get(int id)
     {
         var order = await _orders.Query().Where(o => o.Id == id)
-            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyId, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.ScheduledDate, o.RecipientName, o.RecipientPhone, o.RecipientEmail, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.DeliveryInstructions, o.DriverId, o.DriverName, o.Status, o.DeliveryNotes, o.RequiresSignature, o.RequiresPhotoProof, o.IsRefrigerated, o.SignatureUrl, o.PhotoUrl, o.PhotoHomeUrl, o.PhotoAddressUrl, o.PhotoPackageUrl, o.RecipientNameSigned, o.DeliveryFee, o.TotalAmount, o.CopayAmount, o.CopayCollected, o.ActualPickupTime, o.ActualDeliveryTime, o.CreatedAt, o.UpdatedAt })
+            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyId, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.ScheduledDate, o.RecipientName, o.RecipientPhone, o.RecipientEmail, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.DeliveryInstructions, o.DriverId, o.DriverName, o.Status, o.DeliveryNotes, o.RequiresSignature, o.RequiresPhotoProof, o.IsRefrigerated, o.SignatureUrl, o.PhotoUrl, o.PhotoHomeUrl, o.PhotoAddressUrl, o.PhotoPackageUrl, o.RecipientNameSigned, o.DeliveryFee, o.TotalAmount, o.CopayAmount, o.CopayCollected, o.ActualPickupTime, o.ActualDeliveryTime, o.CreatedAt, o.UpdatedAt, o.FailedAttempts })
             .FirstOrDefaultAsync();
         if (order == null) return NotFound();
         return Ok(order);
