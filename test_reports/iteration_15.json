@@ -1,0 +1,54 @@
+{
+  "summary": "Regression test for 4 bug fixes (Admin Duplicate gating, Copay-clear-on-failed, Driver attempt-failed flow, Backfill-gigs). Backend 100% pass (6/6 scenarios in /app/backend/tests/test_bug_fixes.py). Driver UI flow fully verified end-to-end (1st fail keeps order, 2nd fail removes to history; submitFailed() correctly calls POST /driver-portal/deliveries/{id}/attempt-failed with zero PUT status=failed calls). Admin UI for Bug #1 has a REGRESSION: Duplicate Order button never renders in the order-detail modal because GET /api/orders/{id} response is missing failedAttempts and canDuplicate — the gate `status==='failed' && canDuplicate && (o.failedAttempts||0)>=2` evaluates false for every order.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/orders/{id}",
+        "issue": "Response payload does not include failedAttempts or canDuplicate, so Admin Orders.cshtml detail modal cannot render the Duplicate Order button even for status=failed & failedAttempts>=2. Admin UI Bug #1 requirement FAILS end-to-end.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Admin/Orders.cshtml showDetail() footer",
+        "issue": "Duplicate Order button gated on `canDuplicate` which is never returned by GET /api/orders/{id}. For the verified terminal-failed order 39 (status=failed, failedAttempts=2), the button did not appear in the detail modal. Fix: either include {failedAttempts, canDuplicate} in GET /api/orders/{id} OR simplify the gate to `o.status==='failed' && (o.failedAttempts||0)>=2` (same semantics as backend duplicate endpoint's own guard).",
+        "selector": "[data-testid=\"duplicate-btn-{id}\"]",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bug_fixes.py"
+  ],
+  "action_items": [
+    "Main agent: add `failedAttempts` and `canDuplicate` (= status=='failed' && failedAttempts>=2) to the anonymous projection returned by GET /api/orders/{id} in OrdersController, OR drop the `canDuplicate` factor in Admin/Orders.cshtml line ~412 so gating is `status==='failed' && (o.failedAttempts||0)>=2`. After the fix, re-open admin order-detail modal for a failed order with 2+ attempts; the Duplicate Order button should appear."
+  ],
+  "critical_code_review_comments": [
+    "DriverPortalController.AttemptFailed() is correct: increments FailedAttempts, writes OrderAttemptLog, clears CopayCollected, transitions status assigned<->failed based on 2-attempt threshold, returns canDuplicate flag.",
+    "AdminController.DuplicateOrder() correctly enforces FailedAttempts>=2 and returns 400 with descriptive message otherwise.",
+    "AdminController.LogAttempt() now clears CopayCollected when status=failed (Bug #2 verified).",
+    "AdminController.BackfillGigs() is idempotent (scanned/assigned/skipped contract holds; 2nd call returns scanned=0 when no orphan orders).",
+    "Admin GET /api/admin/orders DOES return failedAttempts – but GET /api/orders/{id} (used by detail modal) does NOT. This inconsistency is the root cause of the UI regression above.",
+    "PUT /driver-portal/deliveries/{id}/status?status=failed is correctly rejected with 400 pointing drivers to the new attempt-failed endpoint."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (6/6 bug-fix scenarios pass)",
+    "frontend": "66% (Driver flow OK, Admin duplicate-button rendering FAILS)"
+  },
+  "test_credentials": {
+    "admin": "admin@rxexpresss.com / Admin@123",
+    "pharmacy": "pharmacy@test.com / Pharmacy@123",
+    "driver": "driver@test.com / Driver@123"
+  },
+  "seed_data_creation": "Created test orders 37 (driver-flow e2e), 38 (1 fail, still assigned), 39 (2 fails, terminal failed) for UI verification.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend 4-bug regression is fully green via /app/backend/tests/test_bug_fixes.py. The remaining issue is a FRONTEND regression: GET /api/orders/{id} is missing failedAttempts & canDuplicate. Admin Orders detail modal gate must be satisfied end-to-end before Bug #1 can be marked complete. Order 39 (id=39, RX-9C3CABC3) in DB is in terminal failed/attempts=2 state and is the easiest sample to retest.",
+  "rca of the issue": "Admin Orders.cshtml showDetail() renders its action footer from the object returned by GET /api/orders/{id}. The anonymous projection in OrdersController (GetById-like endpoint) only returns basic order fields and omits failedAttempts plus canDuplicate. The UI gate `o.status==='failed' && canDuplicate && (o.failedAttempts||0)>=2` therefore evaluates false for every order. Reproduction: login admin, go to /Admin/Orders, click the eye icon for an order with status=Failed & failedAttempts=2, observe the Duplicate Order button is missing from the footer. Mitigation (trivial): extend the projection in OrdersController.GetById to include `FailedAttempts = o.FailedAttempts, CanDuplicate = (o.Status==\"failed\" && o.FailedAttempts>=2)` – same computation already used by GetOrders."
+}

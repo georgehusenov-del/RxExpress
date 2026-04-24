@@ -409,7 +409,7 @@ async function showDetail(id) {
             <button class="btn btn-sm btn-outline" onclick="closeModal('detail-modal');showHistory(${o.id})" data-testid="history-btn-${o.id}">
                 <i class="fas fa-history"></i> Attempt History
             </button>
-            ${o.status === 'failed' && canDuplicate ? `<button class="btn btn-sm btn-warning" onclick="closeModal('detail-modal');openDuplicateModal(${o.id})" data-testid="duplicate-btn-${o.id}">Duplicate Order</button>` : ''}
+            ${o.status === 'failed' && canDuplicate && (o.failedAttempts || 0) >= 2 ? `<button class="btn btn-sm btn-warning" onclick="closeModal('detail-modal');openDuplicateModal(${o.id})" data-testid="duplicate-btn-${o.id}">Duplicate Order</button>` : ''}
         </div>`;
     document.getElementById('detail-modal').classList.add('active');
 }

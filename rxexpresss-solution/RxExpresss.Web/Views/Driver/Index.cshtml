@@ -806,13 +806,17 @@ async function submitFailed(){
     const notes=document.getElementById('failed-notes').value;
     
     try {
-        await ApiService.put(`/driver-portal/deliveries/${orderId}/status?status=failed`);
+        const res=await ApiService.post(`/driver-portal/deliveries/${orderId}/attempt-failed`,{failureReason:reason,notes:notes});
         closeFailedModal();
         scannedSet.delete(parseInt(orderId));
-        showAlert('alert-area','warning',`Delivery marked as Failed: ${reason.replace(/_/g,' ')}`);
+        const atts=res?.failedAttempts ?? 1;
+        const msg=res?.canDuplicate
+            ? `Attempt ${atts} logged. Order has reached 2+ attempts and is now terminal - admin can duplicate it.`
+            : `Attempt ${atts} logged: ${reason.replace(/_/g,' ')}. Order stays on your list for retry.`;
+        showAlert('alert-area','warning',msg);
         loadDeliveries();
     } catch(e) {
-        showAlert('alert-area','danger', e.message || 'Failed to update status');
+        showAlert('alert-area','danger', e.message || 'Failed to log attempt');
     }
 }
 

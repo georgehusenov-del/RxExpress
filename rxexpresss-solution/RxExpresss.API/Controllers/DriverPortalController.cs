@@ -17,6 +17,7 @@ public class DriverPortalController : ControllerBase
     private readonly IRepository<Order> _orders;
     private readonly IRepository<OfficeLocation> _officeLocations;
     private readonly IRepository<DriverLocationLog> _locationLogs;
+    private readonly IRepository<OrderAttemptLog> _attemptLogs;
     private readonly IWebHostEnvironment _env;
     private readonly IConfiguration _config;
     private readonly ILogger<DriverPortalController> _logger;
@@ -26,6 +27,7 @@ public class DriverPortalController : ControllerBase
         IRepository<Order> orders,
         IRepository<OfficeLocation> officeLocations,
         IRepository<DriverLocationLog> locationLogs,
+        IRepository<OrderAttemptLog> attemptLogs,
         IWebHostEnvironment env,
         IConfiguration config,
         ILogger<DriverPortalController> logger)
@@ -34,6 +36,7 @@ public class DriverPortalController : ControllerBase
         _orders = orders;
         _officeLocations = officeLocations;
         _locationLogs = locationLogs;
+        _attemptLogs = attemptLogs;
         _env = env;
         _config = config;
         _logger = logger;
@@ -79,11 +82,16 @@ public class DriverPortalController : ControllerBase
         // - dispatched: leaving office for delivery
         // - out_for_delivery: on route
         // - delivering_now: at location
+        // - failed (but only while FailedAttempts < 2): retry-eligible, keep on driver's list
         // Exclude "in_transit" - those are at office waiting for reassignment
         var orders = await _orders.Query()
-            .Where(o => o.DriverId == driver.Id && (o.Status == "assigned" || o.Status == "picked_up" || o.Status == "dispatched" || o.Status == "out_for_delivery" || o.Status == "delivering_now"))
+            .Where(o => o.DriverId == driver.Id && (
+                o.Status == "assigned" || o.Status == "picked_up" || o.Status == "dispatched"
+                || o.Status == "out_for_delivery" || o.Status == "delivering_now"
+                || (o.Status == "failed" && o.FailedAttempts < 2)
+            ))
             .OrderBy(o => o.CreatedAt)
-            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.Status, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.DeliveryInstructions, o.RequiresSignature, o.IsRefrigerated, o.CreatedAt })
+            .Select(o => new { o.Id, o.OrderNumber, o.TrackingNumber, o.QrCode, o.PharmacyName, o.DeliveryType, o.TimeWindow, o.RecipientName, o.RecipientPhone, o.Street, o.AptUnit, o.City, o.State, o.PostalCode, o.Latitude, o.Longitude, o.Status, o.CopayAmount, o.CopayCollected, o.DeliveryNotes, o.DeliveryInstructions, o.RequiresSignature, o.IsRefrigerated, o.FailedAttempts, o.CreatedAt })
             .ToListAsync();
         return Ok(new { deliveries = orders, count = orders.Count });
     }
@@ -130,7 +138,16 @@ public class DriverPortalController : ControllerBase
         if (driver == null) return NotFound();
         var order = await _orders.Query().FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driver.Id);
         if (order == null) return NotFound();
-        
+
+        // "failed" must go through the attempt-failed flow so the counter increments and copay resets.
+        if (status == "failed")
+        {
+            return BadRequest(new {
+                detail = "Use POST /api/driver-portal/deliveries/{id}/attempt-failed to mark a delivery as failed. " +
+                         "That endpoint logs the attempt, clears any copay, and keeps the order on your list until 2 attempts are reached."
+            });
+        }
+
         order.Status = status;
         order.UpdatedAt = DateTime.UtcNow;
         
@@ -328,6 +345,56 @@ public class DriverPortalController : ControllerBase
         return Ok(new { success = true, message = $"Copay of ${order.CopayAmount:F2} collected" });
     }
 
+    /// <summary>
+    /// POST /api/driver-portal/deliveries/{id}/attempt-failed
+    /// Driver marks a delivery attempt as failed.
+    /// - Increments FailedAttempts counter and writes an OrderAttemptLog.
+    /// - Clears CopayCollected (a failed delivery can never have collected copay).
+    /// - If FailedAttempts &lt; 2, keeps the order on the driver's list (status = "assigned") for retry.
+    /// - If FailedAttempts &gt;= 2, marks the order terminally "failed" so admin can duplicate it with a new QR code.
+    /// </summary>
+    [HttpPost("deliveries/{id}/attempt-failed")]
+    public async Task<IActionResult> AttemptFailed(int id, [FromBody] AttemptFailedDto? dto)
+    {
+        var driver = await GetMyDriver();
+        if (driver == null) return NotFound(new { detail = "Driver not found" });
+
+        var order = await _orders.Query().FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driver.Id);
+        if (order == null) return NotFound(new { detail = "Order not found or not assigned to you" });
+
+        order.FailedAttempts++;
+        // A failed attempt can never have collected copay - enforce data integrity.
+        order.CopayCollected = false;
+
+        // Keep the order on the driver's list unless this is the 2nd+ failure (terminal).
+        bool terminal = order.FailedAttempts >= 2;
+        order.Status = terminal ? "failed" : "assigned";
+        order.UpdatedAt = DateTime.UtcNow;
+
+        await _orders.UpdateAsync(order);
+        await _attemptLogs.AddAsync(new OrderAttemptLog
+        {
+            OrderId = order.Id,
+            AttemptNumber = order.FailedAttempts,
+            Status = "failed",
+            DriverId = driver.Id,
+            DriverName = order.DriverName,
+            FailureReason = dto?.FailureReason,
+            Notes = dto?.Notes
+        });
+
+        return Ok(new
+        {
+            success = true,
+            message = terminal
+                ? "Delivery marked as failed. Order has reached 2+ attempts and is now terminal - admin can duplicate it with a new QR code."
+                : "Attempt logged as failed. The order remains on your list for retry.",
+            failedAttempts = order.FailedAttempts,
+            status = order.Status,
+            canDuplicate = terminal
+        });
+    }
+
     [HttpPut("status")]
     public async Task<IActionResult> UpdateStatus([FromQuery] string? status, [FromBody] Dictionary<string, string>? body = null)
     {
@@ -379,4 +446,10 @@ public class LocationUpdateDto
     public double? Speed { get; set; }
     public double? Heading { get; set; }
     public double? Accuracy { get; set; }
+}
+
+public class AttemptFailedDto
+{
+    public string? FailureReason { get; set; }
+    public string? Notes { get; set; }
 }

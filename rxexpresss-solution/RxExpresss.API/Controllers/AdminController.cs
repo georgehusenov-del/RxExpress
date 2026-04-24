@@ -123,7 +123,8 @@ public class AdminController : ControllerBase
                 o.CopayAmount, o.CopayCollected, o.DeliveryFee,
                 o.IsRefrigerated, o.CreatedAt, o.UpdatedAt,
                 o.PhotoUrl, o.PhotoHomeUrl, o.PhotoAddressUrl, o.PhotoPackageUrl,
-                o.SignatureUrl, o.RecipientNameSigned, o.DeliveryNotes, o.ActualDeliveryTime
+                o.SignatureUrl, o.RecipientNameSigned, o.DeliveryNotes, o.ActualDeliveryTime,
+                o.FailedAttempts
             })
             .ToListAsync();
         return Ok(new { orders, total });
@@ -749,6 +750,16 @@ public class AdminController : ControllerBase
         var original = await _orders.GetByIdAsync(id);
         if (original == null) return NotFound(new { detail = "Order not found" });
 
+        // Enforce the 2+ failed attempts rule server-side. A single failed attempt
+        // should not be duplicable - the driver must retry the same order first.
+        if (original.Status != "failed" || original.FailedAttempts < 2)
+        {
+            return BadRequest(new {
+                detail = $"Cannot duplicate: order must be in 'failed' status with 2 or more failed attempts. " +
+                         $"Current status: {original.Status}, attempts: {original.FailedAttempts}."
+            });
+        }
+
         // Find the root parent order
         var rootOrderId = original.ParentOrderId ?? original.Id;
 
@@ -863,7 +874,12 @@ public class AdminController : ControllerBase
 
         order.FailedAttempts++;
         order.UpdatedAt = DateTime.UtcNow;
-        if (dto.Status == "failed") order.Status = "failed";
+        if (dto.Status == "failed")
+        {
+            order.Status = "failed";
+            // A failed delivery can never have collected copay - clear it to keep data consistent.
+            order.CopayCollected = false;
+        }
         await _orders.UpdateAsync(order);
 
         await _attemptLogs.AddAsync(new OrderAttemptLog
@@ -912,6 +928,44 @@ public class AdminController : ControllerBase
         order.RoutePlanId = gig.Id;
         await _orders.UpdateAsync(order);
         await _planOrders.AddAsync(new RoutePlanOrder { RoutePlanId = gig.Id, OrderId = order.Id });
+    }
+
+    /// <summary>
+    /// POST /api/admin/route-plans/backfill-gigs
+    /// Heals any orders that were created outside the normal flow (e.g. seeded via SQL)
+    /// and therefore never had a gig / RoutePlan assigned. Iterates every order with
+    /// RoutePlanId == null and runs AutoAssignToGig on it.
+    /// </summary>
+    [HttpPost("route-plans/backfill-gigs")]
+    public async Task<IActionResult> BackfillGigs()
+    {
+        var orphanIds = await _orders.Query()
+            .Where(o => o.RoutePlanId == null
+                && o.Status != "delivered" && o.Status != "cancelled")
+            .Select(o => o.Id)
+            .ToListAsync();
+
+        int assigned = 0, skipped = 0;
+        var skippedCities = new List<string>();
+        foreach (var id in orphanIds)
+        {
+            var o = await _orders.GetByIdAsync(id);
+            if (o == null) continue;
+            await AutoAssignToGig(o);
+            if (o.RoutePlanId != null) assigned++;
+            else { skipped++; if (!skippedCities.Contains(o.City)) skippedCities.Add(o.City); }
+        }
+
+        return Ok(new
+        {
+            scanned = orphanIds.Count,
+            assigned,
+            skipped,
+            skippedCities,
+            message = skipped > 0
+                ? $"Backfilled {assigned} orders. {skipped} skipped (no active service zone matched cities: {string.Join(", ", skippedCities)})."
+                : $"Backfilled {assigned} orders into today's gigs."
+        });
     }
 
     #endregion
