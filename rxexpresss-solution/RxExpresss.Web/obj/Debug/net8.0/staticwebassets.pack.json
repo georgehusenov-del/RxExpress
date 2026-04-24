@@ -29,8 +29,16 @@
       "PackagePath": "staticwebassets/js/reports.js"
     },
     {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/media/RX_Expresss_Driver_API_Docs.pdf",
+      "PackagePath": "staticwebassets/media/RX_Expresss_Driver_API_Docs.pdf"
+    },
+    {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/media/pharmacy-brochure.mp4",
       "PackagePath": "staticwebassets/media/pharmacy-brochure.mp4"
+    },
+    {
+      "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/media/pharmacy-walkthrough.mp4",
+      "PackagePath": "staticwebassets/media/pharmacy-walkthrough.mp4"
     },
     {
       "Id": "/app/rxexpresss-solution/RxExpresss.Web/wwwroot/pod/addr_RX-3510F527_20260421074815.jpg",
