@@ -1,17 +1,17 @@
-"""Build RX Expresss Driver API Documentation (PDF)."""
+"""Build RX Expresss Driver API Documentation (PDF) - v2 (comprehensive)."""
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.lib.colors import HexColor, white, black
+from reportlab.lib.colors import HexColor, white
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, KeepTogether,
+    PageBreak,
 )
-from reportlab.lib.enums import TA_LEFT, TA_CENTER
+from reportlab.lib.enums import TA_CENTER
 
 OUT = "/app/RX_Expresss_Driver_API_Docs.pdf"
 
-PRIMARY = HexColor("#0d9488")   # teal
+PRIMARY = HexColor("#0d9488")
 DARK = HexColor("#0b1220")
 MUTED = HexColor("#475569")
 BG_CODE = HexColor("#0f172a")
@@ -65,11 +65,8 @@ def http_row(method, path):
 
 
 def code(txt):
-    # Escape angle brackets for Paragraph
     t = txt.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    # Preserve newlines
     t = t.replace("\n", "<br/>")
-    # Replace spaces with &nbsp; only at leading (indentation)
     lines = t.split("<br/>")
     out = []
     for ln in lines:
@@ -127,7 +124,6 @@ def screen_header(title, status_ready):
 def on_page(canv, doc):
     w, h = A4
     canv.saveState()
-    # Header bar
     canv.setFillColor(DARK)
     canv.rect(0, h - 1.2 * cm, w, 1.2 * cm, stroke=0, fill=1)
     canv.setFillColor(white)
@@ -135,8 +131,7 @@ def on_page(canv, doc):
     canv.drawString(1.5 * cm, h - 0.8 * cm, "RX Expresss  \u2014  Driver API Documentation")
     canv.setFont("Helvetica", 9)
     canv.setFillColor(HexColor("#94a3b8"))
-    canv.drawRightString(w - 1.5 * cm, h - 0.8 * cm, "v1  \u00b7  Internal")
-    # Footer
+    canv.drawRightString(w - 1.5 * cm, h - 0.8 * cm, "v2  \u00b7  Internal")
     canv.setFillColor(MUTED)
     canv.setFont("Helvetica", 8.5)
     canv.drawString(1.5 * cm, 0.8 * cm,
@@ -158,24 +153,26 @@ def build():
     # --- Cover ---
     story.append(Spacer(1, 1.2 * cm))
     story.append(Paragraph("RX Expresss", s_h1))
-    story.append(Paragraph("Driver Side \u2014 API Documentation", ParagraphStyle(
+    story.append(Paragraph("Driver Side \u2014 Complete API Reference", ParagraphStyle(
         "sub", parent=s_h2, fontSize=20, textColor=DARK, leading=26)))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
-        "This document describes the backend APIs that power the driver-facing screens in the RX Expresss pharmacy "
-        "delivery platform. Each section maps one driver screen to the REST endpoints it consumes, along with the "
-        "request payload, response shape, and the current implementation status.",
-        s_body))
+        "This document is a <b>build-ready reference</b> for any engineer building a driver mobile or web app "
+        "against the RX Expresss platform. Every endpoint the driver app needs is listed here \u2014 auth, session, "
+        "profile, duty toggle, office geo-lock, assigned stops, QR scanning, live GPS ping, status transitions, "
+        "copay collection, Proof-of-Delivery (photos + signature), failed-attempt logging, delivery history, and "
+        "customer-facing tracking links. Each screen is mapped to the REST calls it consumes with request payload, "
+        "response shape, and implementation status.", s_body))
     story.append(Spacer(1, 0.4 * cm))
 
-    # Quick facts card
     facts = [
         ["Base URL", "https://backend.rxexpresss.com/api"],
         ["Authentication", "Bearer JWT issued by POST /api/auth/login (role: Driver)"],
         ["Content-Type", "application/json"],
         ["Error format", '{ "detail": "message" }'],
         ["POD image format", "Base64 JPEG (3 photos required) + optional PNG signature"],
-        ["Location ping interval", "Every 10\u201315 seconds while on duty"],
+        ["Location ping", "POST /driver-portal/location  (every 10\u201315 s while on duty)"],
+        ["Static media", "/pod/* served by the API's static-file middleware"],
     ]
     tbl = Table(facts, colWidths=[4.5 * cm, None])
     tbl.setStyle(TableStyle([
@@ -193,49 +190,50 @@ def build():
     story.append(tbl)
     story.append(Spacer(1, 0.5 * cm))
 
-    # --- Table of contents ---
-    story.append(Paragraph("Screens covered", s_h2))
+    # --- TOC ---
+    story.append(Paragraph("Screens & modules covered", s_h2))
     toc = [
-        ["1.", "Login", "READY"],
+        ["1.", "Login  +  Session (GET /me)", "READY"],
         ["2.", "Forgot Password", "NOT READY YET"],
         ["3.", "Dashboard", "NOT READY YET"],
-        ["4.", "Assigned Orders List", "READY"],
-        ["5.", "Order Detail View", "READY"],
-        ["6.", "Order QR Scanning", "READY"],
-        ["7.", "Delivery History", "READY"],
+        ["4.", "Driver Profile  +  Duty Toggle", "READY"],
+        ["5.", "Office Locations  (geo-lock / pickup hubs)", "READY"],
+        ["6.", "Assigned Orders List  +  Status Transitions", "READY"],
+        ["7.", "Order Detail View  (POD photos + signature + copay + GPS)", "READY"],
+        ["8.", "Order QR Scanning", "READY"],
+        ["9.", "Failed Delivery / Log Attempt", "READY"],
+        ["10.", "Delivery History", "READY"],
+        ["11.", "Customer-facing Tracking Link", "READY"],
     ]
-    t = Table(toc, colWidths=[1 * cm, 8 * cm, None])
-    t.setStyle(TableStyle([
+    t = Table(toc, colWidths=[1 * cm, 9.8 * cm, None])
+    sty = [
         ("GRID", (0, 0), (-1, -1), 0.3, BORDER),
         ("BACKGROUND", (0, 0), (-1, -1), white),
         ("FONTSIZE", (0, 0), (-1, -1), 10),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TEXTCOLOR", (2, 0), (2, -1), white),
-        ("BACKGROUND", (2, 0), (2, 0), GREEN),
-        ("BACKGROUND", (2, 1), (2, 1), AMBER),
-        ("BACKGROUND", (2, 2), (2, 2), AMBER),
-        ("BACKGROUND", (2, 3), (2, 3), GREEN),
-        ("BACKGROUND", (2, 4), (2, 4), GREEN),
-        ("BACKGROUND", (2, 5), (2, 5), GREEN),
-        ("BACKGROUND", (2, 6), (2, 6), GREEN),
         ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
         ("ALIGN", (2, 0), (2, -1), "CENTER"),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
         ("RIGHTPADDING", (0, 0), (-1, -1), 6),
         ("TOPPADDING", (0, 0), (-1, -1), 5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-    ]))
+    ]
+    ready_rows = {0, 3, 4, 5, 6, 7, 8, 9, 10}
+    for i in range(len(toc)):
+        color = GREEN if i in ready_rows else AMBER
+        sty.append(("BACKGROUND", (2, i), (2, i), color))
+    t.setStyle(TableStyle(sty))
     story.append(t)
     story.append(PageBreak())
 
-    # =========================================================
-    # 1. LOGIN
-    # =========================================================
-    story.append(screen_header("1. Login", True))
+    # ================= 1. LOGIN + /me =================
+    story.append(screen_header("1. Login  +  Session", True))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
-        "The driver signs in with email + password to obtain a JWT. The same endpoint is used for all roles; the "
-        "returned <b>role</b> field must equal <b>Driver</b>.", s_body))
+        "The driver signs in with email + password and receives a JWT. All subsequent calls must include "
+        "<b>Authorization: Bearer &lt;token&gt;</b>. After launch, call <b>GET /api/auth/me</b> to validate the "
+        "stored token and restore the session.", s_body))
 
     story.append(http_row("POST", "/api/auth/login"))
     story.append(Paragraph("Request body", s_h3))
@@ -243,102 +241,122 @@ def build():
     story.append(Paragraph("Response 200", s_h3))
     story.append(code(
         '{\n  "token": "eyJhbGciOi...",\n  "user": {\n    "id": "5a1c...",\n    "email": "driver@test.com",\n'
-        '    "firstName": "Test",\n    "lastName": "Driver",\n    "phone": "",\n    "role": "Driver",\n'
-        '    "isActive": true,\n    "permissions": []\n  }\n}'))
-    story.append(Paragraph("Error responses", s_h3))
+        '    "firstName": "Test", "lastName": "Driver", "phone": "",\n'
+        '    "role": "Driver", "isActive": true, "permissions": []\n  }\n}'))
+    story.append(Paragraph("Errors", s_h3))
     story.append(table_params([
         ["401", "Unauthorized", "\u2014", "Invalid credentials"],
         ["401", "Unauthorized", "\u2014", "Account is deactivated"],
     ]))
-    story.append(Paragraph("cURL", s_h3))
+
+    story.append(Paragraph("1.1  Restore session / current user", s_h3))
+    story.append(http_row("GET", "/api/auth/me"))
     story.append(code(
-        'curl -X POST https://backend.rxexpresss.com/api/auth/login \\\n'
-        '  -H "Content-Type: application/json" \\\n'
-        '  -d \'{"email":"driver@test.com","password":"Driver@123"}\''))
+        '// Response 200\n{\n  "id": "5a1c...",\n  "email": "driver@test.com",\n'
+        '  "firstName": "Test", "lastName": "Driver", "phone": "",\n'
+        '  "role": "Driver", "isActive": true\n}'))
+    story.append(Paragraph(
+        "<b>Client note:</b> JWTs are stateless; there is no explicit logout endpoint. To \u201clog out\u201d the driver "
+        "app simply discards the stored token. Token lifetime is configured on the server side.", s_muted))
     story.append(PageBreak())
 
-    # =========================================================
-    # 2. FORGOT PASSWORD
-    # =========================================================
+    # ================= 2. FORGOT PASSWORD =================
     story.append(screen_header("2. Forgot Password", False))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
-        "A backend stub exists: it generates a password-reset token, but the <b>email-delivery step is not wired "
-        "up yet</b>. The endpoint therefore logs the token to the server console and always returns a generic "
-        "success message (to prevent email enumeration).",
-        s_body))
-    story.append(Paragraph(
-        "<b>Planned provider:</b> SendGrid / Twilio / Resend (pending decision). Until then the driver screen "
-        "should display an information notice rather than call the endpoint.",
-        s_muted))
+        "A backend stub exists and generates a password-reset token, but the <b>email-delivery step is not wired "
+        "up yet</b>. The endpoint currently logs the token to the server console and always returns a generic "
+        "success message (to prevent email enumeration). Planned provider: SendGrid / Twilio / Resend (pending "
+        "decision).", s_body))
 
     story.append(http_row("POST", "/api/auth/forgot-password"))
-    story.append(Paragraph("Request body", s_h3))
-    story.append(code('{\n  "email": "driver@test.com"\n}'))
-    story.append(Paragraph("Response 200", s_h3))
-    story.append(code('{\n  "message": "If an account exists, a reset link will be sent."\n}'))
+    story.append(code('// Request\n{ "email": "driver@test.com" }'))
+    story.append(code('// Response 200\n{ "message": "If an account exists, a reset link will be sent." }'))
 
-    story.append(Paragraph("Pending work for full implementation", s_h3))
+    story.append(Paragraph("Pending work", s_h3))
     story.append(Paragraph(
-        "\u2022  Integrate email provider (SendGrid / Resend / Twilio) and send the reset token.<br/>"
-        "\u2022  Add a companion <b>POST /api/auth/reset-password</b> endpoint that accepts <b>email</b>, "
-        "<b>token</b>, and <b>newPassword</b>.<br/>"
-        "\u2022  Build the <b>Reset Password</b> screen on the driver app.",
+        "\u2022  Integrate email provider and send the token to the driver.<br/>"
+        "\u2022  Add a companion <b>POST /api/auth/reset-password</b> that accepts <i>email</i>, <i>token</i>, "
+        "and <i>newPassword</i>.<br/>"
+        "\u2022  Add a <b>Reset Password</b> screen on the driver app that deep-links from the email.",
         s_body))
     story.append(PageBreak())
 
-    # =========================================================
-    # 3. DASHBOARD
-    # =========================================================
+    # ================= 3. DASHBOARD =================
     story.append(screen_header("3. Dashboard", False))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
         "A dedicated driver dashboard (today's KPIs, next stop card, earnings, on-duty toggle) is planned but "
-        "<b>not yet implemented</b>. Today the driver app uses the <i>Assigned Orders</i> screen as the landing "
-        "page. Some building blocks already exist and can be composed into the future dashboard:",
+        "<b>not yet implemented</b>. The driver app currently uses the <i>Assigned Orders</i> list as its landing "
+        "page. Today\u2019s / week\u2019s stats can be aggregated client-side from the endpoints in sections 4, 6 and 10.",
         s_body))
 
-    story.append(Paragraph("Already available building blocks", s_h3))
-    story.append(Paragraph(
-        "\u2022  <b>GET /api/driver-portal/profile</b> \u2013 driver info (vehicle, rating, total deliveries).<br/>"
-        "\u2022  <b>GET /api/driver-portal/deliveries</b> \u2013 active stops count.<br/>"
-        "\u2022  <b>GET /api/driver-portal/history</b> \u2013 for today / week stats (client aggregates).<br/>"
-        "\u2022  <b>PUT /api/driver-portal/status</b> \u2013 toggle on/off duty.",
-        s_body))
-
-    story.append(Paragraph("Proposed new endpoint (not implemented)", s_h3))
+    story.append(Paragraph("Proposed endpoint (not yet implemented)", s_h3))
     story.append(http_row("GET", "/api/driver-portal/dashboard"))
-    story.append(Paragraph("Proposed response shape", s_h3))
     story.append(code(
         '{\n  "driver": { "id": 1, "name": "Test Driver", "status": "on_duty", "rating": 4.9 },\n'
-        '  "today": {\n    "assigned": 8,\n    "delivered": 5,\n    "failed": 0,\n    "earnings": 42.50,\n'
+        '  "today": {\n    "assigned": 8, "delivered": 5, "failed": 0, "earnings": 42.50,\n'
         '    "nextStop": { "orderNumber": "RX-QNS00001", "city": "Queens", "eta": "12 min" }\n  },\n'
         '  "week": { "delivered": 38, "earnings": 287.25 }\n}'))
-
-    story.append(Paragraph("Current PUT /api/driver-portal/status (for duty toggle)", s_h3))
-    story.append(http_row("PUT", "/api/driver-portal/status?status=on_duty"))
-    story.append(code('// Body optional\n{ "status": "on_duty" }   // or "offline"'))
     story.append(PageBreak())
 
-    # =========================================================
-    # 4. ASSIGNED ORDERS LIST
-    # =========================================================
-    story.append(screen_header("4. Assigned Orders List", True))
+    # ================= 4. DRIVER PROFILE + DUTY =================
+    story.append(screen_header("4. Driver Profile  +  Duty Toggle", True))
+    story.append(Spacer(1, 0.2 * cm))
+    story.append(Paragraph("4.1  Get the driver's own profile", s_h3))
+    story.append(http_row("GET", "/api/driver-portal/profile"))
+    story.append(code(
+        '{\n  "id": 1,\n  "userId": "5a1c...",\n  "vehicleType": "car",\n  "vehicleNumber": "NY-ABC-123",\n'
+        '  "licenseNumber": "D1234567",\n  "status": "on_duty",\n  "rating": 4.9,\n'
+        '  "totalDeliveries": 287,\n  "isVerified": true\n}'))
+    story.append(Paragraph(
+        "<b>Client use:</b> render the top bar (name, vehicle, rating, badges) and gate certain actions on "
+        "<i>isVerified</i>.", s_muted))
+
+    story.append(Paragraph("4.2  Go on / off duty", s_h3))
+    story.append(http_row("PUT", "/api/driver-portal/status?status=on_duty"))
+    story.append(code(
+        '// Status can also be sent in the body:\n{ "status": "on_duty" }   // valid: on_duty, offline, on_break'))
+    story.append(code('// Response 200\n{ "message": "Status updated to on_duty" }'))
+    story.append(Paragraph(
+        "While status is anything other than <b>offline</b>, the driver app should start the GPS ping loop "
+        "(section 7.3) and enable the order list.", s_muted))
+    story.append(PageBreak())
+
+    # ================= 5. OFFICE LOCATIONS =================
+    story.append(screen_header("5. Office Locations  (geo-lock / pickup hubs)", True))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
-        "Returns all active stops belonging to the authenticated driver. An order appears in this list while its "
-        "status is one of: <b>assigned</b>, <b>picked_up</b>, <b>dispatched</b>, <b>out_for_delivery</b>, "
-        "<b>delivering_now</b>. Packages parked at the office (<b>in_transit</b>) are intentionally excluded.",
-        s_body))
+        "Pickup hubs are defined by admin with a latitude / longitude and an acceptance radius. The driver app "
+        "uses this list to (a) render the map of hubs, (b) geo-lock the \u201cPick-up\u201d button so it only activates "
+        "when the driver is within <i>radiusMeters</i> of an active office, and (c) pick the default hub on first "
+        "launch.", s_body))
+
+    story.append(http_row("GET", "/api/driver-portal/office-locations"))
+    story.append(code(
+        '{\n  "offices": [\n    {\n      "id": 1,\n      "name": "Queens Hub",\n'
+        '      "address": "45-10 Northern Blvd",\n      "city": "Queens",\n'
+        '      "latitude": 40.7505, "longitude": -73.9934,\n'
+        '      "radiusMeters": 150,\n      "isDefault": true\n    }\n  ]\n}'))
+    story.append(PageBreak())
+
+    # ================= 6. ASSIGNED ORDERS =================
+    story.append(screen_header("6. Assigned Orders List  +  Status Transitions", True))
+    story.append(Spacer(1, 0.2 * cm))
+    story.append(Paragraph(
+        "Returns all active stops assigned to the authenticated driver. Orders appear while their status is one "
+        "of: <b>assigned, picked_up, dispatched, out_for_delivery, delivering_now</b>. Packages parked at the "
+        "office hub (<b>in_transit</b>) are intentionally excluded.", s_body))
 
     story.append(http_row("GET", "/api/driver-portal/deliveries"))
-    story.append(Paragraph("Response 200", s_h3))
+    story.append(Paragraph("Response 200 (one stop shown)", s_h3))
     story.append(code(
         '{\n  "deliveries": [\n    {\n      "id": 12,\n      "orderNumber": "RX-QNS00001",\n'
-        '      "trackingNumber": "TRK-QNS00001",\n      "qrCode": "QNS001",\n'
-        '      "pharmacyName": "HealthFirst Pharmacy",\n      "deliveryType": "same_day",\n'
-        '      "timeWindow": "9am-1pm",\n      "recipientName": "John Chen",\n'
-        '      "recipientPhone": "5551234567",\n      "street": "123 Main St", "aptUnit": null,\n'
+        '      "trackingNumber": "TRK-QNS00001", "qrCode": "QNS001",\n'
+        '      "pharmacyName": "HealthFirst Pharmacy",\n'
+        '      "deliveryType": "same_day", "timeWindow": "9am-1pm",\n'
+        '      "recipientName": "John Chen", "recipientPhone": "5551234567",\n'
+        '      "street": "123 Main St", "aptUnit": null,\n'
         '      "city": "Queens", "state": "NY", "postalCode": "11101",\n'
         '      "latitude": 40.7505, "longitude": -73.9934,\n'
         '      "status": "assigned", "copayAmount": 10.00, "copayCollected": false,\n'
@@ -346,33 +364,29 @@ def build():
         '      "requiresSignature": true, "isRefrigerated": false,\n'
         '      "createdAt": "2026-04-18T12:30:00Z"\n    }\n  ],\n  "count": 1\n}'))
 
-    story.append(Paragraph("Status transitions (driver-callable)", s_h3))
+    story.append(Paragraph("6.1  Update stop status", s_h3))
     story.append(http_row("PUT", "/api/driver-portal/deliveries/{id}/status?status=picked_up"))
     story.append(table_params([
         ["id", "int (path)", "yes", "Internal order id"],
         ["status", "string (query)", "yes", "picked_up \u00b7 in_transit \u00b7 dispatched \u00b7 out_for_delivery \u00b7 delivering_now"],
     ]))
     story.append(Paragraph(
-        "<b>Side effects:</b> setting status to <b>picked_up</b> stamps <i>ActualPickupTime</i>. Setting it to "
-        "<b>in_transit</b> automatically un-assigns the driver so admin can route from the office hub.", s_muted))
+        "<b>Server side effects:</b> setting status to <b>picked_up</b> stamps <i>actualPickupTime</i>. Setting "
+        "it to <b>in_transit</b> automatically un-assigns the driver so admin can route from the office hub.",
+        s_muted))
     story.append(PageBreak())
 
-    # =========================================================
-    # 5. ORDER DETAIL VIEW
-    # =========================================================
-    story.append(screen_header("5. Order Detail View", True))
+    # ================= 7. ORDER DETAIL + POD =================
+    story.append(screen_header("7. Order Detail View  (POD + copay + GPS)", True))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
-        "The driver app reuses the same <b>GET /api/driver-portal/deliveries</b> payload and renders one row as "
-        "the detail view. All detail fields (recipient, address, phone, copay, cold-chain flag, special "
-        "instructions) are already in that response. When the driver completes the stop, these three endpoints "
-        "are called in sequence:",
+        "The driver app reuses the <i>GET /api/driver-portal/deliveries</i> payload for rendering the detail view "
+        "(no separate detail endpoint). When the driver completes a stop, the following calls run in order:",
         s_body))
 
-    # 5a. Submit POD
-    story.append(Paragraph("5.1  Submit Proof of Delivery (required)", s_h3))
+    story.append(Paragraph("7.1  Submit Proof of Delivery  (photos + optional signature)", s_h3))
     story.append(http_row("POST", "/api/driver-portal/deliveries/{id}/pod"))
-    story.append(Paragraph("Request body (3-photo format, recommended)", s_h3))
+    story.append(Paragraph("Request body \u2014 recommended 3-photo format", s_h3))
     story.append(code(
         '{\n  "photoHomeBase64":    "data:image/jpeg;base64,/9j/4AAQ...",\n'
         '  "photoAddressBase64": "data:image/jpeg;base64,/9j/4AAQ...",\n'
@@ -381,6 +395,21 @@ def build():
         '  "recipientName": "John Chen",\n'
         '  "notes": "Left with doorman as instructed",\n'
         '  "latitude": 40.7505,\n  "longitude": -73.9934\n}'))
+    story.append(table_params([
+        ["photoHomeBase64", "string (base64)", "yes*", "Photo 1 \u2014 the home / building exterior"],
+        ["photoAddressBase64", "string (base64)", "yes*", "Photo 2 \u2014 the address plaque / number"],
+        ["photoPackageBase64", "string (base64)", "yes*", "Photo 3 \u2014 the package at the door"],
+        ["signatureBase64", "string (base64)", "no", "PNG of handwritten signature (required if requiresSignature=true)"],
+        ["recipientName", "string", "no", "Name of the person who signed / received"],
+        ["notes", "string", "no", "Free-form delivery notes"],
+        ["latitude / longitude", "double", "no", "GPS at the moment of drop"],
+        ["photoBase64", "string (base64)", "legacy", "Single-photo fallback. Use only if 3-photo capture is impossible"],
+    ]))
+    story.append(Paragraph(
+        "<i>*</i> All three photos are required when using the recommended format. If the legacy single-photo "
+        "fallback is used (<b>photoBase64</b> alone), the server still accepts it for backward compatibility.",
+        s_muted))
+
     story.append(Paragraph("Response 200", s_h3))
     story.append(code(
         '{\n  "success": true,\n  "message": "Delivery completed with POD",\n'
@@ -389,50 +418,55 @@ def build():
         '  "photoAddressUrl": "/pod/addr_RX-QNS00001_20260418T143522.jpg",\n'
         '  "photoPackageUrl": "/pod/pkg_RX-QNS00001_20260418T143522.jpg",\n'
         '  "signatureUrl":    "/pod/sig_RX-QNS00001_20260418T143522.png"\n}'))
-    story.append(Paragraph("Error responses", s_h3))
+    story.append(Paragraph("Errors", s_h3))
     story.append(table_params([
-        ["400", "Bad Request", "\u2014", "Photo of home is required"],
-        ["400", "Bad Request", "\u2014", "Photo of address is required"],
-        ["400", "Bad Request", "\u2014", "Photo of package at door is required"],
+        ["400", "Bad Request", "\u2014", "Photo of home / address / package is required"],
         ["400", "Bad Request", "\u2014", "Photo proof is required for delivery completion"],
+        ["400", "Bad Request", "\u2014", "Failed to save photos. Please try again."],
         ["404", "Not Found", "\u2014", "Driver or order not found (or not assigned to you)"],
     ]))
 
-    # 5b. Collect copay
-    story.append(Paragraph("5.2  Mark copay as collected (optional)", s_h3))
-    story.append(http_row("POST", "/api/driver-portal/deliveries/{id}/collect-copay"))
-    story.append(code('// No body. Returns 200:\n{ "success": true, "message": "Copay of $10.00 collected" }'))
+    story.append(Paragraph("Server side effects", s_h3))
+    story.append(Paragraph(
+        "\u2022  Status \u2192 <b>delivered</b>, <b>actualDeliveryTime</b> is stamped.<br/>"
+        "\u2022  Three JPEGs are saved to <b>/pod/</b>; legacy <b>photoUrl</b> is aliased to the package photo.<br/>"
+        "\u2022  If provided, the signature PNG is saved and <b>recipientNameSigned</b> is persisted.<br/>"
+        "\u2022  Driver's <b>totalDeliveries</b> counter is incremented.",
+        s_body))
 
-    # 5c. Location ping
-    story.append(Paragraph("5.3  Live GPS ping (every 10\u201315 s while the screen is active)", s_h3))
+    story.append(Paragraph("7.2  Mark copay as collected", s_h3))
+    story.append(http_row("POST", "/api/driver-portal/deliveries/{id}/collect-copay"))
+    story.append(code('// No body. Response 200:\n{ "success": true, "message": "Copay of $10.00 collected" }'))
+
+    story.append(Paragraph("7.3  Live GPS ping", s_h3))
     story.append(http_row("POST", "/api/driver-portal/location"))
     story.append(code(
         '{\n  "latitude": 40.7505,\n  "longitude": -73.9934,\n'
-        '  "speed": 8.3,       // m/s, optional\n  "heading": 215.0,   // degrees, optional\n'
+        '  "speed": 8.3,       // m/s, optional\n'
+        '  "heading": 215.0,   // degrees, optional\n'
         '  "accuracy": 5.0     // meters, optional\n}'))
+    story.append(Paragraph(
+        "Call every 10\u201315 seconds while the driver is on duty. Each ping updates the driver\u2019s current position "
+        "and is also appended to the <i>DriverLocationLog</i> history used by admin for the breadcrumb trail and "
+        "by customers for live tracking.", s_muted))
     story.append(PageBreak())
 
-    # =========================================================
-    # 6. QR / SCANNING
-    # =========================================================
-    story.append(screen_header("6. Order QR Scanning", True))
+    # ================= 8. QR SCANNING =================
+    story.append(screen_header("8. Order QR Scanning", True))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
-        "When the driver scans the QR label on a prescription package, the app resolves the code against the "
-        "server to verify the package and retrieve the matching order. The canonical scan endpoint is:",
-        s_body))
+        "When the driver scans the QR label on a package, the app resolves the code against the server to verify "
+        "the package and retrieve the matching order. The endpoint is shared across Admin, Pharmacy and Driver "
+        "roles.", s_body))
 
     story.append(http_row("POST", "/api/admin/scan/{qrCode}"))
-    story.append(Paragraph(
-        "Although the route lives under <i>admin</i>, it is invoked by driver, pharmacy and admin apps alike to "
-        "verify a package. Authenticated roles: <b>Admin, Manager, Operator, Pharmacy, Driver</b>.", s_muted))
     story.append(Paragraph("Response 200 (verified)", s_h3))
     story.append(code(
         '{\n  "verified": true,\n  "message": "Package verified!",\n'
-        '  "package": {\n    "id": 12,\n    "orderNumber": "RX-QNS00001",\n'
-        '    "qrCode": "QNS001",\n    "pharmacyName": "HealthFirst Pharmacy",\n'
-        '    "recipientName": "John Chen",\n    "address": "123 Main St, Queens",\n'
-        '    "status": "assigned",\n    "copayAmount": 10.00,\n    "copayCollected": false,\n'
+        '  "package": {\n    "id": 12, "orderNumber": "RX-QNS00001", "qrCode": "QNS001",\n'
+        '    "pharmacyName": "HealthFirst Pharmacy",\n'
+        '    "recipientName": "John Chen", "address": "123 Main St, Queens",\n'
+        '    "status": "assigned", "copayAmount": 10.00, "copayCollected": false,\n'
         '    "driverName": "Test Driver"\n  }\n}'))
     story.append(Paragraph("Response 404 (unknown QR)", s_h3))
     story.append(code('{\n  "verified": false,\n  "detail": "No package found with this QR code"\n}'))
@@ -442,50 +476,87 @@ def build():
         "1.  Driver scans QR with the phone camera.<br/>"
         "2.  App sends <b>POST /api/admin/scan/{qrCode}</b>.<br/>"
         "3.  If <i>verified</i>, app navigates to the matching stop in the Assigned Orders list.<br/>"
-        "4.  Driver updates status (<i>picked_up</i> \u2192 <i>out_for_delivery</i>) or submits POD.",
+        "4.  Driver updates status (<i>picked_up</i> \u2192 <i>out_for_delivery</i>) or submits POD (section 7.1).",
         s_body))
     story.append(PageBreak())
 
-    # =========================================================
-    # 7. DELIVERY HISTORY
-    # =========================================================
-    story.append(screen_header("7. Delivery History", True))
+    # ================= 9. FAILED DELIVERY ATTEMPT =================
+    story.append(screen_header("9. Failed Delivery / Log Attempt", True))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
-        "Returns the driver's last 50 closed orders (<b>delivered</b>, <b>failed</b>, or <b>cancelled</b>), "
-        "newest first. The POD URLs are included so the screen can show a thumbnail of the delivery photo.",
-        s_body))
+        "When the driver cannot complete a delivery (recipient not home, wrong address, refused, etc.), instead "
+        "of submitting POD the app should log an <b>attempt</b>. Each call increments the server-side failure "
+        "counter; after two or more failures the response signals that the order can be <i>duplicated</i> with a "
+        "new QR code.", s_body))
 
-    story.append(http_row("GET", "/api/driver-portal/history"))
+    story.append(http_row("POST", "/api/admin/orders/{id}/log-attempt"))
+    story.append(Paragraph("Request body", s_h3))
+    story.append(code(
+        '{\n  "status": "failed",                   // "failed" or "delivered"\n'
+        '  "driverName": "Test Driver",           // optional; defaults to order.DriverName\n'
+        '  "failureReason": "recipient_not_home", // free-form: wrong_address, refused, no_access, etc.\n'
+        '  "notes": "Called 3x, no answer. Attempted at 14:05."\n}'))
     story.append(Paragraph("Response 200", s_h3))
     story.append(code(
-        '{\n  "deliveries": [\n    {\n      "id": 12,\n      "orderNumber": "RX-QNS00001",\n'
-        '      "qrCode": "QNS001",\n      "recipientName": "John Chen",\n'
-        '      "recipientPhone": "5551234567",\n      "street": "123 Main St",\n'
-        '      "city": "Queens", "state": "NY",\n      "status": "delivered",\n'
-        '      "actualDeliveryTime": "2026-04-18T14:35:22Z",\n'
+        '{\n  "message": "Attempt logged: failed",\n'
+        '  "failedAttempts": 2,\n'
+        '  "canDuplicate": true,\n'
+        '  "duplicateMessage": "This order has failed 2+ times. You can duplicate it with a new QR code."\n}'))
+    story.append(Paragraph(
+        "<b>Client UX:</b> if <i>canDuplicate</i> is true, show the pharmacy / admin the \u201cDuplicate with new QR\u201d "
+        "CTA in their portal. The driver simply sees a \u201creport attempt\u201d confirmation.", s_muted))
+    story.append(PageBreak())
+
+    # ================= 10. DELIVERY HISTORY =================
+    story.append(screen_header("10. Delivery History", True))
+    story.append(Spacer(1, 0.2 * cm))
+    story.append(Paragraph(
+        "Returns the driver\u2019s last 50 closed orders (<b>delivered</b>, <b>failed</b>, or <b>cancelled</b>), "
+        "newest first. POD URLs are included so the screen can render thumbnails.", s_body))
+
+    story.append(http_row("GET", "/api/driver-portal/history"))
+    story.append(code(
+        '{\n  "deliveries": [\n    {\n      "id": 12, "orderNumber": "RX-QNS00001", "qrCode": "QNS001",\n'
+        '      "recipientName": "John Chen", "recipientPhone": "5551234567",\n'
+        '      "street": "123 Main St", "city": "Queens", "state": "NY",\n'
+        '      "status": "delivered",\n      "actualDeliveryTime": "2026-04-18T14:35:22Z",\n'
         '      "copayAmount": 10.00, "copayCollected": true,\n'
         '      "photoUrl": "/pod/pkg_RX-QNS00001_20260418T143522.jpg",\n'
         '      "signatureUrl": "/pod/sig_RX-QNS00001_20260418T143522.png",\n'
-        '      "recipientNameSigned": "John Chen",\n      "isRefrigerated": false,\n'
+        '      "recipientNameSigned": "John Chen", "isRefrigerated": false,\n'
         '      "deliveryNotes": "Left with doorman",\n'
         '      "updatedAt": "2026-04-18T14:35:22Z"\n    }\n  ],\n  "count": 1\n}'))
-
-    story.append(Paragraph("Notes", s_h3))
     story.append(Paragraph(
-        "\u2022  The list is capped at 50 rows server-side. Add client-side pagination/filters "
-        "(by date range, status, or city) as the backlog grows.<br/>"
-        "\u2022  <b>photoUrl</b> / <b>signatureUrl</b> are relative paths served by the API's static-file "
-        "middleware (<code>/pod/*</code>).",
-        s_body))
+        "Capped at 50 rows server-side. Add client-side filters (date range, status, city) or extend the "
+        "endpoint with <i>limit</i> / <i>offset</i> as the backlog grows.", s_muted))
     story.append(PageBreak())
 
-    # =========================================================
-    # Appendix A: Statuses
-    # =========================================================
+    # ================= 11. CUSTOMER TRACKING =================
+    story.append(screen_header("11. Customer-facing Tracking Link", True))
+    story.append(Spacer(1, 0.2 * cm))
+    story.append(Paragraph(
+        "The driver app does not usually call this endpoint directly, but builders often need it to generate the "
+        "\u201cshare tracking link with patient\u201d feature. It returns the status timeline plus the driver\u2019s current "
+        "position when the order is in flight. Authentication is via the pharmacy\u2019s integration API key (not JWT).",
+        s_body))
+
+    story.append(http_row("GET", "/api/v1/orders/{identifier}/tracking"))
+    story.append(Paragraph(
+        "<b>Headers:</b> <b>X-API-Key</b> and <b>X-API-Secret</b> (issued to the pharmacy by admin). "
+        "<b>identifier</b> can be the internal id, the <i>orderNumber</i>, or the <i>trackingNumber</i>.", s_muted))
+    story.append(code(
+        '{\n  "orderNumber": "RX-QNS00001",\n  "status": "out_for_delivery",\n'
+        '  "events": [\n    { "status": "new",        "description": "Order placed",           "timestamp": "..." },\n'
+        '    { "status": "picked_up",  "description": "Picked up from pharmacy", "timestamp": "..." },\n'
+        '    { "status": "out_for_delivery", "description": "Out for delivery", "timestamp": "..." }\n'
+        '  ],\n  "driver": {\n    "latitude": 40.7512, "longitude": -73.9901,\n'
+        '    "lastUpdate": "2026-04-18T14:30:10Z"\n  }\n}'))
+    story.append(PageBreak())
+
+    # ================= APPENDICES =================
     story.append(Paragraph("Appendix A \u2014 Order status vocabulary", s_h2))
     story.append(table_params([
-        ["new", "string", "\u2014", "Order created by pharmacy, awaiting driver assignment"],
+        ["new", "string", "\u2014", "Created by pharmacy, awaiting driver assignment"],
         ["assigned", "string", "\u2014", "Driver assigned, heading to pharmacy pickup"],
         ["picked_up", "string", "\u2014", "Driver has collected the package"],
         ["in_transit", "string", "\u2014", "Package dropped at office hub, awaiting reassign"],
@@ -496,21 +567,48 @@ def build():
         ["failed", "string", "\u2014", "Attempted but could not be handed over"],
         ["cancelled", "string", "\u2014", "Cancelled by pharmacy or admin"],
     ]))
-    story.append(Spacer(1, 0.4 * cm))
+    story.append(Spacer(1, 0.3 * cm))
 
-    # Appendix B: Error model
-    story.append(Paragraph("Appendix B \u2014 Error model", s_h2))
+    story.append(Paragraph("Appendix B \u2014 End-to-end driver flow", s_h2))
     story.append(Paragraph(
-        "All endpoints return a consistent error envelope. Validation / authorization failures use HTTP 400 or "
-        "401/403, resource lookups use 404, server issues use 500.",
+        "<b>Start of shift</b><br/>"
+        "1.  <i>POST /api/auth/login</i> \u2192 store JWT<br/>"
+        "2.  <i>GET /api/auth/me</i> \u2192 validate session<br/>"
+        "3.  <i>GET /api/driver-portal/profile</i> \u2192 render header<br/>"
+        "4.  <i>GET /api/driver-portal/office-locations</i> \u2192 render pickup hubs on map<br/>"
+        "5.  <i>PUT /api/driver-portal/status?status=on_duty</i> \u2192 go on duty<br/>"
+        "6.  Start GPS loop: <i>POST /api/driver-portal/location</i> every 10\u201315 s<br/><br/>"
+
+        "<b>Pickup at pharmacy / office</b><br/>"
+        "7.  <i>GET /api/driver-portal/deliveries</i> \u2192 refresh list<br/>"
+        "8.  Scan package QR \u2192 <i>POST /api/admin/scan/{qrCode}</i><br/>"
+        "9.  <i>PUT /api/driver-portal/deliveries/{id}/status?status=picked_up</i><br/><br/>"
+
+        "<b>On route</b><br/>"
+        "10.  <i>PUT .../status?status=out_for_delivery</i> when leaving the hub<br/>"
+        "11.  <i>PUT .../status?status=delivering_now</i> on arrival<br/><br/>"
+
+        "<b>At recipient \u2014 successful delivery</b><br/>"
+        "12.  Capture 3 photos (home, address, package) + optional signature<br/>"
+        "13.  <i>POST /api/driver-portal/deliveries/{id}/pod</i>  \u2190  photos + signature uploaded<br/>"
+        "14.  If copay &gt; 0: <i>POST /api/driver-portal/deliveries/{id}/collect-copay</i><br/><br/>"
+
+        "<b>At recipient \u2014 failed attempt</b><br/>"
+        "12a.  <i>POST /api/admin/orders/{id}/log-attempt</i> with <i>status=failed</i> + reason<br/><br/>"
+
+        "<b>End of shift</b><br/>"
+        "15.  <i>PUT /api/driver-portal/status?status=offline</i> \u2192 stop GPS loop<br/>"
+        "16.  Optional: <i>GET /api/driver-portal/history</i> to render today\u2019s summary",
         s_body))
-    story.append(code('{\n  "detail": "Human readable message explaining what went wrong"\n}'))
+    story.append(Spacer(1, 0.3 * cm))
 
-    # Appendix C: Roles
-    story.append(Paragraph("Appendix C \u2014 Auth & roles", s_h2))
+    story.append(Paragraph("Appendix C \u2014 Error model & auth", s_h2))
     story.append(Paragraph(
-        "Every <b>/api/driver-portal/*</b> endpoint is guarded by <b>[Authorize(Roles = \"Driver\")]</b>. The "
-        "JWT returned by <b>/api/auth/login</b> must be sent on every subsequent request as:",
+        "All endpoints return a consistent error envelope. Validation / auth failures use 400 or 401/403, "
+        "lookups use 404, server issues use 500.", s_body))
+    story.append(code('{ "detail": "Human readable message explaining what went wrong" }'))
+    story.append(Paragraph(
+        "Every <b>/api/driver-portal/*</b> endpoint is guarded by <b>[Authorize(Roles = \"Driver\")]</b>. Send:",
         s_body))
     story.append(code('Authorization: Bearer <token>'))
 
