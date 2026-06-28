@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.rxexpresss.driver",
-      "buildNumber": "10",
+      "buildNumber": "11",
       "infoPlist": {
         "NSCameraUsageDescription": "RxEx Driver uses the camera to scan package QR codes and capture proof-of-delivery photos for pharmacy orders.",
         "NSLocationWhenInUseUsageDescription": "RxEx Driver uses location during active deliveries to provide route tracking, proof-of-delivery verification, and pharmacy delivery compliance.",
@@ -28,7 +28,7 @@
     },
     "android": {
       "package": "com.rxexpresss.driver",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/rxexpresss-generated-icon.png",
         "backgroundColor": "#061B22"
