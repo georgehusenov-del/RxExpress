@@ -16,6 +16,11 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6770229028",
+        "appleId": "georgehusenov@gmail.com"
+      }
+    }
   }
 }

@@ -1,8 +1,12 @@
 import { apiClient } from './client';
-import type { Delivery, ScanPackage } from '@/types/api';
+import type { Delivery, MyRouteResponse, ScanPackage } from '@/types/api';
 
 export function fetchDeliveries() {
   return apiClient.request<{ deliveries: Delivery[]; count: number }>('/driver-portal/deliveries');
+}
+
+export function fetchMyRoute() {
+  return apiClient.request<MyRouteResponse>('/driver-portal/my-route');
 }
 
 export function fetchHistory() {

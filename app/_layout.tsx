@@ -3,8 +3,6 @@ import { LogBox } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '@/context/AuthContext';
-import { BootSplash } from '@/components/BootSplash';
-import { useAuth } from '@/context/AuthContext';
 
 type RuntimeGlobal = typeof globalThis & {
   __RXEX_KEEP_AWAKE_HANDLER__?: boolean;
@@ -50,20 +48,9 @@ export default function RootLayout() {
 }
 
 function AppNavigator() {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return (
-      <>
-        <StatusBar style="dark" />
-        <BootSplash />
-      </>
-    );
-  }
-
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }} />
     </>
   );

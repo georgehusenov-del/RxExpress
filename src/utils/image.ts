@@ -2,6 +2,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { File } from 'expo-file-system';
 
+const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
+
 export async function captureBase64Photo(label: string): Promise<string> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (perm.status !== 'granted') throw new Error('Camera permission is required.');
@@ -30,6 +32,8 @@ export async function captureBase64Photo(label: string): Promise<string> {
   if (rem === 2) b64 += '==';
   else if (rem === 3) b64 += '=';
 
-  console.log(`[Photo ${label}] ${b64.length} chars (~${Math.round(b64.length * 0.75 / 1024)} KB)`);
+  if (isDev) {
+    console.log(`[Photo ${label}] ${b64.length} chars (~${Math.round(b64.length * 0.75 / 1024)} KB)`);
+  }
   return `data:image/jpeg;base64,${b64}`;
 }

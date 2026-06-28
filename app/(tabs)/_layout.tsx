@@ -6,7 +6,7 @@ import { colors } from '@/theme/colors';
 export default function TabsLayout() {
   return (
     <Tabs
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
         tabBarActiveTintColor: colors.primaryDark,
@@ -19,36 +19,45 @@ export default function TabsLayout() {
           backgroundColor: '#FFFFFF',
           borderTopColor: colors.border,
         },
-        tabBarIcon: ({ focused, color }) => {
-          const icon =
-            route.name === 'home' ? 'view-dashboard-outline' :
-            route.name === 'deliveries/index' ? 'truck-delivery-outline' :
-            route.name === 'scan' ? 'qrcode-scan' :
-            'history';
-
-          const isScan = route.name === 'scan';
-
-          return (
-            <MaterialCommunityIcons
-              name={icon}
-              size={isScan ? 26 : 24}
-              color={isScan ? '#FFFFFF' : color}
-              style={isScan ? {
-                backgroundColor: focused ? colors.primaryDark : colors.primary,
-                padding: 12,
-                borderRadius: 999,
-                overflow: 'hidden',
-                marginTop: -16,
-              } : undefined}
-            />
-          );
-        },
-      })}
+      }}
     >
-      <Tabs.Screen name="home" options={{ title: 'Home' }} />
-      <Tabs.Screen name="deliveries/index" options={{ title: 'Deliveries' }} />
-      <Tabs.Screen name="scan" options={{ title: 'Scan' }} />
-      <Tabs.Screen name="history" options={{ title: 'History' }} />
+      <Tabs.Screen
+        name="deliveries/index"
+        options={{
+          title: 'Deliveries',
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="truck-delivery-outline" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="pickups/index"
+        options={{
+          title: 'Pickups',
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="store-outline" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="scan"
+        options={{
+          title: 'Scan',
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="qrcode-scan" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="history" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen name="home" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -1,58 +1,28 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { AppLogo } from '@/components/AppLogo';
-import { brand } from '@/theme/brand';
-import { colors } from '@/theme/colors';
+import { RxExpresssBrand, TrustStrip } from '@/components/RxExpresssBrand';
 
 export function BootSplash() {
   return (
     <View style={styles.screen}>
-      <View style={styles.orbTop} />
-      <View style={styles.orbBottom} />
-      <View style={styles.gridAura} />
+      <View style={styles.poster}>
+        <View style={styles.blueWash} />
+        <View style={styles.tealWash} />
+        <View style={styles.routeArc} />
+        <MaterialCommunityIcons name="package-variant-closed" size={62} color="rgba(126,255,239,0.18)" style={styles.packageIcon} />
 
-      <View style={styles.centerWrap}>
-        <View style={styles.badgePill}>
-          <View style={styles.badgeDot} />
-          <Text style={styles.badgeText}>Secure driver workspace</Text>
-        </View>
+        <RxExpresssBrand />
+        <Text style={styles.tagline}>Prescription Delivery, <Text style={styles.taglineAccent}>Done Right.</Text></Text>
 
-        <AppLogo size="hero" glow style={styles.logoWrap} />
-
-        <Text style={styles.title}>Loading your route command center</Text>
-        <Text style={styles.subtitle}>{brand.promise}</Text>
-
-        <View style={styles.metricsRow}>
-          <Metric icon="shield-check-outline" label="Secure session" />
-          <Metric icon="map-marker-path" label="Route sync" />
-          <Metric icon="clipboard-check-outline" label="POD ready" />
-        </View>
-
-        <View style={styles.statusCard}>
-          <View style={styles.spinnerWrap}>
-            <ActivityIndicator color={colors.white} />
+        <View style={styles.bottomBlock}>
+          <TrustStrip />
+          <Text style={styles.loadingText}>Loading</Text>
+          <View style={styles.progressTrack}>
+            <View style={styles.progressFill} />
           </View>
-          <View style={styles.copyWrap}>
-            <Text style={styles.statusTitle}>Preparing secure access</Text>
-            <Text style={styles.statusBody}>Loading profile, live status, assigned deliveries, and driver tools.</Text>
-          </View>
-        </View>
-
-        <View style={styles.footerCard}>
-          <Text style={styles.footerTitle}>Professional delivery workflow</Text>
-          <Text style={styles.footerBody}>Clean startup, secure session restore, and full delivery visibility before you move.</Text>
         </View>
       </View>
-    </View>
-  );
-}
-
-function Metric({ icon, label }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string }) {
-  return (
-    <View style={styles.metricCard}>
-      <MaterialCommunityIcons name={icon} size={18} color={colors.primaryDark} />
-      <Text style={styles.metricLabel}>{label}</Text>
     </View>
   );
 }
@@ -60,144 +30,95 @@ function Metric({ icon, label }: { icon: React.ComponentProps<typeof MaterialCom
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#EEF8F9',
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 22,
-    overflow: 'hidden',
+    padding: 18,
+    backgroundColor: '#061B22',
   },
-  orbTop: {
-    position: 'absolute',
-    top: -30,
-    right: -20,
-    width: 290,
-    height: 290,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0, 151, 167, 0.22)',
-  },
-  orbBottom: {
-    position: 'absolute',
-    left: -80,
-    bottom: -20,
-    width: 270,
-    height: 270,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0, 43, 58, 0.1)',
-  },
-  gridAura: {
-    position: 'absolute',
-    top: 150,
-    left: 18,
-    right: 18,
-    height: 210,
+  poster: {
+    width: '100%',
+    maxWidth: 430,
+    flex: 1,
+    maxHeight: 760,
     borderRadius: 34,
-    backgroundColor: 'rgba(255,255,255,0.44)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
-  },
-  centerWrap: {
+    overflow: 'hidden',
     alignItems: 'center',
-  },
-  badgePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 76, 85, 0.08)',
-  },
-  badgeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: colors.success,
-  },
-  badgeText: {
-    color: colors.primaryDark,
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  logoWrap: { marginTop: 28 },
-  title: {
-    marginTop: 28,
-    color: colors.navy,
-    fontSize: 36,
-    lineHeight: 42,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
-  subtitle: {
-    marginTop: 12,
-    color: colors.muted,
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  metricsRow: {
-    marginTop: 24,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 10,
-  },
-  metricCard: {
-    minWidth: 100,
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.82)',
+    padding: 24,
+    backgroundColor: '#07335C',
     borderWidth: 1,
-    borderColor: 'rgba(0, 76, 85, 0.08)',
+    borderColor: 'rgba(126,255,239,0.28)',
   },
-  metricLabel: {
-    marginTop: 8,
-    color: colors.primaryDark,
-    fontSize: 12,
+  blueWash: {
+    position: 'absolute',
+    left: -70,
+    top: -40,
+    width: 360,
+    height: 520,
+    borderRadius: 180,
+    backgroundColor: '#143DB9',
+    opacity: 0.55,
+  },
+  tealWash: {
+    position: 'absolute',
+    right: -120,
+    top: -80,
+    width: 330,
+    height: 420,
+    borderRadius: 180,
+    backgroundColor: '#1EF2D1',
+    opacity: 0.5,
+  },
+  routeArc: {
+    position: 'absolute',
+    left: 46,
+    right: 44,
+    bottom: 170,
+    height: 150,
+    borderWidth: 1,
+    borderColor: 'rgba(126,255,239,0.25)',
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderBottomRightRadius: 120,
+    transform: [{ rotate: '-8deg' }],
+  },
+  packageIcon: { position: 'absolute', right: 32, bottom: 120 },
+  tagline: {
+    marginTop: 10,
+    color: '#FFFFFF',
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '800',
     textAlign: 'center',
   },
-  statusCard: {
-    marginTop: 28,
-    width: '100%',
-    borderRadius: 30,
-    backgroundColor: colors.primaryDark,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    flexDirection: 'row',
+  taglineAccent: { color: '#62FFEA' },
+  bottomBlock: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    bottom: 30,
     alignItems: 'center',
-    gap: 14,
-    shadowColor: colors.navy,
-    shadowOpacity: 0.16,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
   },
-  spinnerWrap: {
-    width: 46,
-    height: 46,
+  loadingText: {
+    marginTop: 14,
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 4,
+  },
+  progressTrack: {
+    width: '48%',
+    minWidth: 132,
+    height: 7,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
+    marginTop: 10,
+    backgroundColor: 'rgba(126,255,239,0.25)',
   },
-  copyWrap: { flex: 1 },
-  statusTitle: { color: colors.white, fontSize: 16, fontWeight: '900' },
-  statusBody: { marginTop: 4, color: '#D8F3F7', fontSize: 13, lineHeight: 19, fontWeight: '600' },
-  footerCard: {
-    marginTop: 18,
-    width: '100%',
-    borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    backgroundColor: 'rgba(255,255,255,0.84)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 76, 85, 0.08)',
+  progressFill: {
+    width: '64%',
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#86FFF1',
   },
-  footerTitle: { color: colors.navy, fontSize: 15, fontWeight: '900', textAlign: 'center' },
-  footerBody: { marginTop: 6, color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center' },
 });

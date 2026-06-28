@@ -1,4 +1,4 @@
-export const brandLogo = require('../../assets/app-icon-clean.png');
+export const brandLogo = require('../../assets/app-icon-dark.png');
 
 export const brand = {
 	appName: 'RxEx Driver',

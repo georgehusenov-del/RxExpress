@@ -1,5 +1,5 @@
 import { loginRequest, fetchMe, fetchDriverProfile, logoutRequest } from './auth';
-import { collectCopayRequest, fetchDeliveries, fetchHistory, logAttemptRequest, scanPackageQr, updateDeliveryStatusRequest } from './deliveries';
+import { collectCopayRequest, fetchDeliveries, fetchHistory, fetchMyRoute, logAttemptRequest, scanPackageQr, updateDeliveryStatusRequest } from './deliveries';
 import { sendDriverLocation, updateDriverStatus } from './location';
 import { submitDeliveryPod } from './pod';
 
@@ -14,6 +14,7 @@ export const rxexApi = {
     return updateDriverStatus(status);
   },
   async deliveries() { return fetchDeliveries(); },
+  async myRoute() { return fetchMyRoute(); },
   async history() { return fetchHistory(); },
   async scanQr(qrCode: string) { return scanPackageQr(qrCode); },
   async location(payload: { latitude: number; longitude: number; speed?: number | null; heading?: number | null; accuracy?: number | null }) {

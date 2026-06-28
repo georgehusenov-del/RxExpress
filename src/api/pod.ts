@@ -1,5 +1,7 @@
 import { apiClient } from './client';
 
+const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
+
 function stripDataUri(value?: string) {
   if (!value) return value;
   const commaIndex = value.indexOf(',');
@@ -18,7 +20,9 @@ export async function submitDeliveryPod(id: number, payload: {
 }) {
   const requestBody = { ...payload, photoBase64: payload.photoPackageBase64 };
   const json = JSON.stringify(requestBody);
-  console.log(`[POD] delivery ${id}, body ${Math.round(json.length / 1024)} KB`);
+  if (isDev) {
+    console.log(`[POD] delivery ${id}, body ${Math.round(json.length / 1024)} KB`);
+  }
 
   try {
     return await apiClient.request<{ success: boolean; message: string }>(`/driver-portal/deliveries/${id}/pod`, { method: 'POST', body: json });
@@ -34,7 +38,9 @@ export async function submitDeliveryPod(id: number, payload: {
       signatureBase64: stripDataUri(payload.signatureBase64),
     };
     const fallbackJson = JSON.stringify(fallbackBody);
-    console.log(`[POD] delivery ${id}, retrying with raw base64 (${Math.round(fallbackJson.length / 1024)} KB)`);
+    if (isDev) {
+      console.log(`[POD] delivery ${id}, retrying with raw base64 (${Math.round(fallbackJson.length / 1024)} KB)`);
+    }
     return apiClient.request<{ success: boolean; message: string }>(`/driver-portal/deliveries/${id}/pod`, { method: 'POST', body: fallbackJson });
   }
 }

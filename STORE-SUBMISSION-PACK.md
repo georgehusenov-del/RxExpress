@@ -86,19 +86,23 @@ Prepare at least these screenshots for Android and iPhone:
 
 Use this in store review fields if needed:
 
-RxEx Driver is a workforce app for authorized delivery personnel.
+RxEx Driver is a professional pharmacy prescription delivery application used by authorized delivery drivers.
 
-Main app functions:
-- Secure sign-in for authorized drivers
-- Assigned delivery list and history
-- QR code scanning for package verification
-- Proof of delivery with photos, signature, and notes
-- Foreground-only location updates while on duty
+Driver accounts are created internally by RxExpresss administrators and pharmacy partners. Public account registration is not available within the app.
 
-If review credentials are required, provide a dedicated reviewer account here before submission:
-- Review email: REVIEWER_EMAIL_HERE
-- Review password: REVIEWER_PASSWORD_HERE
+For App Review testing, please use the provided demo credentials:
 
-If additional review context is required:
-- Location permission is used only while the app is actively used for route progress and delivery confirmation.
-- Camera permission is used for QR scanning and proof-of-delivery photos.
+Email:
+reviewer@rxexpresss.com
+
+Password:
+[ENTER PASSWORD DIRECTLY IN APP STORE CONNECT ONLY]
+
+Camera access is required to scan prescription package QR codes during delivery verification workflows.
+
+The app is intended for iPhone use by authorized courier personnel.
+
+Additional review context:
+- Secure sign-in is available only for authorized RxExpresss driver accounts.
+- Assigned delivery list, proof of delivery, QR package verification, and foreground location updates are core workflow features.
+- All communication is encrypted over HTTPS. Authentication tokens are stored using platform secure storage. Sensitive delivery data is not exposed publicly or shared with third parties.

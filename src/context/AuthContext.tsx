@@ -30,7 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!token) return;
       const current = await rxexApi.me();
       setUser(current);
-      await refreshProfile();
+      setLoading(false);
+      refreshProfile().catch(() => null);
     } catch {
       await rxexApi.logout();
       setUser(null);
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async login(email, password) {
       const result = await rxexApi.login(email.trim(), password);
       setUser(result.user);
-      await refreshProfile();
+      refreshProfile().catch(() => null);
     },
     async logout() {
       await rxexApi.logout();

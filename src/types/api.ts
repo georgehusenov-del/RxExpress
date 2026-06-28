@@ -34,13 +34,27 @@ export type OfficeLocation = {
   isDefault: boolean;
 };
 
+export type DeliveryStatus =
+  | 'new'
+  | 'assigned'
+  | 'picked_up'
+  | 'in_transit'
+  | 'dispatched'
+  | 'out_for_delivery'
+  | 'delivering_now'
+  | 'delivered'
+  | 'failed'
+  | 'cancelled'
+  | 'completed';
+
 export type Delivery = {
   id: number;
   orderNumber: string;
   trackingNumber?: string;
   qrCode: string;
   pharmacyName: string;
-  deliveryType: string;
+  // 'pickup' = pharmacy pickup; anything else = patient delivery
+  deliveryType: 'pickup' | 'delivery' | string;
   timeWindow: string;
   recipientName: string;
   recipientPhone: string;
@@ -51,13 +65,19 @@ export type Delivery = {
   postalCode: string;
   latitude?: number;
   longitude?: number;
-  status: string;
+  status: DeliveryStatus | string;
   copayAmount: number;
   copayCollected: boolean;
   deliveryNotes?: string | null;
   deliveryInstructions?: string | null;
   requiresSignature: boolean;
   isRefrigerated: boolean;
+  // Sequential stop position within the route (1-based)
+  stopNumber?: number;
+  // For pickup deliveries: number of packages expected at this pharmacy
+  expectedPackageCount?: number;
+  // Gig/route identifier this stop belongs to
+  gigNumber?: string;
   createdAt?: string;
   actualDeliveryTime?: string;
   photoUrl?: string;
@@ -82,6 +102,15 @@ export type ScanPackage = {
     copayCollected: boolean;
     driverName?: string;
   };
+};
+
+export type MyRouteResponse = {
+  deliveries: Delivery[];
+  count?: number;
+  // Route-level metadata (present when backend provides them)
+  gigNumber?: string;
+  routeId?: number;
+  routeStatus?: string;
 };
 
 export type ApiError = { detail?: string; message?: string };

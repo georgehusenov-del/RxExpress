@@ -2,34 +2,36 @@
   "expo": {
     "name": "RxEx Driver",
     "slug": "rxex-driver",
-    "version": "1.0.0",
+    "version": "1.2.1",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "orientation": "portrait",
     "scheme": "rxexdriver",
     "userInterfaceStyle": "light",
-    "icon": "./assets/app-icon-clean.png",
+    "icon": "./assets/rxexpresss-generated-icon.png",
     "splash": {
-      "image": "./assets/app-icon-clean.png",
+      "image": "./assets/rxexpresss-generated-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F5FAFB"
+      "backgroundColor": "#061B22"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.rxexpresss.driver",
-      "buildNumber": "1",
+      "buildNumber": "10",
       "infoPlist": {
-        "NSCameraUsageDescription": "Camera is required to scan package QR codes and capture proof of delivery photos.",
-        "NSLocationWhenInUseUsageDescription": "Location is required while using the app to track active delivery progress and confirm delivery coordinates."
+        "NSCameraUsageDescription": "RxEx Driver uses the camera to scan package QR codes and capture proof-of-delivery photos for pharmacy orders.",
+        "NSLocationWhenInUseUsageDescription": "RxEx Driver uses location during active deliveries to provide route tracking, proof-of-delivery verification, and pharmacy delivery compliance.",
+        "NSPhotoLibraryUsageDescription": "RxEx Driver uses selected photos only when drivers upload proof-of-delivery evidence for pharmacy orders.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.rxexpresss.driver",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/app-icon-clean.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/rxexpresss-generated-icon.png",
+        "backgroundColor": "#061B22"
       },
       "permissions": [
         "CAMERA",
@@ -46,7 +48,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow RxEx Driver to scan package QR codes and capture proof of delivery photos.",
+          "cameraPermission": "RxEx Driver uses the camera to scan package QR codes and capture proof-of-delivery photos for pharmacy orders.",
           "recordAudioAndroid": false,
           "barcodeScannerEnabled": true
         }
@@ -54,7 +56,14 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow RxEx Driver to access your location while using the app for delivery progress and proof of delivery."
+          "locationWhenInUsePermission": "RxEx Driver uses location during active deliveries to provide route tracking, proof-of-delivery verification, and pharmacy delivery compliance."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "RxEx Driver uses the camera to scan package QR codes and capture proof-of-delivery photos for pharmacy orders.",
+          "photosPermission": "RxEx Driver uses selected photos only when drivers upload proof-of-delivery evidence for pharmacy orders."
         }
       ],
       "expo-font"

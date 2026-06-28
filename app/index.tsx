@@ -1,307 +1,222 @@
-import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useEffect } from 'react';
+import {
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { AppLogo } from '@/components/AppLogo';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Screen } from '@/components/Screen';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
-import { brand } from '@/theme/brand';
-import { colors } from '@/theme/colors';
+import { RxExpresssBrand, TrustStrip } from '@/components/RxExpresssBrand';
 
 export default function WelcomeScreen() {
   const { user, loading } = useAuth();
+  const { width, height } = useWindowDimensions();
+  const compact = width < 380 || height < 720;
+
+  useEffect(() => {
+    if (!loading && user) {
+      const id = setTimeout(() => router.replace('/home'), 180);
+      return () => clearTimeout(id);
+    }
+  }, [loading, user]);
 
   return (
-    <Screen scroll contentContainerStyle={styles.content}>
-      <View style={styles.backdropA} />
-      <View style={styles.backdropB} />
-      <View style={styles.gridAura} />
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#061B22" />
+      <View style={styles.root}>
+        <View style={[styles.poster, compact && styles.posterCompact]}>
+          <View style={styles.blueWash} />
+          <View style={styles.tealWash} />
+          <View style={styles.routeArcOne} />
+          <View style={styles.routeArcTwo} />
+          <View style={[styles.routeDot, styles.routeDotOne]} />
+          <View style={[styles.routeDot, styles.routeDotTwo]} />
 
-      <View style={styles.heroShell}>
-        <View style={styles.badgeRow}>
-          <View style={styles.liveBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>Driver operations portal</Text>
+          <View style={styles.mapPinGhost}>
+            <MaterialCommunityIcons name="map-marker-outline" size={24} color="rgba(126,255,239,0.22)" />
           </View>
-        </View>
-
-        <AppLogo size="hero" glow style={styles.logoBlock} />
-
-        <View style={styles.copyWrap}>
-          <Text style={styles.title}>The calm, modern cockpit for every pharmacy run.</Text>
-          <Text style={styles.subtitle}>Route visibility, proof of delivery, package scanning, and driver status in one cleaner workflow.</Text>
-        </View>
-
-        <View style={styles.metricsRow}>
-          <Metric value="Live" label="Queue" icon="truck-fast-outline" />
-          <Metric value="3-step" label="POD" icon="camera-outline" />
-          <Metric value="Secure" label="Driver" icon="shield-check-outline" />
-        </View>
-
-        <View style={styles.featurePanel}>
-          <Feature label="Assigned stops with full detail" icon="clipboard-text-outline" />
-          <Feature label="Fast QR verification at pickup" icon="qrcode-scan" />
-          <Feature label="Signatures, notes, and photo proof" icon="draw-pen" />
-        </View>
-      </View>
-
-      <View style={styles.bottomCard}>
-        <Text style={styles.bottomTitle}>{loading ? 'Preparing your workspace' : brand.promise}</Text>
-        <Text style={styles.bottomBody}>
-          {loading
-            ? 'Syncing your secure session, route access, and delivery tools.'
-            : 'Designed for professional drivers who need speed, clarity, and reliable completion at the door.'}
-        </Text>
-        {loading ? (
-          <View style={styles.loadingPanel}>
-            <View style={styles.loadingSpinnerWrap}>
-              <ActivityIndicator color={colors.white} size="small" />
-            </View>
-            <View style={styles.loadingCopyWrap}>
-              <Text style={styles.loadingHeadline}>Loading driver portal</Text>
-              <Text style={styles.loadingText}>Restoring secure session and dashboard access.</Text>
-            </View>
+          <View style={styles.packageGhost}>
+            <MaterialCommunityIcons name="package-variant-closed" size={64} color="rgba(126,255,239,0.2)" />
           </View>
-        ) : (
-          <>
-            <PrimaryButton
-              title={user ? 'Open Dashboard' : 'Continue'}
-              onPress={() => router.replace(user ? '/home' : '/login')}
-            />
-            {!user ? (
-              <Pressable onPress={() => router.push('/login')}>
-                <Text style={styles.secondaryLink}>Driver sign in</Text>
+
+          <View style={styles.brandCenter}>
+            <RxExpresssBrand compact={compact} />
+            <Text style={styles.tagline}>
+              Prescription Delivery, <Text style={styles.taglineAccent}>Done Right.</Text>
+            </Text>
+          </View>
+
+          <View style={styles.bottomBlock}>
+            <TrustStrip />
+            <Text style={styles.loadingText}>{loading || user ? 'Loading' : 'Ready'}</Text>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, !loading && styles.progressFillReady]} />
+            </View>
+            {!loading && !user ? (
+              <Pressable
+                style={({ pressed }) => [styles.signInButton, pressed && styles.signInButtonPressed]}
+                onPress={() => router.replace('/login')}
+              >
+                <Text style={styles.signInText}>Driver Sign In</Text>
+                <MaterialCommunityIcons name="arrow-right" size={19} color="#062331" />
               </Pressable>
             ) : null}
-          </>
-        )}
+          </View>
+        </View>
       </View>
-    </Screen>
-  );
-}
-
-function Feature({ label, icon }: { label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'] }) {
-  return (
-    <View style={styles.featurePill}>
-      <MaterialCommunityIcons name={icon} size={18} color={colors.primaryDark} />
-      <Text style={styles.featureText}>{label}</Text>
-    </View>
-  );
-}
-
-function Metric({ value, label, icon }: { value: string; label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'] }) {
-  return (
-    <View style={styles.metricCard}>
-      <MaterialCommunityIcons name={icon} size={20} color={colors.primaryDark} />
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
-    paddingTop: 20,
-    paddingBottom: 28,
-  },
-  backdropA: {
-    position: 'absolute',
-    top: -40,
-    right: -30,
-    width: 260,
-    height: 260,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0, 151, 167, 0.18)',
-  },
-  backdropB: {
-    position: 'absolute',
-    left: -50,
-    bottom: 110,
-    width: 240,
-    height: 240,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0, 43, 58, 0.08)',
-  },
-  gridAura: {
-    position: 'absolute',
-    top: 160,
-    left: 30,
-    right: 30,
-    height: 180,
-    borderRadius: 34,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    backgroundColor: 'rgba(255,255,255,0.22)',
-  },
-  heroShell: {
-    marginTop: 10,
-  },
-  badgeRow: {
-    alignItems: 'center',
-  },
-  liveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 76, 85, 0.08)',
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: colors.success,
-  },
-  liveText: {
-    color: colors.primaryDark,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  logoBlock: {
-    marginTop: 22,
-    alignSelf: 'center',
-  },
-  copyWrap: {
-    marginTop: 22,
-    alignItems: 'center',
-    paddingHorizontal: 12,
-  },
-  title: {
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '900',
-    textAlign: 'center',
-    color: colors.navy,
-  },
-  subtitle: {
-    marginTop: 12,
-    fontSize: 15,
-    lineHeight: 23,
-    color: colors.muted,
-    textAlign: 'center',
-  },
-  metricsRow: {
-    marginTop: 18,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  metricCard: {
-    minWidth: 88,
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 76, 85, 0.08)',
-  },
-  metricValue: {
-    marginTop: 8,
-    color: colors.navy,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  metricLabel: {
-    marginTop: 4,
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  featurePanel: {
-    marginTop: 18,
-    borderRadius: 28,
-    padding: 14,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 76, 85, 0.08)',
-    gap: 10,
-  },
-  featurePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 18,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  featureText: {
-    color: colors.primaryDark,
-    fontSize: 13,
-    fontWeight: '700',
+  safe: { flex: 1, backgroundColor: '#061B22' },
+  root: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    backgroundColor: '#061B22',
   },
-  bottomCard: {
-    marginTop: 18,
-    padding: 22,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+  poster: {
+    width: '100%',
+    maxWidth: 430,
+    minHeight: 650,
+    flex: 1,
+    maxHeight: 760,
+    borderRadius: 34,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 64,
+    paddingBottom: 30,
+    backgroundColor: '#07335C',
     borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#002B3A',
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 7,
+    borderColor: 'rgba(126,255,239,0.28)',
   },
-  bottomTitle: {
-    color: colors.navy,
-    fontSize: 20,
-    fontWeight: '900',
+  posterCompact: {
+    minHeight: 580,
+    paddingTop: 42,
+    paddingBottom: 22,
+    borderRadius: 28,
   },
-  bottomBody: {
-    marginTop: 8,
-    marginBottom: 18,
-    color: colors.muted,
+  blueWash: {
+    position: 'absolute',
+    left: -70,
+    top: -40,
+    width: 360,
+    height: 520,
+    borderRadius: 180,
+    backgroundColor: '#143DB9',
+    opacity: 0.55,
+  },
+  tealWash: {
+    position: 'absolute',
+    right: -120,
+    top: -80,
+    width: 330,
+    height: 420,
+    borderRadius: 180,
+    backgroundColor: '#1EF2D1',
+    opacity: 0.5,
+  },
+  routeArcOne: {
+    position: 'absolute',
+    left: 38,
+    right: 46,
+    bottom: 168,
+    height: 150,
+    borderWidth: 1,
+    borderColor: 'rgba(126,255,239,0.28)',
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderBottomRightRadius: 120,
+    transform: [{ rotate: '-8deg' }],
+  },
+  routeArcTwo: {
+    position: 'absolute',
+    left: 66,
+    right: 30,
+    top: 120,
+    height: 190,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+    borderTopRightRadius: 150,
+    transform: [{ rotate: '14deg' }],
+  },
+  routeDot: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#39F3E2',
+    shadowColor: '#39F3E2',
+    shadowOpacity: 0.9,
+    shadowRadius: 12,
+  },
+  routeDotOne: { left: 122, bottom: 218 },
+  routeDotTwo: { right: 86, bottom: 292 },
+  mapPinGhost: { position: 'absolute', left: 38, top: 198 },
+  packageGhost: { position: 'absolute', right: 30, bottom: 118 },
+  brandCenter: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  tagline: {
+    marginTop: 10,
+    color: '#FFFFFF',
     fontSize: 14,
-    lineHeight: 22,
-  },
-  loadingRow: {
-    minHeight: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  loadingPanel: {
-    minHeight: 88,
-    borderRadius: 22,
-    backgroundColor: colors.primaryDark,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  loadingSpinnerWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-  },
-  loadingCopyWrap: { flex: 1 },
-  loadingHeadline: { color: colors.white, fontSize: 16, fontWeight: '900' },
-  loadingText: { marginTop: 4, color: '#D8F3F7', fontSize: 13, lineHeight: 19, fontWeight: '600' },
-  secondaryLink: {
-    marginTop: 14,
-    textAlign: 'center',
-    color: colors.primaryDark,
-    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '800',
+    textAlign: 'center',
   },
+  taglineAccent: { color: '#62FFEA' },
+  bottomBlock: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 14,
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 4,
+  },
+  progressTrack: {
+    width: '48%',
+    minWidth: 132,
+    height: 7,
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginTop: 10,
+    backgroundColor: 'rgba(126,255,239,0.25)',
+  },
+  progressFill: {
+    width: '64%',
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#86FFF1',
+  },
+  progressFillReady: { width: '100%' },
+  signInButton: {
+    minHeight: 48,
+    marginTop: 18,
+    paddingHorizontal: 20,
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#86FFF1',
+  },
+  signInButtonPressed: { opacity: 0.82 },
+  signInText: { color: '#062331', fontSize: 15, fontWeight: '900' },
 });
