@@ -9,7 +9,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  Vibration,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -25,6 +27,8 @@ type WorkflowStep = 'arriving' | 'scanning' | 'completing';
 
 export default function PickupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { width } = useWindowDimensions();
+  const scanFrameSize = Math.round(width * 0.78);
   const [pickup, setPickup] = useState<Delivery | null>(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<WorkflowStep>('arriving');
@@ -97,40 +101,56 @@ export default function PickupDetailScreen() {
     setStep('scanning');
   }
 
-  function handleScanCode(rawCode: string) {
-    if (scanLockRef.current || scanBusy) return;
+  async function handleScanCode(rawCode: string) {
+    if (scanLockRef.current || scanBusy || !pickup) return;
 
     const code = rawCode.trim();
     if (!code) return;
 
     if (scannedCodes.includes(code)) {
-      Alert.alert('Already scanned', `This package (${code}) has already been scanned.`);
+      // Duplicate scan — keep part green, no alert, no duplicate event
+      Vibration.vibrate(40);
+      setLastScanned(code);
       return;
     }
 
     scanLockRef.current = true;
     setScanBusy(true);
 
-    // Verify against backend, then record
-    rxexApi
-      .scanQr(code)
-      .then(result => {
-        if (result.verified || result.package) {
-          recordScan(code);
-        } else {
-          Alert.alert('Scan failed', result.message || 'Package not recognised. Try again.');
-        }
-      })
-      .catch(() => {
-        // Fallback: accept the code without backend verification
-        recordScan(code);
-      })
-      .finally(() => {
-        setScanBusy(false);
-        setTimeout(() => {
-          scanLockRef.current = false;
-        }, 800);
+    try {
+      // Use driver portal scan-code endpoint with scanType: pickup
+      const result = await rxexApi.scanCode(pickup.id, {
+        scanType: 'pickup',
+        scannedCode: code,
       });
+
+      Vibration.vibrate(80);
+      recordScan(result.scannedCode ?? code);
+
+      if (result.allScanned) {
+        // Backend auto-transitioned to picked_up — go to done step
+        setStep('completing');
+        await load();
+      } else if (result.missingCodes && result.missingCodes.length > 0) {
+        // Show remaining codes hint — no alert, counter updates
+      }
+    } catch (e: any) {
+      const msg: string = e.message || '';
+      const msgLower = msg.toLowerCase();
+      if (msgLower.includes('do not scan the main order qr') || msgLower.includes('scan the package qr') || msgLower.includes('part label') || msgLower.includes('package-part')) {
+        Alert.alert('Wrong QR Code', 'Please scan the physical package-part label.');
+      } else if (msgLower.includes('does not belong') || msgLower.includes('not belong to this order') || msgLower.includes('wrong order')) {
+        Alert.alert('Wrong QR Code', 'This package does not belong to this order or scan step.');
+      } else if (msgLower.includes('already scanned') || msgLower.includes('already verified') || msgLower.includes('already been scanned')) {
+        // Duplicate returned from backend — keep green, no alert
+        recordScan(code);
+      } else {
+        Alert.alert('Scan failed', msg || 'Package not recognised. Try again.');
+      }
+    } finally {
+      setScanBusy(false);
+      setTimeout(() => { scanLockRef.current = false; }, 800);
+    }
   }
 
   function recordScan(code: string) {
@@ -143,6 +163,7 @@ export default function PickupDetailScreen() {
     if (!pickup) return;
     setCompleting(true);
     try {
+      // For legacy orders (no packages), manually mark picked_up
       await rxexApi.updateDeliveryStatus(pickup.id, 'picked_up');
       setStep('completing');
       await load();
@@ -290,7 +311,7 @@ export default function PickupDetailScreen() {
                 }
               />
               <View style={styles.cameraOverlay}>
-                <View style={styles.scanFrame} />
+                <View style={[styles.scanFrame, { width: scanFrameSize, height: scanFrameSize }]} />
               </View>
             </View>
           ) : (
@@ -517,8 +538,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(2,17,21,0.3)',
   },
   scanFrame: {
-    width: 220,
-    height: 220,
     borderWidth: 3,
     borderColor: '#C6FBFF',
     borderRadius: 24,

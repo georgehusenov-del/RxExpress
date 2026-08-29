@@ -1,6 +1,15 @@
 import { apiClient } from './client';
 
-export function sendDriverLocation(payload: { latitude: number; longitude: number; speed?: number | null; heading?: number | null; accuracy?: number | null }) {
+export function sendDriverLocation(payload: {
+  latitude: number;
+  longitude: number;
+  speed?: number | null;
+  heading?: number | null;
+  accuracy?: number | null;
+  routePlanId?: number;
+  orderId?: number;
+  logType?: string;
+}) {
   return apiClient.request<{ success?: boolean; message?: string }>('/driver-portal/location', {
     method: 'POST',
     body: JSON.stringify(payload),

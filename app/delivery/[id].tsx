@@ -3,13 +3,19 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Modal,
   Pressable,
+  SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
+  TextInput,
+  Vibration,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Card } from '@/components/Card';
 import { InputField } from '@/components/InputField';
@@ -18,7 +24,7 @@ import { Screen } from '@/components/Screen';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SignatureModal } from '@/components/SignatureModal';
 import { rxexApi } from '@/api/rxexApi';
-import type { Delivery } from '@/types/api';
+import type { Delivery, DeliveryPackage } from '@/types/api';
 import { colors } from '@/theme/colors';
 import { captureBase64Photo } from '@/utils/image';
 import { getCurrentCoordinates } from '@/utils/location';
@@ -46,6 +52,17 @@ export default function DeliveryDetail() {
   const [photoAddr, setPhotoAddr] = useState<string | undefined>();
   const [photoPkg, setPhotoPkg] = useState<string | undefined>();
   const [copayDecision, setCopayDecision] = useState<CopayDecision>(null);
+  const [packages, setPackages] = useState<DeliveryPackage[]>([]);
+  const [allScanned, setAllScanned] = useState(true);
+  const [etaLabel, setEtaLabel] = useState<string | null>(null);
+  const [showPackageScanner, setShowPackageScanner] = useState(false);
+  const [scanBusy, setScanBusy] = useState(false);
+  const [scanFlash, setScanFlash] = useState(false);
+  const [manualScanCode, setManualScanCode] = useState('');
+  const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const scanLockRef = useRef(false);
+  const localScannedRef = useRef<Set<string>>(new Set());
   const podRunning = useRef(false);
   const attemptRunning = useRef(false);
   const lastPodStart = useRef(0);
@@ -55,7 +72,21 @@ export default function DeliveryDetail() {
 
   async function load() {
     try {
-      // Try route first, fall back to deliveries
+      // Primary: dedicated detail endpoint
+      try {
+        const r = await rxexApi.deliveryDetail(deliveryId);
+        const order = { ...r.order, id: r.order.id ?? deliveryId };
+        setDelivery(order);
+        const pkgs = r.packages ?? [];
+        setPackages(pkgs);
+        if (pkgs.length === 0) setAllScanned(true);
+        else setAllScanned(pkgs.every(p => p.status === 'scanned'));
+        // Use backend ETA from route if available on the order object
+        const eta = (order as any).optimizedDurationText as string | undefined;
+        if (eta) setEtaLabel(eta);
+        return;
+      } catch {}
+      // Fallback: my-route
       let found: Delivery | undefined;
       try {
         const r = await rxexApi.myRoute();
@@ -65,16 +96,34 @@ export default function DeliveryDetail() {
           id: s.id ?? s.orderId,
         }));
         found = stops.find((d: any) => d.id === deliveryId);
+        if (found) {
+          const eta = (found as any).optimizedDurationText as string | undefined;
+          if (eta) setEtaLabel(eta);
+        }
       } catch {}
       if (!found) {
         const r = await rxexApi.deliveries();
         found = r.deliveries.find(d => d.id === deliveryId);
       }
       setDelivery(found || null);
+      // Load packages separately on fallback path
+      await loadPackages();
     } catch (e: any) {
       Alert.alert('Load failed', e.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadPackages() {
+    try {
+      const result = await rxexApi.getPackages(deliveryId);
+      const pkgs = result.packages ?? [];
+      setPackages(pkgs);
+      if (pkgs.length === 0) setAllScanned(true);
+      else setAllScanned(pkgs.every(p => p.status === 'scanned'));
+    } catch {
+      // Don't touch allScanned or packages on failure — keep whatever is showing
     }
   }
 
@@ -106,7 +155,27 @@ export default function DeliveryDetail() {
       await rxexApi.updateDeliveryStatus(deliveryId, status);
       await load();
     } catch (e: any) {
-      Alert.alert('Status failed', e.message);
+      const msg = String(e?.message || '');
+      const needsPackageScan =
+        msg.toLowerCase().includes('scan every package') ||
+        msg.toLowerCase().includes('package label') ||
+        msg.toLowerCase().includes('package part') ||
+        msg.toLowerCase().includes('requirespackagepartscan') ||
+        msg.toLowerCase().includes('scan the package');
+      if (needsPackageScan) {
+        setAllScanned(false);
+        await loadPackages();
+        Alert.alert(
+          'Scan Package Labels',
+          'This order requires scanning each package QR label individually. Tap "Open Scanner" below.',
+          [
+            { text: 'Open Scanner', onPress: () => setShowPackageScanner(true) },
+            { text: 'Later', style: 'cancel' },
+          ]
+        );
+      } else {
+        Alert.alert('Status failed', msg);
+      }
     } finally {
       setPodBusy(false);
     }
@@ -122,6 +191,68 @@ export default function DeliveryDetail() {
         // Non-blocking: local state is still set.
         if (isDev) console.log('[Copay]', e.message);
       }
+    }
+  }
+
+  async function handlePackageScan(rawCode: string) {
+    if (scanLockRef.current || scanBusy) return;
+    const code = rawCode.trim();
+    if (!code) return;
+    scanLockRef.current = true;
+    setScanBusy(true);
+    try {
+      const coords = await getCurrentCoordinates().catch(() => undefined);
+      const result = await rxexApi.scanCode(deliveryId, {
+        scanType: 'delivering',
+        scannedCode: code,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+      });
+      Vibration.vibrate(80);
+      const scannedCode = result.scannedCode ?? code;
+      setLastScanned(scannedCode);
+      setManualScanCode('');
+
+      // Show success flash briefly
+      setScanFlash(true);
+      setTimeout(() => setScanFlash(false), 1400);
+
+      // Persist in ref — survives re-renders and cannot be overwritten by any API call
+      localScannedRef.current.add(scannedCode);
+      localScannedRef.current.add(code);
+      if ((result as any).package?.packageCode) {
+        localScannedRef.current.add((result as any).package.packageCode);
+      }
+
+      if (result.allScanned) {
+        setAllScanned(true);
+        setPackages(prev => prev.map(p => ({ ...p, status: 'scanned' })));
+        // Auto-close after brief "all done" moment
+        setTimeout(() => setShowPackageScanner(false), 1800);
+      }
+    } catch (e: any) {
+      const msg: string = e.message || '';
+      const msgLower = msg.toLowerCase();
+      if (msgLower.includes('do not scan the main order qr') || msgLower.includes('scan the package qr') || msgLower.includes('part label') || msgLower.includes('package-part')) {
+        // Base QR used for multi-part order — ask for the physical part label
+        Alert.alert('Wrong QR Code', 'Please scan the physical package-part label.');
+      } else if (msgLower.includes('does not belong') || msgLower.includes('not belong to this order') || msgLower.includes('wrong order')) {
+        // Package belongs to a different order or scan stage
+        Alert.alert('Wrong QR Code', 'This package does not belong to this order or scan step.');
+      } else if (msgLower.includes('already scanned') || msgLower.includes('already verified') || msgLower.includes('already been scanned')) {
+        // Duplicate scan — keep part green, no alert, no duplicate event
+        const scannedCode = (e as any)?.scannedCode ?? code;
+        localScannedRef.current.add(scannedCode);
+        localScannedRef.current.add(code);
+        if ((e as any)?.package?.packageCode) localScannedRef.current.add((e as any).package.packageCode);
+        setLastScanned(scannedCode);
+        setManualScanCode('');
+      } else {
+        Alert.alert('Scan failed', msg || 'Could not verify this QR code. Try again.');
+      }
+    } finally {
+      setScanBusy(false);
+      setTimeout(() => { scanLockRef.current = false; }, 800);
     }
   }
 
@@ -167,7 +298,16 @@ export default function DeliveryDetail() {
       router.replace('/deliveries');
     } catch (e: any) {
       const message = e.message || 'POD upload failed.';
-      if (String(message).toLowerCase().includes('failed to save photos')) {
+      const msgLower = String(message).toLowerCase();
+      if (msgLower.includes('scan every package') || msgLower.includes('package/part qr') || msgLower.includes('requirespackagepartscan')) {
+        setAllScanned(false);
+        await loadPackages();
+        Alert.alert(
+          'Package Scan Required',
+          'Scan every package/part QR at this stop before completing POD.',
+          [{ text: 'Open Scanner', onPress: () => setShowPackageScanner(true) }, { text: 'Cancel', style: 'cancel' }]
+        );
+      } else if (msgLower.includes('failed to save photos')) {
         Alert.alert(
           'POD save failed',
           'Photo upload failed. Mark delivery complete without POD?',
@@ -192,7 +332,14 @@ export default function DeliveryDetail() {
     attemptRunning.current = true;
     try {
       setAttemptBusy(true);
-      const r = await rxexApi.logAttempt(deliveryId, { status: 'failed', failureReason, notes });
+      const coords = await getCurrentCoordinates().catch(() => undefined);
+      const r = await rxexApi.driverAction(deliveryId, {
+        action: 'failed',
+        failureReason,
+        notes,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+      });
       Alert.alert('Attempt logged', r.message);
       router.replace('/deliveries');
     } catch (e: any) {
@@ -213,12 +360,24 @@ export default function DeliveryDetail() {
   }
 
   const allPhotosCaptured = !!photoHome && !!photoAddr && !!photoPkg;
-  const canComplete = allPhotosCaptured && (!delivery.requiresSignature || !!signature) && podUnlocked;
+  // Merge backend package status with locally-scanned ref — ref wins (can never be overwritten)
+  const effectivePackages = packages.map(p => ({
+    ...p,
+    status: (p.status === 'scanned' || localScannedRef.current.has(p.packageCode))
+      ? 'scanned' as const
+      : p.status,
+  }));
+  const effectiveAllScanned = packages.length === 0
+    || effectivePackages.every(p => p.status === 'scanned')
+    || allScanned;
+
+  const canComplete = allPhotosCaptured && (!delivery.requiresSignature || !!signature) && podUnlocked && effectiveAllScanned;
   const phoneNumber = sanitizePhone(delivery.recipientPhone);
 
   async function callPatient() {
     if (!phoneNumber) return;
-
+    // Log call action (fire-and-forget)
+    rxexApi.driverAction(deliveryId, { action: 'call_patient' }).catch(() => null);
     try {
       await Linking.openURL(`tel:${phoneNumber}`);
     } catch {
@@ -228,13 +387,32 @@ export default function DeliveryDetail() {
 
   async function navigateToPatient() {
     if (!delivery) return;
-
+    rxexApi.driverAction(deliveryId, { action: 'navigate' }).catch(() => null);
+    // Auto-advance assigned/new → picked_up when driver taps Navigate
+    if (['new', 'assigned'].includes(delivery.status)) {
+      rxexApi.updateDeliveryStatus(deliveryId, 'picked_up')
+        .then(() => load())
+        .catch(() => null);
+    }
     try {
       await openNavigationForDelivery(delivery);
     } catch {
       Alert.alert('Navigation failed', 'Unable to open maps for this delivery address.');
     }
   }
+
+  async function sendEtaToPatient() {
+    try {
+      const result = await rxexApi.driverAction(deliveryId, { action: 'send_eta' });
+      Alert.alert('ETA Sent', result.message || 'Patient has been notified via SMS.');
+    } catch (e: any) {
+      Alert.alert('Send ETA failed', e.message || 'Unable to send ETA SMS.');
+    }
+  }
+
+  const scannedCountForModal = effectivePackages.filter(p =>
+    p.status === 'scanned' || localScannedRef.current.has(p.packageCode)
+  ).length;
 
   return (
     <>
@@ -247,6 +425,180 @@ export default function DeliveryDetail() {
         }}
         onCancel={() => setShowSignatureModal(false)}
       />
+
+      {/* ── Full-screen Package QR Scanner Modal ── */}
+      <Modal
+        visible={showPackageScanner}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        statusBarTranslucent
+        onRequestClose={() => setShowPackageScanner(false)}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="#04181C" />
+        <View style={styles.scanModal}>
+          {/* Camera fills the whole background */}
+          {permission?.granted && (
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              barcodeScannerSettings={{ barcodeTypes: ['qr', 'code128', 'code39', 'ean13'] }}
+              onBarcodeScanned={scanBusy ? undefined : ({ data }) => handlePackageScan(data)}
+            />
+          )}
+
+          {/* Translucent overlay */}
+          <View style={styles.scanModalOverlay} pointerEvents="box-none">
+
+            {/* Header */}
+            <SafeAreaView style={styles.scanModalSafeTop}>
+              <View style={styles.scanModalHeader}>
+                <Pressable
+                  onPress={() => setShowPackageScanner(false)}
+                  style={styles.scanModalCloseBtn}
+                  hitSlop={12}
+                >
+                  <MaterialCommunityIcons name="close" size={22} color="#FFFFFF" />
+                  <Text style={styles.scanModalCloseText}>Close</Text>
+                </Pressable>
+
+                <View style={styles.scanModalTitleWrap}>
+                  <Text style={styles.scanModalTitle}>Scan Packages</Text>
+                  <Text style={styles.scanModalSub}>Point camera at the package QR label</Text>
+                </View>
+
+                <View style={styles.scanModalProgressWrap}>
+                  <Text style={[
+                    styles.scanModalProgressNum,
+                    effectiveAllScanned && styles.scanModalProgressNumDone,
+                  ]}>
+                    {scannedCountForModal}/{effectivePackages.length}
+                  </Text>
+                  <Text style={styles.scanModalProgressLabel}>verified</Text>
+                </View>
+              </View>
+            </SafeAreaView>
+
+            {/* Scan frame area */}
+            <View style={styles.scanModalFrameArea} pointerEvents="none">
+              <View style={styles.scanModalFrame}>
+                {/* Corner markers */}
+                <View style={[styles.scanCorner, styles.scanCornerTL]} />
+                <View style={[styles.scanCorner, styles.scanCornerTR]} />
+                <View style={[styles.scanCorner, styles.scanCornerBL]} />
+                <View style={[styles.scanCorner, styles.scanCornerBR]} />
+
+                {/* Success flash */}
+                {scanFlash && (
+                  <View style={styles.scanSuccessFlash}>
+                    <MaterialCommunityIcons name="check-circle" size={72} color="#FFFFFF" />
+                    <Text style={styles.scanSuccessText}>Package verified</Text>
+                  </View>
+                )}
+
+                {/* All done overlay */}
+                {effectiveAllScanned && effectivePackages.length > 0 && !scanFlash && (
+                  <View style={styles.scanAllDoneFlash}>
+                    <MaterialCommunityIcons name="check-decagram" size={72} color="#4ADE80" />
+                    <Text style={styles.scanAllDoneText}>All packages verified!</Text>
+                  </View>
+                )}
+
+                {/* Busy overlay */}
+                {scanBusy && (
+                  <View style={styles.scanBusyOverlayModal}>
+                    <ActivityIndicator color="#FFFFFF" size="large" />
+                    <Text style={styles.scanBusyOverlayText}>Verifying…</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* No permission fallback */}
+            {!permission?.granted && (
+              <View style={styles.scanNoCameraWrap}>
+                <MaterialCommunityIcons name="camera-off" size={52} color="rgba(255,255,255,0.5)" />
+                <Text style={styles.scanNoCameraText}>Camera access required</Text>
+                <Pressable onPress={requestPermission as any} style={styles.scanNoCameraBtn}>
+                  <Text style={styles.scanNoCameraBtnText}>Enable Camera</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {/* Bottom panel */}
+            <SafeAreaView style={styles.scanModalBottomSafe}>
+              <View style={styles.scanModalBottom}>
+
+                {/* Status row */}
+                <View style={styles.scanModalStatusRow}>
+                  <View style={[
+                    styles.scanModalStatusDot,
+                    scanBusy && styles.scanModalStatusDotBusy,
+                    !scanBusy && scanFlash && styles.scanModalStatusDotDone,
+                    !scanBusy && effectiveAllScanned && styles.scanModalStatusDotDone,
+                  ]} />
+                  <Text style={[
+                    styles.scanModalStatusText,
+                    (scanFlash || effectiveAllScanned) && !scanBusy && styles.scanModalStatusTextDone,
+                  ]}>
+                    {scanBusy
+                      ? 'Verifying…'
+                      : effectiveAllScanned && effectivePackages.length > 0
+                      ? 'Order scan complete'
+                      : scanFlash && lastScanned
+                      ? `Package verified: ${lastScanned}`
+                      : 'Ready to scan'}
+                  </Text>
+                </View>
+
+                {/* Package list */}
+                {effectivePackages.length > 0 && (
+                  <View style={styles.scanPkgList}>
+                    {effectivePackages.map((pkg) => {
+                      const verified = pkg.status === 'scanned' || localScannedRef.current.has(pkg.packageCode);
+                      return (
+                        <View key={pkg.id} style={styles.scanPkgItem}>
+                          <MaterialCommunityIcons
+                            name={verified ? 'check-circle' : 'circle-outline'}
+                            size={18}
+                            color={verified ? '#4ADE80' : 'rgba(255,255,255,0.45)'}
+                          />
+                          <Text style={[styles.scanPkgCode, verified && styles.scanPkgCodeDone]} numberOfLines={1}>
+                            {pkg.packageCode}
+                          </Text>
+                          <Text style={[styles.scanPkgBadge, verified && styles.scanPkgBadgeDone]}>
+                            {verified ? 'Verified' : 'Pending'}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Manual entry */}
+                <View style={styles.scanManualRow}>
+                  <TextInput
+                    style={styles.scanManualInput}
+                    value={manualScanCode}
+                    onChangeText={setManualScanCode}
+                    placeholder="Enter code manually"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    autoCapitalize="characters"
+                    returnKeyType="done"
+                    onSubmitEditing={() => manualScanCode.trim() && handlePackageScan(manualScanCode)}
+                  />
+                  <Pressable
+                    onPress={() => manualScanCode.trim() && handlePackageScan(manualScanCode)}
+                    disabled={!manualScanCode.trim() || scanBusy}
+                    style={[styles.scanManualSubmit, (!manualScanCode.trim() || scanBusy) && styles.scanManualSubmitDisabled]}
+                  >
+                    <MaterialCommunityIcons name="check" size={22} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+
+              </View>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       <Screen scroll keyboard contentContainerStyle={[styles.pad, { paddingHorizontal: horizontalPadding }]}>
         <View style={[styles.contentWrap, { maxWidth: contentMaxWidth }]}>
@@ -294,11 +646,16 @@ export default function DeliveryDetail() {
               <MetaPill icon="storefront-outline" text={delivery.pharmacyName} />
               <MetaPill icon="phone-outline" text={delivery.recipientPhone || 'No phone'} onPress={phoneNumber ? callPatient : undefined} />
               {delivery.timeWindow ? <MetaPill icon="clock-outline" text={delivery.timeWindow} /> : null}
+              {etaLabel ? <MetaPill icon="map-marker-distance" text={`ETA ${etaLabel}`} /> : null}
             </View>
             <View style={styles.heroActions}>
               <Pressable style={styles.navigateButton} onPress={navigateToPatient}>
                 <MaterialCommunityIcons name="navigation-variant" size={18} color="#FFFFFF" />
                 <Text style={styles.navigateButtonText}>Navigate</Text>
+              </Pressable>
+              <Pressable style={styles.sendEtaButton} onPress={sendEtaToPatient}>
+                <MaterialCommunityIcons name="message-text-outline" size={16} color={colors.primaryDark} />
+                <Text style={styles.sendEtaButtonText}>Send ETA to Patient</Text>
               </Pressable>
             </View>
           </Card>
@@ -325,7 +682,7 @@ export default function DeliveryDetail() {
                 active={delivery.status === 'picked_up'}
                 onPress={() => setStatus('picked_up')}
                 busy={podBusy}
-                done={['out_for_delivery','delivering_now','delivered','completed'].includes(delivery.status)}
+                done={['picked_up','in_transit','dispatched','out_for_delivery','delivering_now','delivered','completed'].includes(delivery.status)}
               />
               <StatusAction
                 label="Out for Delivery"
@@ -333,15 +690,15 @@ export default function DeliveryDetail() {
                 active={delivery.status === 'out_for_delivery'}
                 onPress={() => setStatus('out_for_delivery')}
                 busy={podBusy}
-                done={['delivering_now','delivered','completed'].includes(delivery.status)}
+                done={['out_for_delivery','delivering_now','delivered','completed'].includes(delivery.status)}
               />
               <StatusAction
-                label="Arrived / Delivering Now"
+                label="Mark En Route"
                 icon="map-marker-check-outline"
                 active={delivery.status === 'delivering_now'}
                 onPress={() => setStatus('delivering_now')}
                 busy={podBusy}
-                done={['delivered','completed'].includes(delivery.status)}
+                done={['delivering_now','delivered','completed'].includes(delivery.status)}
               />
             </View>
           </Card>
@@ -402,6 +759,111 @@ export default function DeliveryDetail() {
                     Please collect the copay before completing the delivery.
                   </Text>
                 </View>
+              )}
+            </Card>
+          )}
+
+          {/* Package verification */}
+          {effectivePackages.length > 0 && (
+            <Card style={styles.mt}>
+              <View style={styles.pkgHeader}>
+                <MaterialCommunityIcons
+                  name={effectiveAllScanned ? 'check-decagram' : 'package-variant-closed'}
+                  size={22}
+                  color={effectiveAllScanned ? colors.success : colors.primaryDark}
+                />
+                <Text style={[styles.sectionTitle, { flex: 1 }]}>Package Verification</Text>
+                {effectiveAllScanned && (
+                  <View style={styles.pkgAllDoneBadge}>
+                    <Text style={styles.pkgAllDoneText}>All verified</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.sectionSub}>
+                Scan all package QR codes at this stop before completing delivery.
+              </Text>
+
+              {(() => {
+                const scannedCount = effectivePackages.filter(p => p.status === 'scanned').length;
+                const remaining = effectivePackages.length - scannedCount;
+                return (
+                  <View style={styles.pkgCountRow}>
+                    <View style={styles.pkgCountBadge}>
+                      <Text style={[styles.pkgCountNum, effectiveAllScanned && styles.pkgCountNumDone]}>
+                        {scannedCount} / {effectivePackages.length}
+                      </Text>
+                      <Text style={styles.pkgCountLabel}> scanned</Text>
+                    </View>
+                    {!effectiveAllScanned && remaining > 0 && (
+                      <View style={styles.pkgRemainingBadge}>
+                        <MaterialCommunityIcons name="alert-circle-outline" size={14} color={colors.danger} />
+                        <Text style={styles.pkgRemainingText}>{remaining} remaining</Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })()}
+
+              {effectivePackages.map((pkg, idx) => {
+                const scanned = pkg.status === 'scanned';
+                return (
+                  <View
+                    key={pkg.id}
+                    style={[styles.pkgRow, scanned ? styles.pkgRowDone : styles.pkgRowPending]}
+                  >
+                    <MaterialCommunityIcons
+                      name={scanned ? 'check-circle' : 'circle-outline'}
+                      size={20}
+                      color={scanned ? colors.success : colors.navy}
+                    />
+                    <View style={styles.pkgTextWrap}>
+                      <Text style={[styles.pkgCode, scanned ? styles.pkgCodeDone : styles.pkgCodePending]}>
+                        {pkg.packageCode}
+                      </Text>
+                      <Text style={[
+                        styles.pkgIndexLabel,
+                        scanned ? styles.pkgIndexLabelDone : styles.pkgIndexLabelPending,
+                      ]}>
+                        {idx + 1}/{effectivePackages.length}
+                      </Text>
+                    </View>
+                    <View style={[styles.pkgStatusBadge, scanned ? styles.pkgStatusBadgeDone : styles.pkgStatusBadgePending]}>
+                      <Text style={[styles.pkgStatus, scanned ? styles.pkgStatusDone : styles.pkgStatusPending]}>
+                        {scanned ? 'Scanned' : 'Pending'}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {!effectiveAllScanned && (
+                <Text style={styles.pkgHint}>
+                  Scan all package QR codes before completing delivery.
+                </Text>
+              )}
+
+              {lastScanned && (
+                <View style={styles.lastScannedRow}>
+                  <MaterialCommunityIcons name="check-circle" size={15} color={colors.success} />
+                  <Text style={styles.lastScannedText}>Last scanned: {lastScanned}</Text>
+                </View>
+              )}
+
+              {/* Open full-screen scanner */}
+              {!effectiveAllScanned && (
+                <Pressable
+                  style={styles.scanPkgBtn}
+                  onPress={() => {
+                    if (!permission?.granted) {
+                      requestPermission().then(r => { if (r.granted) setShowPackageScanner(true); });
+                    } else {
+                      setShowPackageScanner(true);
+                    }
+                  }}
+                >
+                  <MaterialCommunityIcons name="qrcode-scan" size={20} color="#FFFFFF" />
+                  <Text style={styles.scanPkgBtnText}>Open QR Scanner</Text>
+                </Pressable>
               )}
             </Card>
           )}
@@ -467,10 +929,10 @@ export default function DeliveryDetail() {
               )}
 
               <PrimaryButton
-                title="Complete Delivery"
-                onPress={completePod}
+                title={!effectiveAllScanned ? 'Scan Packages First' : 'Complete Delivery'}
+                onPress={!effectiveAllScanned ? () => setShowPackageScanner(true) : completePod}
                 loading={podBusy}
-                disabled={!canComplete || podBusy}
+                disabled={(!canComplete && allScanned) || podBusy}
                 style={styles.completeButton}
               />
 
@@ -479,6 +941,9 @@ export default function DeliveryDetail() {
               )}
               {allPhotosCaptured && delivery.requiresSignature && !signature && (
                 <Text style={styles.warn}>Capture recipient signature to enable completion.</Text>
+              )}
+              {!effectiveAllScanned && effectivePackages.length > 0 && (
+                <Text style={styles.warn}>Scan all package QR codes to enable completion.</Text>
               )}
             </Card>
           ) : copayDecision === 'not_collected' ? (
@@ -650,6 +1115,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryDark,
   },
   navigateButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  sendEtaButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginTop: 8, paddingVertical: 10, borderRadius: 12,
+    borderWidth: 1.5, borderColor: colors.primaryDark, backgroundColor: '#FFFFFF',
+  },
+  sendEtaButtonText: { color: colors.primaryDark, fontSize: 13, fontWeight: '800' },
 
   sectionTitle: { fontSize: 17, fontWeight: '900', color: colors.navy, marginBottom: 6 },
   sectionSub: { color: colors.muted, fontSize: 13, lineHeight: 19, marginBottom: 14 },
@@ -756,4 +1227,145 @@ const styles = StyleSheet.create({
 
   completeButton: { marginTop: 14 },
   warn: { color: colors.warning, fontSize: 12, marginTop: 8, textAlign: 'center', fontWeight: '600' },
+
+  // Package verification
+  pkgHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  pkgAllDoneBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
+  pkgAllDoneText: { color: colors.success, fontSize: 11, fontWeight: '900' },
+  pkgCountRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  pkgCountBadge: { flexDirection: 'row', alignItems: 'center' },
+  pkgCountLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  pkgCountNum: { color: colors.primaryDark, fontSize: 16, fontWeight: '900' },
+  pkgCountNumDone: { color: colors.success },
+  pkgRemainingBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999,
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+  },
+  pkgRemainingText: { color: colors.danger, fontSize: 12, fontWeight: '800' },
+  pkgRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12,
+    borderWidth: 1.5, borderColor: colors.border, backgroundColor: '#FFFFFF', marginBottom: 8,
+  },
+  pkgRowDone: { borderColor: '#BBF7D0', backgroundColor: '#F0FDF4' },
+  pkgRowPending: { borderColor: colors.border, backgroundColor: '#FFFFFF' },
+  pkgTextWrap: { flex: 1 },
+  pkgCode: { fontSize: 14, fontWeight: '900', color: colors.navy, letterSpacing: 0.5 },
+  pkgCodeDone: { color: colors.success },
+  pkgCodePending: { color: colors.navy },
+  pkgIndexLabel: { fontSize: 11, fontWeight: '700', marginTop: 1 },
+  pkgIndexLabelDone: { color: colors.success },
+  pkgIndexLabelPending: { color: colors.muted },
+  pkgStatusBadge: {
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999,
+  },
+  pkgStatusBadgeDone: { backgroundColor: '#DCFCE7' },
+  pkgStatusBadgePending: { backgroundColor: colors.bgSoft },
+  pkgStatus: { fontSize: 11, fontWeight: '800' },
+  pkgStatusDone: { color: colors.success },
+  pkgStatusPending: { color: colors.text },
+  pkgHint: { color: colors.danger, fontSize: 12, fontWeight: '700', marginBottom: 12, marginTop: 4 },
+  lastScannedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
+  lastScannedText: { color: colors.success, fontSize: 12, fontWeight: '700' },
+
+  // Open-scanner button (in card)
+  scanPkgBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: colors.primaryDark, borderRadius: 14, paddingVertical: 16, marginTop: 6,
+  },
+  scanPkgBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+
+  // ── Full-screen QR Scanner Modal ──────────────────────────────────────────
+  scanModal: { flex: 1, backgroundColor: '#04181C' },
+  scanModalOverlay: { flex: 1, backgroundColor: 'rgba(2,17,21,0.35)' },
+
+  scanModalSafeTop: { backgroundColor: 'rgba(0,0,0,0.55)' },
+  scanModalHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 16, paddingVertical: 14,
+  },
+  scanModalCloseBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, width: 76 },
+  scanModalCloseText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  scanModalTitleWrap: { flex: 1, alignItems: 'center' },
+  scanModalTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  scanModalSub: { color: '#A9E4E9', fontSize: 12, fontWeight: '700', marginTop: 2 },
+  scanModalProgressWrap: { width: 76, alignItems: 'flex-end' },
+  scanModalProgressNum: { color: 'rgba(255,255,255,0.7)', fontSize: 22, fontWeight: '900' },
+  scanModalProgressNumDone: { color: '#4ADE80' },
+  scanModalProgressLabel: { color: '#A9E4E9', fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  // Scan frame
+  scanModalFrameArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scanModalFrame: {
+    width: 280, height: 280,
+    borderWidth: 3, borderColor: '#C6FBFF', borderRadius: 28,
+    backgroundColor: 'transparent', position: 'relative',
+    shadowColor: '#80F5FF', shadowOpacity: 0.45, shadowRadius: 22, elevation: 6,
+  },
+  scanCorner: { position: 'absolute', width: 28, height: 28 },
+  scanCornerTL: { top: -2, left: -2, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#FFFFFF', borderTopLeftRadius: 8 },
+  scanCornerTR: { top: -2, right: -2, borderTopWidth: 4, borderRightWidth: 4, borderColor: '#FFFFFF', borderTopRightRadius: 8 },
+  scanCornerBL: { bottom: -2, left: -2, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: '#FFFFFF', borderBottomLeftRadius: 8 },
+  scanCornerBR: { bottom: -2, right: -2, borderBottomWidth: 4, borderRightWidth: 4, borderColor: '#FFFFFF', borderBottomRightRadius: 8 },
+
+  // Overlays inside the frame
+  scanSuccessFlash: {
+    position: 'absolute', top: -3, left: -3, right: -3, bottom: -3,
+    borderRadius: 28, backgroundColor: 'rgba(0,200,100,0.28)',
+    alignItems: 'center', justifyContent: 'center', gap: 8,
+  },
+  scanSuccessText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  scanAllDoneFlash: {
+    position: 'absolute', top: -3, left: -3, right: -3, bottom: -3,
+    borderRadius: 28, backgroundColor: 'rgba(74,222,128,0.22)',
+    alignItems: 'center', justifyContent: 'center', gap: 8,
+  },
+  scanAllDoneText: { color: '#4ADE80', fontSize: 16, fontWeight: '900' },
+  scanBusyOverlayModal: {
+    position: 'absolute', top: -3, left: -3, right: -3, bottom: -3,
+    borderRadius: 28, backgroundColor: 'rgba(0,76,85,0.85)',
+    alignItems: 'center', justifyContent: 'center', gap: 10,
+  },
+  scanBusyOverlayText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+
+  // No camera
+  scanNoCameraWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  scanNoCameraText: { color: 'rgba(255,255,255,0.6)', fontSize: 16, fontWeight: '700' },
+  scanNoCameraBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14, backgroundColor: colors.primary, marginTop: 4 },
+  scanNoCameraBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+
+  // Bottom panel
+  scanModalBottomSafe: { backgroundColor: 'rgba(4,24,28,0.94)' },
+  scanModalBottom: { padding: 16, gap: 12 },
+
+  scanModalStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scanModalStatusDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.25)' },
+  scanModalStatusDotBusy: { backgroundColor: '#FCD34D' },
+  scanModalStatusDotDone: { backgroundColor: '#4ADE80' },
+  scanModalStatusText: { flex: 1, color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: '700' },
+  scanModalStatusTextDone: { color: '#4ADE80' },
+
+  // Per-package list inside modal
+  scanPkgList: { gap: 6 },
+  scanPkgItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  scanPkgCode: { flex: 1, color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
+  scanPkgCodeDone: { color: '#FFFFFF' },
+  scanPkgBadge: { color: 'rgba(255,255,255,0.35)', fontSize: 11, fontWeight: '800' },
+  scanPkgBadgeDone: { color: '#4ADE80' },
+
+  // Manual entry inside modal
+  scanManualRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  scanManualInput: {
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
+    color: '#FFFFFF', fontSize: 14, fontWeight: '700',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
+  },
+  scanManualSubmit: { width: 50, height: 50, borderRadius: 13, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  scanManualSubmitDisabled: { opacity: 0.35 },
 });

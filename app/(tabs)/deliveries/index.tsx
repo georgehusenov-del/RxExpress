@@ -112,22 +112,20 @@ export default function DeliveriesScreen() {
     return () => { stopGpsLoop().catch(() => null); };
   }, [profile?.status]);
 
-  // Only patient deliveries
+
+  // Per API checklist: assigned, picked_up, dispatched, out_for_delivery, delivering_now
   const deliveryStops = useMemo(() => {
-    const stops = items.filter(item => {
-      const t = (item.deliveryType ?? '').toLowerCase();
-      return t !== 'pickup' && t !== 'pharmacy_pickup';
-    });
+    const ACTIVE = new Set(['new', 'assigned', 'picked_up', 'in_transit', 'dispatched', 'out_for_delivery', 'delivering_now']);
+    const stops = items.filter(item => ACTIVE.has(item.status));
     return [...stops].sort((a, b) => {
-      if (a.stopNumber != null && b.stopNumber != null) return a.stopNumber - b.stopNumber;
-      return 0;
+      const aSeq = (a as any).optimizedSequence ?? a.stopNumber ?? 999;
+      const bSeq = (b as any).optimizedSequence ?? b.stopNumber ?? 999;
+      return aSeq - bSeq;
     });
   }, [items]);
 
   const isOnline = ['on_duty', 'available', 'online'].includes(profile?.status ?? '');
-  const remainingCount = deliveryStops.filter(
-    d => !['delivered', 'completed', 'failed', 'cancelled'].includes(d.status)
-  ).length;
+  const remainingCount = deliveryStops.filter(d => !['delivered', 'completed', 'failed', 'cancelled'].includes(d.status)).length;
 
   if (loading) {
     return (
@@ -154,21 +152,10 @@ export default function DeliveriesScreen() {
 
   async function handleNavigate(delivery: Delivery) {
     setNavigatingId(delivery.id);
-    try {
-      // Status workflow: assigned → picked_up, picked_up → out_for_delivery, else just navigate
-      if (delivery.status === 'assigned') {
-        await rxexApi.updateDeliveryStatus(delivery.id, 'out_for_delivery');
-        await load();
-      } else if (delivery.status === 'picked_up') {
-        await rxexApi.updateDeliveryStatus(delivery.id, 'out_for_delivery');
-        await load();
-      }
-      openMaps(delivery);
-    } catch {
-      openMaps(delivery);
-    } finally {
-      setNavigatingId(null);
-    }
+    // Per API docs: navigate only logs an event, does NOT change order status
+    rxexApi.driverAction(delivery.id, { action: 'navigate' }).catch(() => null);
+    openMaps(delivery);
+    setNavigatingId(null);
   }
 
   return (
@@ -239,15 +226,21 @@ export default function DeliveriesScreen() {
             </Card>
           )
         }
-        renderItem={({ item, index }) => (
-          <StopCard
-            stop={item}
-            stopNumber={(item as any).stopNumber ?? index + 1}
-            onNavigate={() => handleNavigate(item)}
-            navigating={navigatingId === item.id}
-            onViewDetail={() => router.push(`/delivery/${item.id}`)}
-          />
-        )}
+        renderItem={({ item, index }) => {
+          const isPharmacyPickup = ['pickup', 'pharmacy_pickup'].includes((item.deliveryType ?? '').toLowerCase());
+          const eta = (item as any).optimizedDurationText as string | undefined;
+          return (
+            <StopCard
+              stop={item}
+              stopNumber={(item as any).optimizedSequence ?? (item as any).stopNumber ?? index + 1}
+              onNavigate={() => handleNavigate(item)}
+              navigating={navigatingId === item.id}
+              onViewDetail={() => router.push(isPharmacyPickup ? `/pickup/${item.id}` : `/delivery/${item.id}`)}
+              isPharmacyPickup={isPharmacyPickup}
+              eta={eta}
+            />
+          );
+        }}
         ListFooterComponent={
           <Pressable onPress={logout} style={styles.signOutRow}>
             <MaterialCommunityIcons name="logout" size={18} color={colors.muted} />
@@ -262,13 +255,15 @@ export default function DeliveriesScreen() {
 // ─── Stop Card ────────────────────────────────────────────────────────────────
 
 function StopCard({
-  stop, stopNumber, onNavigate, navigating, onViewDetail,
+  stop, stopNumber, onNavigate, navigating, onViewDetail, isPharmacyPickup, eta,
 }: {
   stop: Delivery;
   stopNumber: number;
   onNavigate: () => void;
   navigating: boolean;
   onViewDetail: () => void;
+  isPharmacyPickup?: boolean;
+  eta?: string;
 }) {
   const isDone = ['delivered', 'completed', 'failed', 'cancelled'].includes(stop.status);
   const isActive = stop.status === 'delivering_now';
@@ -301,8 +296,8 @@ function StopCard({
         <StatusBadge status={stop.status} />
       </View>
 
-      {/* Patient info */}
-      <Text style={styles.stopPatient}>{stop.recipientName}</Text>
+      {/* Name */}
+      <Text style={styles.stopPatient}>{isPharmacyPickup ? stop.pharmacyName : stop.recipientName}</Text>
       <Text style={styles.stopAddress}>{stop.street}{stop.aptUnit ? `, ${stop.aptUnit}` : ''}</Text>
       <Text style={styles.stopAddress}>{stop.city}, {stop.state} {stop.postalCode}</Text>
 
@@ -314,12 +309,18 @@ function StopCard({
         </View>
       ) : null}
 
-      {/* Time + Copay row */}
+      {/* Time + ETA + Copay row */}
       <View style={styles.metaRow}>
         {stop.timeWindow ? (
           <View style={styles.metaPill}>
             <MaterialCommunityIcons name="clock-outline" size={14} color={colors.primaryDark} />
             <Text style={styles.metaPillText}>{stop.timeWindow}</Text>
+          </View>
+        ) : null}
+        {eta ? (
+          <View style={styles.etaPill}>
+            <MaterialCommunityIcons name="map-marker-distance" size={14} color="#065F46" />
+            <Text style={styles.etaText}>ETA {eta}</Text>
           </View>
         ) : null}
         {hasCopay && (
@@ -354,7 +355,7 @@ function StopCard({
             )}
           </Pressable>
           <Pressable onPress={onViewDetail} style={styles.detailButton}>
-            <Text style={styles.detailButtonText}>Details</Text>
+            <Text style={styles.detailButtonText}>{isPharmacyPickup ? 'Scan' : 'Details'}</Text>
             <MaterialCommunityIcons name="chevron-right" size={18} color={colors.primaryDark} />
           </Pressable>
         </View>
@@ -452,6 +453,12 @@ const styles = StyleSheet.create({
   metaPillText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
   metaPillTextDone: { color: colors.success },
   metaPillTextCopay: { color: '#92400E', fontWeight: '800' },
+  etaPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 7, borderRadius: 12,
+    backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#6EE7B7',
+  },
+  etaText: { color: '#065F46', fontSize: 13, fontWeight: '800' },
 
   // Actions
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, paddingTop: 12 },

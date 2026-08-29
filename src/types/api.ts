@@ -47,14 +47,51 @@ export type DeliveryStatus =
   | 'cancelled'
   | 'completed';
 
+export type DriverActionType =
+  | 'call_patient'
+  | 'send_eta'
+  | 'navigate'
+  | 'start_navigation'
+  | 'en_route'
+  | 'arrived'
+  | 'failed';
+
+export type DriverActionPayload = {
+  action: DriverActionType;
+  notes?: string;
+  failureReason?: string;
+  failedPhotoBase64?: string | null;
+  latitude?: number;
+  longitude?: number;
+};
+
+export type DriverActionResponse = {
+  message: string;
+  orderId?: number;
+  status?: string;
+};
+
+export type DeliveryDetailResponse = {
+  order: Delivery;
+  packages: DeliveryPackage[];
+  events: any[];
+  files: any[];
+};
+
+export type ScanType =
+  | 'pickup' | 'picked_up' | 'pickup_scan'
+  | 'intransit' | 'in_transit' | 'office' | 'office_scan'
+  | 'outfordelivery' | 'out_for_delivery'
+  | 'delivering' | 'delivering_now' | 'enroute' | 'en_route'
+  | 'verify';
+
 export type Delivery = {
   id: number;
   orderNumber: string;
   trackingNumber?: string;
   qrCode: string;
   pharmacyName: string;
-  // 'pickup' = pharmacy pickup; anything else = patient delivery
-  deliveryType: 'pickup' | 'delivery' | string;
+  deliveryType: 'same_day' | 'next_day' | 'pickup' | 'delivery' | string;
   timeWindow: string;
   recipientName: string;
   recipientPhone: string;
@@ -78,6 +115,12 @@ export type Delivery = {
   expectedPackageCount?: number;
   // Gig/route identifier this stop belongs to
   gigNumber?: string;
+  optimizedSequence?: number;
+  optimizedDistanceText?: string;
+  optimizedDurationText?: string;
+  requiresPhotoProof?: boolean;
+  packages?: DeliveryPackage[];
+  packageCodes?: string[];
   createdAt?: string;
   actualDeliveryTime?: string;
   photoUrl?: string;
@@ -114,3 +157,23 @@ export type MyRouteResponse = {
 };
 
 export type ApiError = { detail?: string; message?: string };
+
+export type DeliveryPackage = {
+  id: number;
+  orderId: number;
+  packageCode: string;
+  packageIndex?: number;
+  status: 'pending' | 'scanned' | string;
+};
+
+export type ScanCodeResponse = {
+  message: string;
+  orderStatus?: string;
+  allScanned: boolean;
+  scannedCode?: string;
+  missingCodes?: string[];
+  package?: DeliveryPackage;
+  expectedCodes?: string[];
+  requiresPackagePartScan?: boolean;
+  detail?: string;
+};
