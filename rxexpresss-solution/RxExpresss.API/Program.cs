@@ -67,6 +67,7 @@ builder.Services.AddAuthorization();
 // DI
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<RxExpresss.API.Services.JarvisReadService>();
 builder.Services.AddSingleton<RxExpresss.API.Services.CircuitService>();
 builder.Services.AddSingleton<RxExpresss.API.Services.GoogleMapsService>();
 builder.Services.AddSingleton<RxExpresss.API.Services.AppleMapsService>();
